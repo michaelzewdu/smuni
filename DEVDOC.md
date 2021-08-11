@@ -1,4 +1,4 @@
-# ስሙኒ
+# Project gitስሙኒ
 
 ## To-do
 
