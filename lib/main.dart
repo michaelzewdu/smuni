@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:smuni/routes.dart';
 import 'package:smuni/screens/home_screen.dart';
 
+import 'constants.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -22,7 +24,7 @@ class MyApp extends StatelessWidget {
           // or simply save your changes to "hot reload" in a Flutter IDE).
           // Notice that the counter didn't reset back to zero; the application
           // is not restarted.
-          primarySwatch: Colors.brown),
+          primarySwatch: primarySmuniSwatch),
       home: SmuniHomeScreen(),
       onGenerateRoute: Routes.myOnGenerateRoute,
     );
