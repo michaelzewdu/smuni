@@ -91,6 +91,7 @@ class SmuniHomeScreen extends StatelessWidget {
                   HorizontalCards(),
                   HorizontalCards(),
                   HorizontalCards(),
+
                 ],
               ),
             ),
