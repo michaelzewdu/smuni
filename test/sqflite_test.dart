@@ -1,4 +1,4 @@
-import 'package:smuni/data_providers/data_providers.dart';
+import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/models/models.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
@@ -19,7 +19,7 @@ void main() {
   );
   test("sqflite works", () async {
     var db = await sqflite.openDatabase("test.db");
-    var provider = SqliteUserProvider(db);
+    var provider = SqliteUserRepository(db);
     await provider.setItem(user.id, user);
     var out = await provider.getItem(user.id);
     print(out?.toJSON());

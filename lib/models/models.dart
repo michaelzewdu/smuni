@@ -65,7 +65,7 @@ enum FrequencyKind { OneTime, Recurring }
 abstract class Frequency {
   final FrequencyKind kind;
 
-  Frequency(this.kind);
+  const Frequency(this.kind);
   Map<String, dynamic> toJSON();
 
   factory Frequency.fromJson(Map<String, dynamic> json) {
@@ -82,7 +82,7 @@ abstract class Frequency {
 }
 
 class OneTime extends Frequency {
-  OneTime() : super(FrequencyKind.OneTime);
+  const OneTime() : super(FrequencyKind.OneTime);
   Map<String, dynamic> toJSON() => {
         "kind": kind,
       };
@@ -100,7 +100,7 @@ class MonetaryAmount {
   final String currency;
   final int amount;
 
-  MonetaryAmount({required this.currency, required this.amount});
+  const MonetaryAmount({required this.currency, required this.amount});
 
   Map<String, dynamic> toJSON() => {"currency": currency, "amount": amount};
   factory MonetaryAmount.fromJson(Map<String, dynamic> json) => MonetaryAmount(
@@ -247,6 +247,27 @@ class Expense {
       budgetId: checkedConvert(json, "category",
           (v) => checkedConvert(v, "budgetId", (v) => v as String)),
       amount: checkedConvert(json, "amount", (v) => MonetaryAmount.fromJson(v)),
+    );
+  }
+
+  factory Expense.from(
+    Expense other, {
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? name,
+    String? categoryId,
+    String? budgetId,
+    MonetaryAmount? amount,
+  }) {
+    return Expense(
+      id: id ?? other.id,
+      createdAt: createdAt ?? other.createdAt,
+      updatedAt: updatedAt ?? other.updatedAt,
+      name: name ?? other.name,
+      categoryId: categoryId ?? other.categoryId,
+      budgetId: budgetId ?? other.budgetId,
+      amount: amount ?? other.amount,
     );
   }
 }

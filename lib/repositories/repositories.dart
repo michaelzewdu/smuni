@@ -3,14 +3,14 @@ import 'dart:collection';
 import 'package:smuni/models/models.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
-abstract class DataProvider<Identfier, Item> {
+abstract class Repository<Identfier, Item> {
   Future<Item?> getItem(Identfier id);
   Future<Iterable<Item>> getItems();
   Future<void> setItem(Identfier id, Item item);
   Future<void> removeItem(Identfier id);
 }
 
-class HashMapProvider<Identfier, Item> extends DataProvider<Identfier, Item> {
+class HashMapRepository<Identfier, Item> extends Repository<Identfier, Item> {
   HashMap<Identfier, Item> _items = new HashMap();
 
   @override
@@ -34,16 +34,16 @@ class HashMapProvider<Identfier, Item> extends DataProvider<Identfier, Item> {
   }
 }
 
-class UserProvider extends HashMapProvider<String, User> {}
+class UserRepository extends HashMapRepository<String, User> {}
 
-class BudgetProvider extends HashMapProvider<String, Budget> {}
+class BudgetRepository extends HashMapRepository<String, Budget> {}
 
-class CategoryProvider extends HashMapProvider<String, Category> {}
+class CategoryRepository extends HashMapRepository<String, Category> {}
 
-class ExpenseProvider extends HashMapProvider<String, Expense> {}
+class ExpenseRepository extends HashMapRepository<String, Expense> {}
 
-abstract class SqliteProvider<Identfier, Item>
-    extends DataProvider<Identfier, Item> {
+abstract class SqliteRepository<Identfier, Item>
+    extends Repository<Identfier, Item> {
   final sqflite.Database db;
   final String tableName;
   final String primaryColumnName;
@@ -51,7 +51,7 @@ abstract class SqliteProvider<Identfier, Item>
   final Map<String, dynamic> Function(Item) toMap;
   final Item Function(Map<String, dynamic>) fromMap;
 
-  SqliteProvider(
+  SqliteRepository(
     this.db, {
     required this.tableName,
     required this.primaryColumnName,
@@ -99,8 +99,8 @@ abstract class SqliteProvider<Identfier, Item>
   }
 }
 
-/*class SqliteUserProvider extends SqliteProvider<String, User> {
-  SqliteUserProvider(sqflite.Database db)
+class SqliteUserRepository extends SqliteRepository<String, User> {
+  SqliteUserRepository(sqflite.Database db)
       : super(
           db,
           tableName: "users",
@@ -129,4 +129,3 @@ create table users (
 ''');
   }
 }
-*/

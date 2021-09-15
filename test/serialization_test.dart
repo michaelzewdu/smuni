@@ -17,7 +17,7 @@ void main() {
 }
 
 const String USER_JSON = """{
-        "_id": "613b67bc9aeded76daaa9b79",
+        "_id": "614193c7f2ea51b47f5896be",
         "username": "superkind",
         "email": "don@key.ote",
         "phoneNumber": "+251900112233",
@@ -46,9 +46,9 @@ const String USER_JSON = """{
                         "tags": [
                             "pharma"
                         ],
-                        "_id": "613b67bc9aeded76daaa9b73",
-                        "createdAt": "2021-09-10T14:12:13.191Z",
-                        "updatedAt": "2021-09-10T14:12:13.191Z"
+                        "_id": "614193c7f2ea51b47f5896b8",
+                        "createdAt": "2021-09-15T06:33:45.553Z",
+                        "updatedAt": "2021-09-15T06:33:45.553Z"
                     },
                     {
                         "allocatedAmount": {
@@ -57,18 +57,18 @@ const String USER_JSON = """{
                         },
                         "name": "RejuvPill",
                         "parentCategory": {
-                            "_id": "613b67bc9aeded76daaa9b73",
+                            "_id": "614193c7f2ea51b47f5896b8",
                             "name": "Medicine"
                         },
                         "tags": [],
-                        "_id": "613b67bc9aeded76daaa9b74",
-                        "createdAt": "2021-09-10T14:12:13.191Z",
-                        "updatedAt": "2021-09-10T14:12:13.191Z"
+                        "_id": "614193c7f2ea51b47f5896b9",
+                        "createdAt": "2021-09-15T06:33:45.553Z",
+                        "updatedAt": "2021-09-15T06:33:45.553Z"
                     }
                 ],
-                "_id": "613b67bc9aeded76daaa9b75",
-                "createdAt": "2021-09-10T14:12:13.191Z",
-                "updatedAt": "2021-09-10T14:12:13.191Z"
+                "_id": "614193c7f2ea51b47f5896ba",
+                "createdAt": "2021-09-15T06:33:45.554Z",
+                "updatedAt": "2021-09-15T06:33:45.554Z"
             },
             {
                 "frequency": {
@@ -82,12 +82,11 @@ const String USER_JSON = """{
                 "startTime": "2021-08-31T21:00:00.000Z",
                 "endTime": "2021-09-06T21:00:00.000Z",
                 "categories": [],
-                "_id": "613b67bc9aeded76daaa9b76",
-                "createdAt": "2021-09-10T14:12:13.191Z",
-                "updatedAt": "2021-09-10T14:12:13.191Z"
+                "_id": "614193c7f2ea51b47f5896bb",
+                "createdAt": "2021-09-15T06:33:45.554Z",
+                "updatedAt": "2021-09-15T06:33:45.554Z"
             }
         ],
-        "incomes": [],
         "expenses": [
             {
                 "amount": {
@@ -96,33 +95,29 @@ const String USER_JSON = """{
                 },
                 "name": "Pill purchase",
                 "category": {
-                    "_id": "613b67bc9aeded76daaa9b74",
-                    "name": "RejuvPill",
-                    "budgetId": "613b67bc9aeded76daaa9b75",
-                    "budgetName": "Monthly budget"
+                    "_id": "614193c7f2ea51b47f5896b9",
+                    "budgetId": "614193c7f2ea51b47f5896ba"
                 },
-                "_id": "613b67bc9aeded76daaa9b77",
-                "createdAt": "2021-09-10T14:12:13.192Z",
-                "updatedAt": "2021-09-10T14:12:13.192Z"
+                "_id": "614193c7f2ea51b47f5896bc",
+                "createdAt": "2021-09-15T06:33:45.554Z",
+                "updatedAt": "2021-09-15T06:33:45.554Z"
             },
             {
                 "amount": {
                     "currency": "ETB",
-                    "amount": 40000
+                    "amount": 20000
                 },
-                "name": "Pill purchase",
+                "name": "Xanax purchase",
                 "category": {
-                    "_id": "613b67bc9aeded76daaa9b74",
-                    "name": "RejuvPill",
-                    "budgetId": "613b67bc9aeded76daaa9b75",
-                    "budgetName": "Monthly budget"
+                    "_id": "614193c7f2ea51b47f5896b8",
+                    "budgetId": "614193c7f2ea51b47f5896ba"
                 },
-                "_id": "613b67bc9aeded76daaa9b77",
-                "createdAt": "2021-09-10T14:12:13.192Z",
-                "updatedAt": "2021-09-10T14:12:13.192Z"
+                "_id": "614193c7f2ea51b47f5896bd",
+                "createdAt": "2021-09-15T06:33:45.554Z",
+                "updatedAt": "2021-09-15T06:33:45.554Z"
             }
         ],
         "payoffPlans": [],
-        "createdAt": "2021-09-10T14:12:13.192Z",
-        "updatedAt": "2021-09-10T14:12:13.192Z"
+        "createdAt": "2021-09-15T06:33:45.555Z",
+        "updatedAt": "2021-09-15T06:33:45.555Z"
     }""";
