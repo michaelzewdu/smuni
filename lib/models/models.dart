@@ -46,13 +46,17 @@ class User {
         budgets: checkedConvert(
             json,
             "budgets",
-            (v) => checkedConvertArray(
-                v as List<dynamic>, (_, v) => Budget.fromJson(v))),
+            (v) => v == null
+                ? []
+                : checkedConvertArray(
+                    v as List<dynamic>, (_, v) => Budget.fromJson(v))),
         expenses: checkedConvert(
             json,
             "expenses",
-            (v) => checkedConvertArray(
-                v as List<dynamic>, (_, v) => Expense.fromJson(v))),
+            (v) => v == null
+                ? []
+                : checkedConvertArray(
+                    v as List<dynamic>, (_, v) => Expense.fromJson(v))),
       );
 }
 
@@ -151,8 +155,10 @@ class Budget {
         categories: checkedConvert(
             json,
             "categories",
-            (v) => checkedConvertArray(
-                v as List<dynamic>, (_, v) => Category.fromJson(v))),
+            (v) => v == null
+                ? []
+                : checkedConvertArray(
+                    v as List<dynamic>, (_, v) => Category.fromJson(v))),
       );
 }
 
@@ -163,7 +169,7 @@ class Category {
   final String name;
   final MonetaryAmount allocatedAmount;
   final String? parentId;
-  final List<String>? tags;
+  final List<String> tags;
   Category({
     required this.id,
     required this.createdAt,
@@ -199,7 +205,7 @@ class Category {
             json,
             "tags",
             (v) => v == null
-                ? null
+                ? []
                 : checkedConvertArray(
                     v as List<dynamic>, (_, v) => v as String)),
       );
