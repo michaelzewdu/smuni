@@ -17,6 +17,12 @@ class BudgetListPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('Budgets List'),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {  },
+        child: Icon(
+          Icons.add
+        ),
+      ),
     );
   }
 }

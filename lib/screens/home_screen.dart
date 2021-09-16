@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:smuni/constants.dart';
+import 'package:smuni/screens/Budget/budgets_list_screen.dart';
 
 class SmuniHomeScreen extends StatelessWidget {
   SmuniHomeScreen({Key? key}) : super(key: key);
@@ -17,6 +19,26 @@ class SmuniHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Text(
+                'Smuni',
+                style: TextStyle(
+                  fontSize: 32,
+
+                ),
+
+              ),
+              ElevatedButton(onPressed: ()=>Navigator.pushNamed(context, BudgetListPage.routeName), child: Text('Budget',style: TextStyle(fontSize: 24),)),
+              ElevatedButton(onPressed: ()=>print('On to Expense Screen'), child: Text('Expense',style: TextStyle(fontSize: 24),)),
+              ElevatedButton(onPressed: ()=>print('On to About us Screen'), child: Text('About us',style: TextStyle(fontSize: 24),)),
+            ],
+          ),
+        )
+      ),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -55,7 +77,7 @@ class SmuniHomeScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '-15000 Br',
+                            '-15,000 Br',
                             textScaleFactor: 3,
                             style: TextStyle(backgroundColor: Colors.white),
                           ),
@@ -81,31 +103,114 @@ class SmuniHomeScreen extends StatelessWidget {
             ),
           ),
           SliverToBoxAdapter(
-            child: Container(
-              margin: EdgeInsets.fromLTRB(8, 8, 0, 8),
-              height: 150,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  HorizontalCards(),
-                  HorizontalCards(),
-                  HorizontalCards(),
-                  HorizontalCards(),
+            child: Column(
+             // margin: EdgeInsets.fromLTRB(8, 8, 0, 8),
+              //height: 150,
+              children: [
+                Container(
+                  height: 125,
+                  child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    HorizontalCards(),
+                    HorizontalCards(),
+                    HorizontalCards(),
+                    HorizontalCards(),
+                  ],
 
-                ],
               ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0,horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        child: RichText(text: TextSpan(children: [
+                          TextSpan(
+                              text: 'Total ',
+
+                            style: TextStyle(
+                              fontSize: 23,
+                              color: Colors.black,
+                              fontWeight: FontWeight.w300
+                            )
+                          ),
+                          TextSpan(
+                              text: 'Spend',
+                            style: TextStyle(
+                              fontSize: 23,
+                              color: semuni600,
+                              fontWeight: FontWeight.w600
+                            )
+                          )
+                        ])),
+                      ),
+                      Text(
+                        '65,099.76 Br',
+                        style:TextStyle(
+                          fontSize: 23,
+                          color: semuni600
+                        )
+                      )
+                    ],
+                  ),
+                )
+              ],
             ),
           ),
           SliverList(
               delegate:
                   SliverChildBuilderDelegate((BuildContext context, int index) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('This Month',style: TextStyle(fontSize: 22,fontWeight: FontWeight.bold),),
+                          SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                  'Bills',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w300
+                                ),
+                              ),
+                              Text(
+                                '2635.12Br',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w300
+                                ),
+                              )
+                            ],
+
+
+                          ),
+                          SizedBox(height: 8),
+
+                          ListTile(
+                            leading: Icon(
+                              Icons.water
+                            ),
+                            title: Text('Water',style: TextStyle(fontSize: 20),),
+                            subtitle: Text('Utility'),
+                            trailing: Text('-120 Br'),
+
+                          )
+                        ],
+                      ),
+                    );
+
+                    /*
             return Container(
               color: index.isOdd ? Colors.white : Colors.black12,
               height: 100.0,
               child: Center(
                 child: Text('$index', textScaleFactor: 5),
               ),
-            );
+            );*/
           }, childCount: 20))
         ],
       ),
@@ -126,20 +231,26 @@ class HorizontalCards extends StatelessWidget {
         shadowColor: Colors.green,
         elevation: 3,
         child: SizedBox(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text('CBE Wallet'),
-              ),
-              Text(
-                '12,900 Br',
-                textScaleFactor: 2,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              //Text('Spent 5000birr'),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8.0,8,100,8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('CBE Wallet',
+                style: TextStyle(
+                  fontWeight: FontWeight.w400
+                ),),
+                SizedBox(height: 8,),
+                Text(
+                  '12,900 Br',
+                  textScaleFactor: 1.6,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 5,),
+                Text('spent 5,000 Birr',style: TextStyle(fontWeight: FontWeight.w300),)
+                //Text('Spent 5000birr'),
+              ],
+            ),
           ),
         ),
       ),
