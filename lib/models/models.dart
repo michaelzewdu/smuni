@@ -25,6 +25,8 @@ class User {
 
   Map<String, dynamic> toJSON() => {
         "_id": id,
+        "createdAt": createdAt.toIso8601String(),
+        "updatedAt": updatedAt.toIso8601String(),
         "firebaseId": firebaseId,
         "username": username,
         "email": email,
@@ -133,10 +135,12 @@ class Budget {
 
   Map<String, dynamic> toJSON() => {
         "_id": id,
+        "createdAt": createdAt.toIso8601String(),
+        "updatedAt": updatedAt.toIso8601String(),
         "name": name,
-        "amount": allocatedAmount.toJSON(),
         "startTime": startTime.toUtc().toString(),
         "endTime": endTime.toUtc().toString(),
+        "allocatedAmount": allocatedAmount.toJSON(),
         "frequency": frequency.toJSON(),
         "categories": categories.map((c) => c.toJSON()),
       };
@@ -182,9 +186,11 @@ class Category {
 
   Map<String, dynamic> toJSON() => {
         "_id": id,
+        "createdAt": createdAt.toIso8601String(),
+        "updatedAt": updatedAt.toIso8601String(),
         "name": name,
-        "allocatedAmount": allocatedAmount.toJSON(),
         "parentId": parentId,
+        "allocatedAmount": allocatedAmount.toJSON(),
         "tags": tags,
       };
 
@@ -231,9 +237,12 @@ class Expense {
 
   Map<String, dynamic> toJSON() => {
         "_id": id,
+        "createdAt": createdAt.toIso8601String(),
+        "updatedAt": updatedAt.toIso8601String(),
         "name": name,
-        "amount": amount.toJSON(),
         "categoryId": categoryId,
+        "budgetId": budgetId,
+        "amount": amount.toJSON(),
       };
 
   factory Expense.fromJson(Map<String, dynamic> json) {
@@ -275,6 +284,7 @@ class Expense {
 T enumFromString<T>(Iterable<T> values, String value) {
   return values.firstWhere(
     (type) =>
+        type.toString() == value ||
         type.toString().split(".").last.toLowerCase() == value.toLowerCase(),
   );
 }
