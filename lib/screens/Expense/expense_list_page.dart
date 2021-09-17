@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/blocs.dart';
-import 'package:smuni/screens/Expense/expense_details_page.dart';
+
+import 'expense_details_page.dart';
+import 'expense_edit_page.dart';
 
 class ExpenseListPage extends StatefulWidget {
   static const String routeName = "expenseList";
@@ -27,7 +29,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
               onPressed: () {
                 Navigator.pushNamed(
                   context,
-                  ExpenseDetailsPage.routeName,
+                  ExpenseEditPage.routeName,
                 );
               },
               child: const Text("New"),
@@ -48,7 +50,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
                           return ListTile(
                             title: Text(item.name),
                             subtitle: Text(
-                              "${item.amount.currency} ${item.amount.amount}",
+                              "${item.amount.currency} ${item.amount.amount / 100}",
                             ),
                             onTap: () {
                               Navigator.pushNamed(
