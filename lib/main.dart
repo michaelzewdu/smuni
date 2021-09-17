@@ -114,9 +114,16 @@ class MyApp extends StatelessWidget {
               create: (context) =>
                   UserRepository()..setItem(defaultUser.id, defaultUser)),
           RepositoryProvider(create: (context) {
+            var repo = BudgetRepository();
+            for (var item in defaultUser.budgets) {
+              repo.setItem(item.id, item);
+            }
+            return repo;
+          }),
+          RepositoryProvider(create: (context) {
             var repo = ExpenseRepository();
-            for (var expense in defaultUser.expenses) {
-              repo.setItem(expense.id, expense);
+            for (var item in defaultUser.expenses) {
+              repo.setItem(item.id, item);
             }
             return repo;
           }),
@@ -128,6 +135,11 @@ class MyApp extends StatelessWidget {
               create: (context) =>
                   ExpensesBloc(context.read<ExpenseRepository>())
                     ..add(LoadExpenses()),
+            ),
+            BlocProvider(
+              create: (context) =>
+                  BudgetsBloc(context.read<BudgetRepository>())
+                    ..add(LoadBudgets()),
             ),
           ],
           child: MaterialApp(

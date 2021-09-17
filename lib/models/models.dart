@@ -164,6 +164,30 @@ class Budget {
                 : checkedConvertArray(
                     v as List<dynamic>, (_, v) => Category.fromJson(v))),
       );
+  factory Budget.from(
+      Budget other, {
+        String? id,
+        DateTime? createdAt,
+        DateTime? updatedAt,
+        String? name,
+        DateTime? startTime,
+        DateTime? endTime,
+        MonetaryAmount? allocatedAmount,
+        Frequency? frequency,
+        List<Category>? categories,
+      }) {
+    return Budget(
+      id: id ?? other.id,
+      createdAt: createdAt ?? other.createdAt,
+      updatedAt: updatedAt ?? other.updatedAt,
+      name: name ?? other.name,
+      startTime: startTime ?? other.startTime,
+      endTime: endTime ?? other.endTime,
+      allocatedAmount: allocatedAmount ?? other.allocatedAmount,
+      frequency: frequency ?? other.frequency,
+      categories: categories ?? other.categories,
+    );
+  }
 }
 
 class Category {

@@ -48,7 +48,7 @@ class ExpensesLoadSuccess extends ExpensesBlocState {
 // BLOC
 
 class ExpensesBloc extends Bloc<ExpensesBlocEvent, ExpensesBlocState> {
-  ExpenseRepository repo;
+  Repository<String, Expense> repo;
   ExpensesBloc(this.repo) : super(ExpensesLoading());
 
   @override
