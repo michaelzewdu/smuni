@@ -21,6 +21,16 @@ class UpdateExpense extends ExpensesBlocEvent {
   UpdateExpense(this.update);
 }
 
+class CreateExpense extends ExpensesBlocEvent {
+  final Expense item;
+  CreateExpense(this.item);
+}
+
+class DeleteExpense extends ExpensesBlocEvent {
+  final String id;
+  DeleteExpense(this.id);
+}
+
 // STATE
 
 abstract class ExpensesBlocState {
@@ -45,12 +55,7 @@ class ExpensesBloc extends Bloc<ExpensesBlocEvent, ExpensesBlocState> {
   Stream<ExpensesBlocState> mapEventToState(
     ExpensesBlocEvent event,
   ) async* {
-    if (event is UpdateExpense) {
-      repo.setItem(event.update.id, event.update);
-      final expenses = (state as ExpensesLoadSuccess).expenses;
-      expenses[event.update.id] = event.update;
-      yield ExpensesLoadSuccess(expenses);
-    } else if (event is LoadExpenses) {
+    if (event is LoadExpenses) {
       // TODO:  load from fs
       yield ExpensesLoadSuccess(
         HashMap.fromIterable(
@@ -59,6 +64,45 @@ class ExpensesBloc extends Bloc<ExpensesBlocEvent, ExpensesBlocState> {
           value: (i) => i,
         ),
       );
+    } else if (event is UpdateExpense) {
+      // TODO
+
+      final current = state;
+      if (current is ExpensesLoadSuccess) {
+        await repo.setItem(event.update.id, event.update);
+        current.expenses[event.update.id] = event.update;
+        yield ExpensesLoadSuccess(current.expenses);
+      } else if (current is ExpensesLoading) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        add(event);
+      }
+    } else if (event is CreateExpense) {
+      final current = state;
+      if (current is ExpensesLoadSuccess) {
+        // TODO
+        final item = Expense.from(
+          event.item,
+          id: "id-${event.item.createdAt.microsecondsSinceEpoch}",
+        );
+        await repo.setItem(item.id, item);
+        current.expenses[item.id] = item;
+        yield ExpensesLoadSuccess(current.expenses);
+      } else if (current is ExpensesLoading) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        add(event);
+      }
+    } else if (event is DeleteExpense) {
+      final current = state;
+      if (current is ExpensesLoadSuccess) {
+        // TODO
+        await repo.removeItem(event.id);
+        current.expenses.remove(event.id);
+
+        yield ExpensesLoadSuccess(current.expenses);
+      } else if (current is ExpensesLoading) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        add(event);
+      }
     }
   }
 }

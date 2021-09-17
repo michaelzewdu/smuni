@@ -1,9 +1,11 @@
-import 'package:flutter/cupertino.dart';
-import 'package:smuni/screens/Budget/budgets_list_screen.dart';
-import 'package:smuni/screens/Expense/expense_details_page.dart';
-import 'package:smuni/screens/Expense/expense_list_page.dart';
-import 'package:smuni/screens/home_screen.dart';
-import 'package:smuni/screens/settings_page.dart';
+import 'package:flutter/widgets.dart';
+
+import 'Budget/budgets_list_screen.dart';
+import 'Expense/expense_details_page.dart';
+import 'Expense/expense_list_page.dart';
+import 'Expense/expense_edit_page.dart';
+import 'home_screen.dart';
+import 'settings_page.dart';
 
 class Routes {
   static Route myOnGenerateRoute(RouteSettings settings) {
@@ -17,9 +19,11 @@ class Routes {
       case ExpenseListPage.routeName:
         return ExpenseListPage.route();
       case ExpenseDetailsPage.routeName:
+        return ExpenseDetailsPage.route(settings.arguments as String);
+      case ExpenseEditPage.routeName:
         return settings.arguments == null
-            ? ExpenseDetailsPage.routeNew()
-            : ExpenseDetailsPage.routeView(settings.arguments as String);
+            ? ExpenseEditPage.routeNew()
+            : ExpenseEditPage.route(settings.arguments as String);
       default:
         return SmuniHomeScreen.route();
     }
