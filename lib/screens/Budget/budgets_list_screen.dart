@@ -60,8 +60,10 @@ class BudgetListPage extends StatelessWidget {
         //  print('');
       }),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: Icon(Icons.add),
+        onPressed: () {  },
+        child: Icon(
+          Icons.add
+        ),
       ),
     );
   }
