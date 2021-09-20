@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/categories.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/blocs/blocs.dart';
+import 'package:smuni/screens/Category/category_edit_page.dart';
 
 class CategorySelectorState {
   final String id;
@@ -128,7 +129,10 @@ class _CategorySelectorState extends State<CategorySelector> {
                                 ListTile(
                                   title: const Text("Add new category"),
                                   onTap: () {
-                                    // TODO
+                                    Navigator.pushNamed(
+                                      context,
+                                      CategoryEditPage.routeName,
+                                    );
                                   },
                                 ),
                               ],

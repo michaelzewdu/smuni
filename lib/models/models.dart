@@ -205,7 +205,7 @@ class Category {
     required this.updatedAt,
     required this.name,
     required this.budgetId,
-    required this.parentId,
+    this.parentId,
     required this.allocatedAmount,
     required this.tags,
   });

@@ -2,59 +2,58 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/blocs.dart';
-import 'package:smuni/blocs/expense_edit_page.dart';
+import 'package:smuni/blocs/category_edit_page.dart';
 import 'package:smuni/models/models.dart';
-import 'package:smuni/widgets/category_selector.dart';
+import 'package:smuni/widgets/budget_selector.dart';
 import 'package:smuni/widgets/money_editor.dart';
 
-class ExpenseEditPage extends StatefulWidget {
-  static const String routeName = "expenseEdit";
+class CategoryEditPage extends StatefulWidget {
+  static const String routeName = "categoryEdit";
 
-  const ExpenseEditPage({Key? key}) : super(key: key);
+  const CategoryEditPage({Key? key}) : super(key: key);
 
   static Route route(String id) => MaterialPageRoute(
       settings: const RouteSettings(name: routeName),
       builder: (context) {
-        final itemsBlock = context.read<ExpensesBloc>();
-        final item = (itemsBlock.state as ExpensesLoadSuccess).items[id]!;
+        final itemsBlock = context.read<CategoriesBloc>();
+        final item = (itemsBlock.state as CategoriesLoadSuccess).items[id]!;
 
         return BlocProvider(
-          create: (context) => ExpenseEditPageBloc(itemsBlock, item),
-          child: ExpenseEditPage(),
+          create: (context) => CategoryEditPageBloc(itemsBlock, item),
+          child: CategoryEditPage(),
         );
       });
 
   static Route routeNew() => MaterialPageRoute(
       settings: const RouteSettings(name: routeName),
       builder: (context) {
-        final itemsBlock = context.read<ExpensesBloc>();
+        final itemsBlock = context.read<CategoriesBloc>();
         final now = DateTime.now();
-        final item = Expense(
+        final item = Category(
           id: "new-id",
           createdAt: now,
           updatedAt: now,
           name: "",
-          categoryId: "",
+          tags: [],
           budgetId: "",
-          amount: MonetaryAmount(currency: "ETB", amount: 0),
+          allocatedAmount: MonetaryAmount(currency: "ETB", amount: 0),
         );
         return BlocProvider(
-          create: (context) => ExpenseEditPageBloc.modified(itemsBlock, item),
-          child: ExpenseEditPage(),
+          create: (context) => CategoryEditPageBloc.modified(itemsBlock, item),
+          child: CategoryEditPage(),
         );
       });
 
   @override
-  State<StatefulWidget> createState() => _ExpenseEditPageState();
+  State<StatefulWidget> createState() => _CategoryEditPageState();
 }
 
-class _ExpenseEditPageState extends State<ExpenseEditPage> {
+class _CategoryEditPageState extends State<CategoryEditPage> {
   final _formKey = GlobalKey<FormState>();
   int _amountWholes = 0;
   int _amountCents = 0;
   String _name = "";
 
-  String _categoryId = "";
   String _budgetId = "";
 
   @override
@@ -62,9 +61,9 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
         key: _formKey,
         child: Scaffold(
           appBar: AppBar(
-            title: BlocBuilder<ExpenseEditPageBloc, ExpenseEditPageBlocState>(
+            title: BlocBuilder<CategoryEditPageBloc, CategoryEditPageBlocState>(
               builder: (context, state) =>
-                  Text("Editing expense: ${state.unmodified.name}"),
+                  Text("Editing category: ${state.unmodified.name}"),
             ),
             actions: [
               ElevatedButton(
@@ -72,22 +71,21 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                   final form = this._formKey.currentState;
                   if (form != null && form.validate()) {
                     form.save();
-                    final bloc = context.read<ExpenseEditPageBloc>();
+                    final bloc = context.read<CategoryEditPageBloc>();
                     bloc.add(
                       ModifyItem(
-                        Expense.from(bloc.state.unmodified,
+                        Category.from(bloc.state.unmodified,
                             name: _name,
-                            amount: MonetaryAmount(
+                            allocatedAmount: MonetaryAmount(
                                 currency: "ETB",
                                 amount: (_amountWholes * 100) + _amountCents),
-                            categoryId: _categoryId,
                             budgetId: _budgetId),
                       ),
                     );
                     bloc.add(SaveChanges());
                     /* Navigator.popAndPushNamed(
                       context,
-                      ExpenseDetailsPage.routeName,
+                      CategoryDetailsPage.routeName,
                       arguments: bloc.state.unmodified.id,
                     ); */
                     Navigator.pop(context);
@@ -97,14 +95,14 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  context.read<ExpenseEditPageBloc>().add(DiscardChanges());
+                  context.read<CategoryEditPageBloc>().add(DiscardChanges());
                   Navigator.pop(context);
                 },
                 child: const Text("Cancel"),
               ),
             ],
           ),
-          body: BlocBuilder<ExpenseEditPageBloc, ExpenseEditPageBlocState>(
+          body: BlocBuilder<CategoryEditPageBloc, CategoryEditPageBlocState>(
             builder: (context, state) => Column(
               children: <Widget>[
                 TextFormField(
@@ -126,7 +124,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                   ),
                 ),
                 MoneyEditor(
-                  initial: state.unmodified.amount,
+                  initial: state.unmodified.allocatedAmount,
                   onSavedWhole: (v) => setState(() {
                     _amountWholes = v;
                   }),
@@ -137,21 +135,20 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                 Text("id: ${state.unmodified.id}"),
                 Text("createdAt: ${state.unmodified.createdAt}"),
                 Text("updatedAt: ${state.unmodified.updatedAt}"),
+                Text("budget: ${state.unmodified.budgetId}"),
                 // Text("category: ${state.unmodified.categoryId}"),
-                CategorySelector(
-                  initialValue: state.unmodified.categoryId.isEmpty
+                BudgetSelector(
+                  initialValue: state.unmodified.budgetId.isEmpty
                       ? null
-                      : CategorySelectorState(state.unmodified.categoryId,
-                          state.unmodified.budgetId),
+                      : state.unmodified.budgetId,
                   onSaved: (value) {
                     setState(() {
-                      _categoryId = value!.id;
-                      _budgetId = value.budgetId;
+                      _budgetId = value!;
                     });
                   },
                   validator: (value) {
                     if (value == null) {
-                      return "No category selected";
+                      return "No budget selected";
                     }
                   },
                 ),
