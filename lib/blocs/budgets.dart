@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
+
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 
@@ -39,7 +40,7 @@ abstract class BudgetsBlocState {
 class BudgetsLoading extends BudgetsBlocState {}
 
 class BudgetsLoadSuccess extends BudgetsBlocState {
-  final Map<String, Budget> items;
+  final Map<String, Budget> budgets;
 
   BudgetsLoadSuccess(this.items);
 }
@@ -80,8 +81,8 @@ class BudgetsBloc extends Bloc<BudgetsBlocEvent, BudgetsBlocState> {
       final current = state;
       if (current is BudgetsLoadSuccess) {
         await repo.setItem(event.update.id, event.update);
-        current.items[event.update.id] = event.update;
-        yield BudgetsLoadSuccess(current.items);
+        current.budgets[event.update.id] = event.update;
+        yield BudgetsLoadSuccess(current.budgets);
       } else if (current is BudgetsLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
         add(event);
@@ -95,8 +96,8 @@ class BudgetsBloc extends Bloc<BudgetsBlocEvent, BudgetsBlocState> {
           id: "id-${event.item.createdAt.microsecondsSinceEpoch}",
         );
         await repo.setItem(item.id, item);
-        current.items[item.id] = item;
-        yield BudgetsLoadSuccess(current.items);
+        current.budgets[item.id] = item;
+        yield BudgetsLoadSuccess(current.budgets);
       } else if (current is BudgetsLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
         add(event);
@@ -106,9 +107,9 @@ class BudgetsBloc extends Bloc<BudgetsBlocEvent, BudgetsBlocState> {
       if (current is BudgetsLoadSuccess) {
         // TODO
         await repo.removeItem(event.id);
-        current.items.remove(event.id);
+        current.budgets.remove(event.id);
 
-        yield BudgetsLoadSuccess(current.items);
+        yield BudgetsLoadSuccess(current.budgets);
       } else if (current is BudgetsLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
         add(event);

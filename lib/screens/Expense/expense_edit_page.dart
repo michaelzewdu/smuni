@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/blocs/expense_edit_page.dart';
 import 'package:smuni/models/models.dart';
-
-import 'expense_details_page.dart';
+import 'package:smuni/widgets/category_selector.dart';
+import 'package:smuni/widgets/money_editor.dart';
 
 class ExpenseEditPage extends StatefulWidget {
   static const String routeName = "expenseEdit";
@@ -17,7 +16,8 @@ class ExpenseEditPage extends StatefulWidget {
       settings: const RouteSettings(name: routeName),
       builder: (context) {
         final itemsBlock = context.read<ExpensesBloc>();
-        final item = (itemsBlock.state as ExpensesLoadSuccess).expenses[id]!;
+        final item = (itemsBlock.state as ExpensesLoadSuccess).items[id]!;
+
         return BlocProvider(
           create: (context) => ExpenseEditPageBloc(itemsBlock, item),
           child: ExpenseEditPage(),
@@ -54,6 +54,9 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
   int _amountCents = 0;
   String _name = "";
 
+  String _categoryId = "";
+  String _budgetId = "";
+
   @override
   Widget build(BuildContext context) => Form(
         key: _formKey,
@@ -76,16 +79,18 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                             name: _name,
                             amount: MonetaryAmount(
                                 currency: "ETB",
-                                amount: (_amountWholes * 100) + _amountCents)),
+                                amount: (_amountWholes * 100) + _amountCents),
+                            categoryId: _categoryId,
+                            budgetId: _budgetId),
                       ),
                     );
                     bloc.add(SaveChanges());
-                    Navigator.popAndPushNamed(
+                    /* Navigator.popAndPushNamed(
                       context,
                       ExpenseDetailsPage.routeName,
                       arguments: bloc.state.unmodified.id,
-                    );
-                    // Navigator.pop(context);
+                    ); */
+                    Navigator.pop(context);
                   }
                 },
                 child: const Text("Save"),
@@ -132,74 +137,27 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                 Text("id: ${state.unmodified.id}"),
                 Text("createdAt: ${state.unmodified.createdAt}"),
                 Text("updatedAt: ${state.unmodified.updatedAt}"),
-                Text("budget: ${state.unmodified.categoryId}"),
-                Text("category: ${state.unmodified.categoryId}"),
+                // Text("category: ${state.unmodified.categoryId}"),
+                CategorySelector(
+                  initialValue: state.unmodified.categoryId.isEmpty
+                      ? null
+                      : CategorySelectorState(state.unmodified.categoryId,
+                          state.unmodified.budgetId),
+                  onSaved: (value) {
+                    setState(() {
+                      _categoryId = value!.id;
+                      _budgetId = value.budgetId;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return "No category selected";
+                    }
+                  },
+                ),
               ],
             ),
           ),
         ),
-      );
-}
-
-class MoneyEditor extends StatelessWidget {
-  final MonetaryAmount initial;
-  final void Function(int) onSavedWhole;
-  final void Function(int) onSavedCents;
-
-  const MoneyEditor({
-    Key? key,
-    required this.onSavedWhole,
-    required this.onSavedCents,
-    this.initial = const MonetaryAmount(currency: "ETB", amount: 0),
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          Expanded(
-            child: TextFormField(
-              textAlign: TextAlign.end,
-              keyboardType: TextInputType.numberWithOptions(),
-              initialValue: (initial.amount / 100).truncate().toString(),
-              onSaved: (value) {
-                onSavedWhole(int.parse(value!));
-              },
-              validator: (value) {
-                if (value == null || int.tryParse(value) == null) {
-                  return "Must be a whole number";
-                }
-              },
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                hintText: "Amount",
-                helperText: "Amount",
-                prefix: const Text("ETB"),
-              ),
-            ),
-          ),
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.3,
-            ),
-            child: TextFormField(
-              inputFormatters: [LengthLimitingTextInputFormatter(2)],
-              keyboardType: TextInputType.numberWithOptions(),
-              initialValue: (initial.amount % 100).toString(),
-              onSaved: (value) {
-                onSavedCents(int.parse(value!));
-              },
-              validator: (value) {
-                if (value == null || int.tryParse(value) == null) {
-                  return "Not a whole number";
-                }
-              },
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                hintText: "Cents",
-                helperText: "Cents",
-              ),
-            ),
-          ),
-        ],
       );
 }

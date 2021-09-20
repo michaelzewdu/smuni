@@ -38,6 +38,7 @@ void main() {
             updatedAt: DateTime.now(),
             name: "Printing",
             parentId: null,
+            budgetId: "wnd9pucgyfwp8943yp",
             allocatedAmount: MonetaryAmount(currency: "ETB", amount: 100000),
             tags: ["paper"],
           ),

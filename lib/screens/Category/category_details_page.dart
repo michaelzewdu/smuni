@@ -4,25 +4,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 
-import 'expense_edit_page.dart';
+import 'category_edit_page.dart';
 
-class ExpenseDetailsPage extends StatelessWidget {
-  static const String routeName = "expenseDetails";
+class CategoryDetailsPage extends StatelessWidget {
+  static const String routeName = "categoryDetails";
 
   static Route route(String id) => MaterialPageRoute(
       settings: const RouteSettings(name: routeName),
       builder: (context) {
-        final itemsBlock = context.read<ExpensesBloc>();
-        final item = (itemsBlock.state as ExpensesLoadSuccess).items[id];
+        final itemsBlock = context.read<CategoriesBloc>();
+        final item = (itemsBlock.state as CategoriesLoadSuccess).items[id];
         if (item != null) {
-          return ExpenseDetailsPage(item: item);
+          return CategoryDetailsPage(item: item);
         } else {
-          return const Center(child: const Text("Expense not found"));
+          return const Center(child: const Text("Category not found"));
         }
       });
 
-  final Expense item;
-  const ExpenseDetailsPage({Key? key, required this.item}) : super(key: key);
+  final Category item;
+  const CategoryDetailsPage({Key? key, required this.item}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +32,11 @@ class ExpenseDetailsPage extends StatelessWidget {
         actions: [
           ElevatedButton(
             onPressed: () {
-              Navigator.pushNamed(
+              /* Navigator.pushNamed(
                 context,
-                ExpenseEditPage.routeName,
+                CategoryEditPage.routeName,
                 arguments: item.id,
-              );
+              );*/
             },
             child: const Text("Edit"),
           ),
@@ -65,7 +65,7 @@ class ExpenseDetailsPage extends StatelessWidget {
             ).then(
               (confirm) {
                 if (confirm != null && confirm) {
-                  context.read<ExpensesBloc>().add(DeleteExpense(item.id));
+                  context.read<CategoriesBloc>().add(DeleteCategory(item.id));
                   Navigator.pop(context);
                 }
               },
@@ -77,10 +77,12 @@ class ExpenseDetailsPage extends StatelessWidget {
       body: Column(
         children: <Widget>[
           Text(item.name),
-          Text("amount: ${item.amount.currency} ${item.amount.amount / 100}"),
+          Text(
+            "allocatedAmount: ${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
+          ),
           Text("id: ${item.id}"),
-          Text("budget: ${item.categoryId}"),
-          Text("category: ${item.categoryId}"),
+          Text("budget: ${item.budgetId}"),
+          Text("tags: ${item.tags}"),
           Text("createdAt: ${item.createdAt}"),
           Text("updatedAt: ${item.updatedAt}"),
         ],

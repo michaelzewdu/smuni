@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:smuni/routes.dart';
-import 'package:smuni/screens/Expense/expense_list_page.dart';
-import 'package:smuni/screens/home_screen.dart';
 
-import 'routes.dart';
-import 'screens/home_screen.dart';
+import 'screens/Expense/expense_list_page.dart';
+import 'screens/routes.dart';
 import 'repositories/repositories.dart';
 import 'models/models.dart';
 import 'blocs/blocs.dart';
 import 'constants.dart';
-import 'models/models.dart';
-import 'repositories/repositories.dart';
-import 'screens/routes.dart';
 
 void main() async {
   /*var user = User(
@@ -63,6 +58,7 @@ class MyApp extends StatelessWidget {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
             name: "Medicine",
+            budgetId: "614193c7f2ea51b47f5896ba",
             parentId: null,
             allocatedAmount: MonetaryAmount(currency: "ETB", amount: 100000),
             tags: ["pharma"],
@@ -72,6 +68,7 @@ class MyApp extends StatelessWidget {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
             name: "RejuvPill",
+            budgetId: "614193c7f2ea51b47f5896ba",
             parentId: "614193c7f2ea51b47f5896b8",
             allocatedAmount: MonetaryAmount(currency: "ETB", amount: 50000),
             tags: [],
@@ -126,9 +123,18 @@ class MyApp extends StatelessWidget {
             return repo;
           }),
           RepositoryProvider(create: (context) {
+            var repo = CategoryRepository();
+            for (var budget in defaultUser.budgets) {
+              for (var item in budget.categories) {
+                repo.setItem(item.id, item);
+              }
+            }
+            return repo;
+          }),
+          RepositoryProvider(create: (context) {
             var repo = ExpenseRepository();
-            for (var expense in defaultUser.expenses) {
-              repo.setItem(expense.id, expense);
+            for (var item in defaultUser.expenses) {
+              repo.setItem(item.id, item);
             }
             return repo;
           }),
@@ -142,8 +148,14 @@ class MyApp extends StatelessWidget {
                     ..add(LoadExpenses()),
             ),
             BlocProvider(
-              create: (context) => BudgetsBloc(context.read<BudgetRepository>())
-                ..add(LoadBudgets()),
+              create: (context) =>
+                  BudgetsBloc(context.read<BudgetRepository>())
+                    ..add(LoadBudgets()),
+            ),
+            BlocProvider(
+              create: (context) =>
+                  CategoriesBloc(context.read<CategoryRepository>())
+                    ..add(LoadCategories()),
             ),
           ],
           child: MaterialApp(

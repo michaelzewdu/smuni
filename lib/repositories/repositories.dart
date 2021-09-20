@@ -240,6 +240,7 @@ class SqliteCategoryRepository extends SqliteRepository<String, Category> {
             "updatedAt",
             "name",
             "parentId",
+            "budgetId",
             "allocatedAmountCurrency",
             "allocatedAmountValue",
             "tags",
@@ -280,6 +281,7 @@ class SqliteCategoryRepository extends SqliteRepository<String, Category> {
     await db.execute('''
 create table categories ( 
   _id text primary key,
+  budgetId text not null,
   name text not null,
   allocatedAmountCurrency text not null,
   allocatedAmountValue integer not null,

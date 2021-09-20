@@ -4,6 +4,8 @@ import 'Budget/budgets_list_screen.dart';
 import 'Expense/expense_details_page.dart';
 import 'Expense/expense_list_page.dart';
 import 'Expense/expense_edit_page.dart';
+import 'Category/category_edit_page.dart';
+import 'Category/category_details_page.dart';
 import 'home_screen.dart';
 import 'settings_page.dart';
 
@@ -24,6 +26,12 @@ class Routes {
         return settings.arguments == null
             ? ExpenseEditPage.routeNew()
             : ExpenseEditPage.route(settings.arguments as String);
+      case CategoryDetailsPage.routeName:
+        return CategoryDetailsPage.route(settings.arguments as String);
+      case CategoryEditPage.routeName:
+        return settings.arguments == null
+            ? CategoryEditPage.routeNew()
+            : CategoryEditPage.route(settings.arguments as String);
       default:
         return SmuniHomeScreen.route();
     }
