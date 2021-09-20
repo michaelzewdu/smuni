@@ -13,7 +13,7 @@ class ExpenseDetailsPage extends StatelessWidget {
       settings: const RouteSettings(name: routeName),
       builder: (context) {
         final itemsBlock = context.read<ExpensesBloc>();
-        final item = (itemsBlock.state as ExpensesLoadSuccess).expenses[id];
+        final item = (itemsBlock.state as ExpensesLoadSuccess).items[id];
         if (item != null) {
           return ExpenseDetailsPage(item: item);
         } else {

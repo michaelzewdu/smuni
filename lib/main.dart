@@ -58,6 +58,7 @@ class MyApp extends StatelessWidget {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
             name: "Medicine",
+            budgetId: "614193c7f2ea51b47f5896ba",
             parentId: null,
             allocatedAmount: MonetaryAmount(currency: "ETB", amount: 100000),
             tags: ["pharma"],
@@ -67,6 +68,7 @@ class MyApp extends StatelessWidget {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
             name: "RejuvPill",
+            budgetId: "614193c7f2ea51b47f5896ba",
             parentId: "614193c7f2ea51b47f5896b8",
             allocatedAmount: MonetaryAmount(currency: "ETB", amount: 50000),
             tags: [],
@@ -121,6 +123,15 @@ class MyApp extends StatelessWidget {
             return repo;
           }),
           RepositoryProvider(create: (context) {
+            var repo = CategoryRepository();
+            for (var budget in defaultUser.budgets) {
+              for (var item in budget.categories) {
+                repo.setItem(item.id, item);
+              }
+            }
+            return repo;
+          }),
+          RepositoryProvider(create: (context) {
             var repo = ExpenseRepository();
             for (var item in defaultUser.expenses) {
               repo.setItem(item.id, item);
@@ -137,9 +148,13 @@ class MyApp extends StatelessWidget {
                     ..add(LoadExpenses()),
             ),
             BlocProvider(
+              create: (context) => BudgetsBloc(context.read<BudgetRepository>())
+                ..add(LoadBudgets()),
+            ),
+            BlocProvider(
               create: (context) =>
-                  BudgetsBloc(context.read<BudgetRepository>())
-                    ..add(LoadBudgets()),
+                  CategoriesBloc(context.read<CategoryRepository>())
+                    ..add(LoadCategories()),
             ),
           ],
           child: MaterialApp(

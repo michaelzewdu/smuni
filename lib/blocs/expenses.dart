@@ -40,9 +40,9 @@ abstract class ExpensesBlocState {
 class ExpensesLoading extends ExpensesBlocState {}
 
 class ExpensesLoadSuccess extends ExpensesBlocState {
-  final Map<String, Expense> expenses;
+  final Map<String, Expense> items;
 
-  ExpensesLoadSuccess(this.expenses);
+  ExpensesLoadSuccess(this.items);
 }
 
 // BLOC
@@ -64,17 +64,20 @@ class ExpensesBloc extends Bloc<ExpensesBlocEvent, ExpensesBlocState> {
           value: (i) => i,
         ),
       );
+      return;
     } else if (event is UpdateExpense) {
       // TODO
 
       final current = state;
       if (current is ExpensesLoadSuccess) {
         await repo.setItem(event.update.id, event.update);
-        current.expenses[event.update.id] = event.update;
-        yield ExpensesLoadSuccess(current.expenses);
+        current.items[event.update.id] = event.update;
+        yield ExpensesLoadSuccess(current.items);
+        return;
       } else if (current is ExpensesLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
         add(event);
+        return;
       }
     } else if (event is CreateExpense) {
       final current = state;
@@ -85,24 +88,29 @@ class ExpensesBloc extends Bloc<ExpensesBlocEvent, ExpensesBlocState> {
           id: "id-${event.item.createdAt.microsecondsSinceEpoch}",
         );
         await repo.setItem(item.id, item);
-        current.expenses[item.id] = item;
-        yield ExpensesLoadSuccess(current.expenses);
+        current.items[item.id] = item;
+        yield ExpensesLoadSuccess(current.items);
+        return;
       } else if (current is ExpensesLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
         add(event);
+        return;
       }
     } else if (event is DeleteExpense) {
       final current = state;
       if (current is ExpensesLoadSuccess) {
         // TODO
         await repo.removeItem(event.id);
-        current.expenses.remove(event.id);
+        current.items.remove(event.id);
 
-        yield ExpensesLoadSuccess(current.expenses);
+        yield ExpensesLoadSuccess(current.items);
+        return;
       } else if (current is ExpensesLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
         add(event);
+        return;
       }
     }
+    throw Exception("Unhandled event");
   }
 }

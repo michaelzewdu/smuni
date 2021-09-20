@@ -40,9 +40,9 @@ abstract class BudgetsBlocState {
 class BudgetsLoading extends BudgetsBlocState {}
 
 class BudgetsLoadSuccess extends BudgetsBlocState {
-  final Map<String, Budget> budgets;
+  final Map<String, Budget> items;
 
-  BudgetsLoadSuccess(this.budgets);
+  BudgetsLoadSuccess(this.items);
 }
 
 // BLOC
@@ -70,8 +70,8 @@ class BudgetsBloc extends Bloc<BudgetsBlocEvent, BudgetsBlocState> {
       final current = state;
       if (current is BudgetsLoadSuccess) {
         await repo.setItem(event.update.id, event.update);
-        current.budgets[event.update.id] = event.update;
-        yield BudgetsLoadSuccess(current.budgets);
+        current.items[event.update.id] = event.update;
+        yield BudgetsLoadSuccess(current.items);
       } else if (current is BudgetsLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
         add(event);
@@ -85,8 +85,8 @@ class BudgetsBloc extends Bloc<BudgetsBlocEvent, BudgetsBlocState> {
           id: "id-${event.item.createdAt.microsecondsSinceEpoch}",
         );
         await repo.setItem(item.id, item);
-        current.budgets[item.id] = item;
-        yield BudgetsLoadSuccess(current.budgets);
+        current.items[item.id] = item;
+        yield BudgetsLoadSuccess(current.items);
       } else if (current is BudgetsLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
         add(event);
@@ -96,9 +96,9 @@ class BudgetsBloc extends Bloc<BudgetsBlocEvent, BudgetsBlocState> {
       if (current is BudgetsLoadSuccess) {
         // TODO
         await repo.removeItem(event.id);
-        current.budgets.remove(event.id);
+        current.items.remove(event.id);
 
-        yield BudgetsLoadSuccess(current.budgets);
+        yield BudgetsLoadSuccess(current.items);
       } else if (current is BudgetsLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
         add(event);

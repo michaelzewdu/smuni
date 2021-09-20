@@ -165,17 +165,17 @@ class Budget {
                     v as List<dynamic>, (_, v) => Category.fromJson(v))),
       );
   factory Budget.from(
-      Budget other, {
-        String? id,
-        DateTime? createdAt,
-        DateTime? updatedAt,
-        String? name,
-        DateTime? startTime,
-        DateTime? endTime,
-        MonetaryAmount? allocatedAmount,
-        Frequency? frequency,
-        List<Category>? categories,
-      }) {
+    Budget other, {
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? name,
+    DateTime? startTime,
+    DateTime? endTime,
+    MonetaryAmount? allocatedAmount,
+    Frequency? frequency,
+    List<Category>? categories,
+  }) {
     return Budget(
       id: id ?? other.id,
       createdAt: createdAt ?? other.createdAt,
@@ -196,6 +196,7 @@ class Category {
   final DateTime updatedAt;
   final String name;
   final MonetaryAmount allocatedAmount;
+  final String budgetId;
   final String? parentId;
   final List<String> tags;
   Category({
@@ -203,6 +204,7 @@ class Category {
     required this.createdAt,
     required this.updatedAt,
     required this.name,
+    required this.budgetId,
     required this.parentId,
     required this.allocatedAmount,
     required this.tags,
@@ -214,6 +216,7 @@ class Category {
         "updatedAt": updatedAt.toIso8601String(),
         "name": name,
         "parentId": parentId,
+        "budgetId": budgetId,
         "allocatedAmount": allocatedAmount.toJSON(),
         "tags": tags,
       };
@@ -229,6 +232,7 @@ class Category {
                 ? null
                 : checkedConvert(v, "_id", (v) => v as String)),
         name: checkedConvert(json, "name", (v) => v as String),
+        budgetId: checkedConvert(json, "budgetId", (v) => v as String),
         allocatedAmount: checkedConvert(
             json, "allocatedAmount", (v) => MonetaryAmount.fromJson(v)),
         tags: checkedConvert(
@@ -239,6 +243,28 @@ class Category {
                 : checkedConvertArray(
                     v as List<dynamic>, (_, v) => v as String)),
       );
+  factory Category.from(
+    Category other, {
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? name,
+    MonetaryAmount? allocatedAmount,
+    String? budgetId,
+    String? parentId,
+    List<String>? tags,
+  }) {
+    return Category(
+      id: id ?? other.id,
+      createdAt: createdAt ?? other.createdAt,
+      updatedAt: updatedAt ?? other.updatedAt,
+      name: name ?? other.name,
+      allocatedAmount: allocatedAmount ?? other.allocatedAmount,
+      budgetId: budgetId ?? other.budgetId,
+      parentId: parentId ?? other.parentId,
+      tags: tags ?? other.tags,
+    );
+  }
 }
 
 class Expense {

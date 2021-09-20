@@ -60,6 +60,7 @@ class ExpenseEditPageBloc
     if (event is ModifyItem) {
       yield ModifiedEditState(
           modified: event.modified, unmodified: state.unmodified);
+      return;
     } else if (event is SaveChanges) {
       final current = state;
       if (current is ModifiedEditState) {
@@ -67,8 +68,11 @@ class ExpenseEditPageBloc
 
         yield ExpenseEditPageBlocState(unmodified: state.unmodified);
       }
+      return;
     } else if (event is DiscardChanges) {
       yield ExpenseEditPageBlocState(unmodified: state.unmodified);
+      return;
     }
+    throw new Exception("Unhandeled event.");
   }
 }

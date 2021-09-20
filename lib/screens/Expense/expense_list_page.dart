@@ -39,7 +39,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         body: BlocBuilder<ExpensesBloc, ExpensesBlocState>(
           builder: (context, state) {
             if (state is ExpensesLoadSuccess) {
-              final items = state.expenses;
+              final items = state.items;
               final keys = items.keys;
               return Container(
                 child: items.isNotEmpty
