@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 
 import 'expense_details_page.dart';
 import 'expense_edit_page.dart';
 
 class ExpenseListPage extends StatefulWidget {
-  static const String routeName = "expenseList";
+  static const String routeName = "/expenseList";
 
   static Route route() {
     return MaterialPageRoute(
