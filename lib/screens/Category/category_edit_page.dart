@@ -5,6 +5,7 @@ import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/blocs/category_edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/widgets/budget_selector.dart';
+import 'package:smuni/widgets/category_selector.dart';
 import 'package:smuni/widgets/money_editor.dart';
 
 class CategoryEditPage extends StatefulWidget {
@@ -53,8 +54,9 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
   int _amountWholes = 0;
   int _amountCents = 0;
   String _name = "";
-
+  bool _isSubcategory = false;
   String _budgetId = "";
+  String? _parentId;
 
   @override
   Widget build(BuildContext context) => Form(
@@ -79,6 +81,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                             allocatedAmount: MonetaryAmount(
                                 currency: "ETB",
                                 amount: (_amountWholes * 100) + _amountCents),
+                            parentId: _parentId,
                             budgetId: _budgetId),
                       ),
                     );
@@ -137,20 +140,51 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                 Text("updatedAt: ${state.unmodified.updatedAt}"),
                 Text("budget: ${state.unmodified.budgetId}"),
                 // Text("category: ${state.unmodified.categoryId}"),
-                BudgetSelector(
-                  initialValue: state.unmodified.budgetId.isEmpty
-                      ? null
-                      : state.unmodified.budgetId,
-                  onSaved: (value) {
-                    setState(() {
-                      _budgetId = value!;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return "No budget selected";
-                    }
-                  },
+                Column(
+                  children: [
+                    CheckboxListTile(
+                      value: _isSubcategory,
+                      onChanged: (value) => setState(() {
+                        _isSubcategory = value!;
+                      }),
+                      title: const Text("Is Subcategory"),
+                    ),
+                    _isSubcategory
+                        ? CategorySelector(
+                            caption: "Parent category",
+                            initialValue: state.unmodified.parentId == null
+                                ? null
+                                : CategorySelectorState(
+                                    state.unmodified.parentId!,
+                                    state.unmodified.budgetId),
+                            onSaved: (value) {
+                              setState(() {
+                                _parentId = value!.id;
+                                _budgetId = value.budgetId;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null) {
+                                return "Parent category not selected";
+                              }
+                            },
+                          )
+                        : BudgetSelector(
+                            initialValue: state.unmodified.budgetId.isEmpty
+                                ? null
+                                : state.unmodified.budgetId,
+                            onSaved: (value) {
+                              setState(() {
+                                _budgetId = value!;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null) {
+                                return "No budget selected";
+                              }
+                            },
+                          )
+                  ],
                 ),
               ],
             ),

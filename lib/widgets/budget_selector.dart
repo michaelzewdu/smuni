@@ -1,14 +1,12 @@
-import 'dart:collection';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/budgets.dart';
-import 'package:smuni/models/models.dart';
 import 'package:smuni/blocs/blocs.dart';
 
 class BudgetSelector extends StatefulWidget {
+  final String? caption;
   final String? initialValue;
   final FormFieldSetter<String>? onSaved;
   final FormFieldValidator<String>? validator;
@@ -16,6 +14,7 @@ class BudgetSelector extends StatefulWidget {
 
   const BudgetSelector({
     Key? key,
+    this.caption,
     this.initialValue,
     this.onSaved,
     this.validator,
@@ -106,7 +105,7 @@ class _BudgetSelectorState extends State<BudgetSelector> {
             Row(children: [
               Expanded(
                   child: Text(
-                state.errorText ?? "Budget",
+                state.errorText ?? widget.caption ?? "Budget",
                 style: TextStyle(
                     color: state.errorText != null ? Colors.red : null),
               )),

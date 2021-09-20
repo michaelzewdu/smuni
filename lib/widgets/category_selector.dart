@@ -17,6 +17,7 @@ class CategorySelectorState {
 }
 
 class CategorySelector extends StatefulWidget {
+  final String? caption;
   final CategorySelectorState? initialValue;
   final FormFieldSetter<CategorySelectorState>? onSaved;
   final FormFieldValidator<CategorySelectorState>? validator;
@@ -24,6 +25,7 @@ class CategorySelector extends StatefulWidget {
 
   const CategorySelector({
     Key? key,
+    this.caption,
     this.initialValue,
     this.onSaved,
     this.validator,
@@ -161,7 +163,7 @@ class _CategorySelectorState extends State<CategorySelector> {
             Row(children: [
               Expanded(
                   child: Text(
-                state.errorText ?? "Category",
+                state.errorText ?? widget.caption ?? "Category",
                 style: TextStyle(
                     color: state.errorText != null ? Colors.red : null),
               )),
