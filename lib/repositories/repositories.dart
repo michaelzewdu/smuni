@@ -125,7 +125,7 @@ class CategoryRepository extends HashMapRepository<String, Category> {
 }
 
 class ExpenseRepository extends HashMapRepository<String, Expense> {
-  Future<Map<DateRange, DateRangeFilter>>? _filtersFuture;
+  /*  Future<Map<DateRange, DateRangeFilter>>? _filtersFuture;
   Future<Map<DateRange, DateRangeFilter>> get dateRangeFilters {
     if (_filtersFuture == null) {
       _filtersFuture = new Future.value(
@@ -133,12 +133,15 @@ class ExpenseRepository extends HashMapRepository<String, Expense> {
       );
     }
     return _filtersFuture!;
-  }
+  } */
 
-  @override
-  Future<void> setItem(String id, Expense item) async {
-    await super.setItem(id, item);
-    _filtersFuture = null;
+  Future<Map<DateRange, DateRangeFilter>> getDateRangeFilters(
+      [List<String>? belongingtoCategories]) async {
+    return generateDateRangesFilters(this
+        ._items
+        .values
+        .where((e) => (belongingtoCategories?.contains(e.categoryId) ?? true))
+        .map((e) => e.createdAt));
   }
 
   Future<Iterable<Expense>> getItemsInRange(DateRange range,

@@ -89,7 +89,7 @@ class ExpenseListPageBloc
           ? await categoryRepo.getCategoryDescendantsTree(event.ofCategory!)
           : null;
       final items = await repo.getItemsInRange(event.range.range, catFilter);
-      final dateRangeFilters = await repo.dateRangeFilters;
+      final dateRangeFilters = await repo.getDateRangeFilters(catFilter);
       // TODO:  load from fs
       yield ExpensesLoadSuccess(
         HashMap.fromIterable(
@@ -108,7 +108,8 @@ class ExpenseListPageBloc
         // TODO
         await repo.removeItem(event.id);
         current.items.remove(event.id);
-        final dateRangeFilters = await repo.dateRangeFilters;
+        final dateRangeFilters =
+            await repo.getDateRangeFilters(current.categoryFilter);
 
         yield ExpensesLoadSuccess(
           current.items,

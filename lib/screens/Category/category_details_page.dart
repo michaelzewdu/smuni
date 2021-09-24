@@ -95,9 +95,11 @@ class CategoryDetailsPage extends StatelessWidget {
                   ? Builder(builder: (context) {
                       final currency = state.item.allocatedAmount.currency;
                       final totalAlocated = state.item.allocatedAmount.amount;
-                      final totalUsed = expensesState.items.values
-                          .map((e) => e.amount.amount)
-                          .reduce((a, b) => a + b);
+                      var totalUsed = 0;
+                      for (final expenseAmount in expensesState.items.values
+                          .map((e) => e.amount.amount)) {
+                        totalUsed += expenseAmount;
+                      }
                       return Column(
                         children: [
                           Text(
@@ -109,9 +111,10 @@ class CategoryDetailsPage extends StatelessWidget {
                           Text(
                             "Remaining:  $currency ${(totalAlocated - totalUsed) / 100}",
                           ),
-                          LinearProgressIndicator(
-                            value: totalUsed / totalAlocated,
-                          )
+                          if (totalAlocated > 0)
+                            LinearProgressIndicator(
+                              value: totalUsed / totalAlocated,
+                            )
                         ],
                       );
                     })
