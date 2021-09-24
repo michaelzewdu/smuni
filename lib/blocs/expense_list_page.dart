@@ -15,7 +15,8 @@ abstract class ExpensesListBlocEvent {
 
 class LoadExpenses extends ExpensesListBlocEvent {
   final DateRangeFilter range;
-  const LoadExpenses(this.range);
+  final String? ofCategory;
+  const LoadExpenses(this.range, [this.ofCategory]);
 }
 
 class DeleteExpense extends ExpensesListBlocEvent {
@@ -27,19 +28,30 @@ class DeleteExpense extends ExpensesListBlocEvent {
 
 abstract class ExpenseListPageBlocState {
   final DateRangeFilter range;
-  const ExpenseListPageBlocState(this.range);
+  const ExpenseListPageBlocState(
+    this.range,
+  );
 }
 
 class ExpensesLoading extends ExpenseListPageBlocState {
-  ExpensesLoading(DateRangeFilter range) : super(range);
+  final String? ofCategory;
+  ExpensesLoading(
+    DateRangeFilter range, [
+    this.ofCategory,
+  ]) : super(range);
 }
 
 class ExpensesLoadSuccess extends ExpenseListPageBlocState {
   Map<DateRange, DateRangeFilter> dateRangeFilters;
+  final List<String>? categoryFilter;
   final Map<String, Expense> items;
 
-  ExpensesLoadSuccess(this.items, DateRangeFilter range, this.dateRangeFilters)
-      : super(range);
+  ExpensesLoadSuccess(
+    this.items,
+    DateRangeFilter range,
+    this.dateRangeFilters, [
+    this.categoryFilter,
+  ]) : super(range);
 }
 
 // BLOC
@@ -47,20 +59,25 @@ class ExpensesLoadSuccess extends ExpenseListPageBlocState {
 class ExpenseListPageBloc
     extends Bloc<ExpensesListBlocEvent, ExpenseListPageBlocState> {
   ExpenseRepository repo;
-  ExpenseListPageBloc(this.repo, DateRangeFilter initialRangeToLoad)
-      : super(
-          ExpensesLoading(initialRangeToLoad),
+  CategoryRepository categoryRepo;
+  ExpenseListPageBloc(
+    this.repo,
+    this.categoryRepo,
+    DateRangeFilter initialRangeToLoad, [
+    String? initialCategoryToLoad,
+  ]) : super(
+          ExpensesLoading(initialRangeToLoad, initialCategoryToLoad),
         ) {
     repo.changedItems.listen((ids) {
       add(LoadExpenses(
-        const DateRangeFilter(
-          "All",
-          DateRange(),
-          FilterLevel.All,
-        ),
-      ));
+          const DateRangeFilter(
+            "All",
+            DateRange(),
+            FilterLevel.All,
+          ),
+          initialCategoryToLoad));
     });
-    add(LoadExpenses(initialRangeToLoad));
+    add(LoadExpenses(initialRangeToLoad, initialCategoryToLoad));
   }
 
   @override
@@ -68,7 +85,10 @@ class ExpenseListPageBloc
     ExpensesListBlocEvent event,
   ) async* {
     if (event is LoadExpenses) {
-      final items = await repo.getItemsInRange(event.range.range);
+      final catFilter = event.ofCategory != null
+          ? await categoryRepo.getCategoryDescendantsTree(event.ofCategory!)
+          : null;
+      final items = await repo.getItemsInRange(event.range.range, catFilter);
       final dateRangeFilters = await repo.dateRangeFilters;
       // TODO:  load from fs
       yield ExpensesLoadSuccess(
@@ -79,6 +99,7 @@ class ExpenseListPageBloc
         ),
         event.range,
         dateRangeFilters,
+        catFilter,
       );
       return;
     } else if (event is DeleteExpense) {
@@ -90,7 +111,11 @@ class ExpenseListPageBloc
         final dateRangeFilters = await repo.dateRangeFilters;
 
         yield ExpensesLoadSuccess(
-            current.items, current.range, dateRangeFilters);
+          current.items,
+          current.range,
+          dateRangeFilters,
+          current.categoryFilter,
+        );
         return;
       } else if (current is ExpensesLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
