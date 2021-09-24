@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:smuni/models/models.dart';
+import 'package:smuni/utilities.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 abstract class Repository<Identfier, Item> {
@@ -8,6 +10,7 @@ abstract class Repository<Identfier, Item> {
   Future<Iterable<Item>> getItems();
   Future<void> setItem(Identfier id, Item item);
   Future<void> removeItem(Identfier id);
+  Stream<List<Identfier>> get changedItems;
 }
 
 class HashMapRepository<Identfier, Item> extends Repository<Identfier, Item> {
@@ -21,6 +24,7 @@ class HashMapRepository<Identfier, Item> extends Repository<Identfier, Item> {
   @override
   Future<void> setItem(Identfier id, Item item) async {
     _items[id] = item;
+    this._changedItemsController.add([id]);
   }
 
   @override
@@ -32,6 +36,12 @@ class HashMapRepository<Identfier, Item> extends Repository<Identfier, Item> {
   Future<Iterable<Item>> getItems() async {
     return _items.values;
   }
+
+  StreamController<List<Identfier>> _changedItemsController =
+      StreamController.broadcast();
+
+  @override
+  Stream<List<Identfier>> get changedItems => _changedItemsController.stream;
 }
 
 class UserRepository extends HashMapRepository<String, User> {}
@@ -40,7 +50,30 @@ class BudgetRepository extends HashMapRepository<String, Budget> {}
 
 class CategoryRepository extends HashMapRepository<String, Category> {}
 
-class ExpenseRepository extends HashMapRepository<String, Expense> {}
+class ExpenseRepository extends HashMapRepository<String, Expense> {
+  Future<Map<DateRange, DateRangeFilter>>? _filtersFuture;
+  Future<Map<DateRange, DateRangeFilter>> get dateRangeFilters {
+    if (_filtersFuture == null) {
+      _filtersFuture = new Future.value(
+        generateDateRangesFilters(this._items.values.map((e) => e.createdAt)),
+      );
+    }
+    return _filtersFuture!;
+  }
+
+  @override
+  Future<void> setItem(String id, Expense item) async {
+    await super.setItem(id, item);
+    _filtersFuture = null;
+  }
+
+  Future<Iterable<Expense>> getItemsInRange(DateRange range) async {
+    return this
+        ._items
+        .values
+        .where((e) => range.containsTimestamp(e.createdAt));
+  }
+}
 
 abstract class SqliteRepository<Identfier, Item>
     extends Repository<Identfier, Item> {
@@ -96,7 +129,14 @@ abstract class SqliteRepository<Identfier, Item>
       toMap(item),
       conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
     );
+    this._changedItemsController.add([id]);
   }
+
+  StreamController<List<Identfier>> _changedItemsController =
+      StreamController.broadcast();
+
+  @override
+  Stream<List<Identfier>> get changedItems => _changedItemsController.stream;
 }
 
 class SqliteUserRepository extends SqliteRepository<String, User> {
@@ -349,5 +389,10 @@ create table expenses (
   createdAt integer not null,
   updatedAt integer not null)
 ''');
+  }
+
+  Map<String, DateRangeFilter> generateDateRangesFilters() {
+    // TODO:
+    throw UnimplementedError();
   }
 }

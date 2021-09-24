@@ -1,18 +1,19 @@
 import 'dart:convert';
 
-import 'package:smuni/models/models.dart';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:smuni/models/models.dart';
 
 void main() {
   var json = JsonCodec();
   test("user de works", () {
     var user = User.fromJson(json.decode(USER_JSON));
-    print(user.toJSON());
-    assert(user.id == "613b67bc9aeded76daaa9b79");
-    assert(user.budgets.length == 2);
-    assert(user.budgets[0].categories.length == 2);
-    assert(user.expenses.length == 2);
+    // print(user.toJSON());
+
+    expect(user.id, equals("613b67bc9aeded76daaa9b79"));
+    expect(user.budgets.length, equals(2));
+    expect(user.budgets[0].categories.length, equals(2));
+    expect(user.expenses.length, equals(2));
   });
 }
 
