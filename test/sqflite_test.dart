@@ -1,17 +1,16 @@
+import 'package:sqflite/sqflite.dart' as sqflite;
+import 'package:sqflite_common/sqlite_api.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:flutter_test/flutter_test.dart';
+
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/models/models.dart';
-import 'package:sqflite/sqflite.dart' as sqflite;
-
-import 'package:sqflite_common/sqlite_api.dart';
-//import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-
-import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   // Init ffi loader if needed.
-  //TODO: Fix this Yoph
-  //sqfliteFfiInit();
-  //sqflite.databaseFactory = databaseFactoryFfi;
+
+  sqfliteFfiInit();
+  sqflite.databaseFactory = databaseFactoryFfi;
   var user = User(
     id: "cny45347yncx093n24579xm",
     username: "deathconsciousness",

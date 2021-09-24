@@ -32,11 +32,11 @@ class CategoryDetailsPage extends StatelessWidget {
         actions: [
           ElevatedButton(
             onPressed: () {
-              /* Navigator.pushNamed(
+              Navigator.pushNamed(
                 context,
                 CategoryEditPage.routeName,
                 arguments: item.id,
-              );*/
+              );
             },
             child: const Text("Edit"),
           ),
