@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
-
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 
@@ -23,7 +22,7 @@ class UpdateBudget extends BudgetsBlocEvent {
 
 class CreateBudget extends BudgetsBlocEvent {
   final Budget item;
-  CreateBudget(this.item);
+  CreateBudget({required this.item});
 }
 
 class DeleteBudget extends BudgetsBlocEvent {

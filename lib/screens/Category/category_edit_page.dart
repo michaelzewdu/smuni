@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/blocs/category_edit_page.dart';
 import 'package:smuni/models/models.dart';
@@ -140,6 +139,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                 Text("updatedAt: ${state.unmodified.updatedAt}"),
                 Text("budget: ${state.unmodified.budgetId}"),
                 // Text("category: ${state.unmodified.categoryId}"),
+                // TODO: tag editor
                 Column(
                   children: [
                     CheckboxListTile(
