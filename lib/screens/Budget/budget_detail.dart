@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:smuni/models/models.dart';
 
 class BudgetDetails extends StatelessWidget {
-  const BudgetDetails({Key? key}) : super(key: key);
+  BudgetDetails({Key? key}) : super(key: key);
 
   static const String routeName = '/budgetDetail';
+  Budget? thisBudget;
 
   static Route route() {
     return MaterialPageRoute(
@@ -13,6 +15,8 @@ class BudgetDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return Column(
+      children: [],
+    );
   }
 }

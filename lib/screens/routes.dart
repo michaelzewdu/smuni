@@ -1,12 +1,13 @@
 import 'package:flutter/widgets.dart';
 
+import 'Budget/budget_detail.dart';
 import 'Budget/budgets_list_screen.dart';
+import 'Category/category_details_page.dart';
+import 'Category/category_edit_page.dart';
 import 'Category/category_list_2.dart';
 import 'Expense/expense_details_page.dart';
-import 'Expense/expense_list_page.dart';
 import 'Expense/expense_edit_page.dart';
-import 'Category/category_edit_page.dart';
-import 'Category/category_details_page.dart';
+import 'Expense/expense_list_page.dart';
 import 'home_screen.dart';
 import 'settings_page.dart';
 
@@ -19,6 +20,8 @@ class Routes {
         return SettingsPage.route();
       case BudgetListPage.routeName:
         return BudgetListPage.route();
+      case BudgetDetails.routeName:
+        return BudgetDetails.route();
       case ExpenseListPage.routeName:
         return ExpenseListPage.route();
       case ExpenseDetailsPage.routeName:
