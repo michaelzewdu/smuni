@@ -1,14 +1,19 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:smuni/blocs/categories.dart';
 
 import 'package:smuni/models/models.dart';
+import 'package:smuni/repositories/repositories.dart';
 
 // EVENTS
 
 abstract class CategoryEditPageBlocEvent {
   const CategoryEditPageBlocEvent();
+}
+
+class LoadItem extends CategoryEditPageBlocEvent {
+  final String id;
+  const LoadItem(this.id);
 }
 
 class ModifyItem extends CategoryEditPageBlocEvent {
@@ -28,14 +33,28 @@ class SaveChanges extends CategoryEditPageBlocEvent {
 // STATE
 
 class CategoryEditPageBlocState {
+  const CategoryEditPageBlocState();
+}
+
+class LoadingItem extends CategoryEditPageBlocState {
+  final String id;
+  const LoadingItem(this.id);
+}
+
+class ItemNotFound extends CategoryEditPageBlocState {
+  final String id;
+  const ItemNotFound(this.id);
+}
+
+class UnmodifiedEditState extends CategoryEditPageBlocState {
   final Category unmodified;
 
-  CategoryEditPageBlocState({
+  UnmodifiedEditState({
     required this.unmodified,
   });
 }
 
-class ModifiedEditState extends CategoryEditPageBlocState {
+class ModifiedEditState extends UnmodifiedEditState {
   final Category modified;
 
   ModifiedEditState({required Category unmodified, required this.modified})
@@ -46,32 +65,82 @@ class ModifiedEditState extends CategoryEditPageBlocState {
 
 class CategoryEditPageBloc
     extends Bloc<CategoryEditPageBlocEvent, CategoryEditPageBlocState> {
-  CategoriesBloc itemsBloc;
-  CategoryEditPageBloc(this.itemsBloc, Category item)
-      : super(CategoryEditPageBlocState(unmodified: item));
+  Repository<String, Category> repo;
+  CategoryEditPageBloc(this.repo, String id) : super(LoadingItem(id)) {
+    repo.changedItems.listen((ids) {
+      if (ids[0] == id) {
+        add(LoadItem(id));
+      }
+    });
+    add(LoadItem(id));
+  }
 
-  CategoryEditPageBloc.modified(this.itemsBloc, Category item)
+  CategoryEditPageBloc.modified(this.repo, Category item)
       : super(ModifiedEditState(modified: item, unmodified: item));
+
+  Stream<CategoryEditPageBlocState> _mapLoadItemEventToState(
+    LoadItem event,
+  ) async* {
+    yield LoadingItem(event.id);
+    final item = await repo.getItem(event.id);
+    if (item != null) {
+      yield UnmodifiedEditState(unmodified: item);
+      return;
+    } else {
+      yield ItemNotFound(event.id);
+      return;
+    }
+  }
+
+  Stream<CategoryEditPageBlocState> _mapModifyItemEventToState(
+    ModifyItem event,
+  ) async* {
+    final current = state;
+    if (current is UnmodifiedEditState) {
+      yield ModifiedEditState(
+          modified: event.modified, unmodified: current.unmodified);
+      return;
+    } else {
+      throw Exception("Impossible event.");
+    }
+  }
+
+  Stream<CategoryEditPageBlocState> _mapSaveChangesEventToState(
+    SaveChanges event,
+  ) async* {
+    final current = state;
+    if (current is ModifiedEditState) {
+      // TODO
+      await repo.setItem(current.modified.id, current.modified);
+      yield UnmodifiedEditState(unmodified: current.modified);
+    }
+    return;
+  }
+
+  Stream<CategoryEditPageBlocState> _mapDiscardChangesEventToState(
+    DiscardChanges event,
+  ) async* {
+    final current = state;
+    if (current is ModifiedEditState) {
+      yield UnmodifiedEditState(unmodified: current.unmodified);
+      return;
+    } else {
+      return;
+    }
+  }
 
   @override
   Stream<CategoryEditPageBlocState> mapEventToState(
     CategoryEditPageBlocEvent event,
-  ) async* {
-    if (event is ModifyItem) {
-      yield ModifiedEditState(
-          modified: event.modified, unmodified: state.unmodified);
-      return;
+  ) {
+    if (event is LoadItem) {
+      return _mapLoadItemEventToState(event);
+    } else if (event is ModifyItem) {
+      return _mapModifyItemEventToState(event);
     } else if (event is SaveChanges) {
-      final current = state;
-      if (current is ModifiedEditState) {
-        itemsBloc.add(UpdateCategory(current.modified));
-
-        yield CategoryEditPageBlocState(unmodified: state.unmodified);
-      }
-      return;
+      return _mapSaveChangesEventToState(event);
     } else if (event is DiscardChanges) {
-      yield CategoryEditPageBlocState(unmodified: state.unmodified);
-      return;
+      return _mapDiscardChangesEventToState(event);
     }
     throw new Exception("Unhandeled event.");
   }

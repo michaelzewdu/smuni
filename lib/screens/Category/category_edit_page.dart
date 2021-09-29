@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/blocs/category_edit_page.dart';
 import 'package:smuni/models/models.dart';
+import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/budget_selector.dart';
 import 'package:smuni/widgets/category_selector.dart';
 import 'package:smuni/widgets/money_editor.dart';
@@ -13,21 +15,17 @@ class CategoryEditPage extends StatefulWidget {
   const CategoryEditPage({Key? key}) : super(key: key);
 
   static Route route(String id) => MaterialPageRoute(
-      settings: const RouteSettings(name: routeName),
-      builder: (context) {
-        final itemsBlock = context.read<CategoriesBloc>();
-        final item = (itemsBlock.state as CategoriesLoadSuccess).items[id]!;
-
-        return BlocProvider(
-          create: (context) => CategoryEditPageBloc(itemsBlock, item),
+        settings: const RouteSettings(name: routeName),
+        builder: (context) => BlocProvider(
+          create: (context) =>
+              CategoryEditPageBloc(context.read<CategoryRepository>(), id),
           child: CategoryEditPage(),
-        );
-      });
+        ),
+      );
 
   static Route routeNew() => MaterialPageRoute(
       settings: const RouteSettings(name: routeName),
       builder: (context) {
-        final itemsBlock = context.read<CategoriesBloc>();
         final now = DateTime.now();
         final item = Category(
           id: "new-id",
@@ -39,7 +37,8 @@ class CategoryEditPage extends StatefulWidget {
           allocatedAmount: MonetaryAmount(currency: "ETB", amount: 0),
         );
         return BlocProvider(
-          create: (context) => CategoryEditPageBloc.modified(itemsBlock, item),
+          create: (context) => CategoryEditPageBloc.modified(
+              context.read<CategoryRepository>(), item),
           child: CategoryEditPage(),
         );
       });
@@ -57,40 +56,36 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
   String _budgetId = "";
   String? _parentId;
 
-  @override
-  Widget build(BuildContext context) => Form(
+  Widget _showForm(BuildContext context, UnmodifiedEditState state) => Form(
         key: _formKey,
         child: Scaffold(
           appBar: AppBar(
-            title: BlocBuilder<CategoryEditPageBloc, CategoryEditPageBlocState>(
-              builder: (context, state) =>
-                  Text("Editing category: ${state.unmodified.name}"),
-            ),
+            title: Text("Editing category: ${state.unmodified.name}"),
             actions: [
               ElevatedButton(
                 onPressed: () {
                   final form = this._formKey.currentState;
                   if (form != null && form.validate()) {
                     form.save();
-                    final bloc = context.read<CategoryEditPageBloc>();
-                    bloc.add(
-                      ModifyItem(
-                        Category.from(bloc.state.unmodified,
-                            name: _name,
-                            allocatedAmount: MonetaryAmount(
-                                currency: "ETB",
-                                amount: (_amountWholes * 100) + _amountCents),
-                            parentId: _parentId,
-                            budgetId: _budgetId),
-                      ),
-                    );
-                    bloc.add(SaveChanges());
+                    context.read<CategoryEditPageBloc>()
+                      ..add(
+                        ModifyItem(
+                          Category.from(state.unmodified,
+                              name: _name,
+                              allocatedAmount: MonetaryAmount(
+                                  currency: "ETB",
+                                  amount: (_amountWholes * 100) + _amountCents),
+                              parentId: _parentId,
+                              budgetId: _budgetId),
+                        ),
+                      )
+                      ..add(SaveChanges());
                     /* Navigator.popAndPushNamed(
                       context,
                       CategoryDetailsPage.routeName,
                       arguments: bloc.state.unmodified.id,
                     ); */
-                    Navigator.pop(context);
+                    Navigator.pop(context, true);
                   }
                 },
                 child: const Text("Save"),
@@ -98,7 +93,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
               ElevatedButton(
                 onPressed: () {
                   context.read<CategoryEditPageBloc>().add(DiscardChanges());
-                  Navigator.pop(context);
+                  Navigator.pop(context, false);
                 },
                 child: const Text("Cancel"),
               ),
@@ -139,7 +134,6 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                 Text("updatedAt: ${state.unmodified.updatedAt}"),
                 Text("budget: ${state.unmodified.budgetId}"),
                 // Text("category: ${state.unmodified.categoryId}"),
-                // TODO: tag editor
                 Column(
                   children: [
                     CheckboxListTile(

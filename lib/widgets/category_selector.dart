@@ -128,7 +128,7 @@ class _CategorySelectorState extends State<CategorySelector> {
                                     },
                                   ),
                                 ),
-                                ListTile(
+                                /*ListTile(
                                   title: const Text("Add new category"),
                                   onTap: () {
                                     Navigator.pushNamed(
@@ -136,7 +136,7 @@ class _CategorySelectorState extends State<CategorySelector> {
                                       CategoryEditPage.routeName,
                                     );
                                   },
-                                ),
+                                ),*/
                               ],
                             ),
                           )

@@ -1,8 +1,10 @@
 # Project gitስሙኒ
 
+\(￣︶￣*\))
+
 ## To-do
 
-\(￣︶￣*\))
+- [ ] Validate allocated amount is under budget/parent during category creation
 
 ## Design doc
 
