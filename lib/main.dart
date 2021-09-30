@@ -10,25 +10,6 @@ import 'repositories/repositories.dart';
 import 'screens/routes.dart';
 
 void main() async {
-  /*var user = User(
-    id: "cny45347yncx093n24579xm",
-    username: "deathconsciousness",
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    email: "shit.flick@lick.shit",
-    firebaseId: "holyfukinshit40000",
-    phoneNumber: "31415",
-    pictureURL: "gemini://bad.bot",
-    budgets: [],
-    expenses: [],
-  );
-  print(await sqflite.getDatabasesPath());
-
-  var db = await sqflite.openDatabase("test.db");
-  var provider = SqliteUserProvider(db);
-  await provider.setItem(user.id, user);
-  var out = await provider.getItem(user.id);
-  print(out?.toJSON());*/
   runApp(MyApp());
 }
 
@@ -54,52 +35,16 @@ class MyApp extends StatelessWidget {
           endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
           allocatedAmount: MonetaryAmount(currency: "ETB", amount: 7000 * 100),
           frequency: Recurring(2592000),
-          categories: [
-            Category(
-              id: "fpoq3cum4cpu43241u34",
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              name: "Mental health",
-              budgetId: "614193c7f2ea51b47f5896ba",
-              parentId: null,
-              allocatedAmount:
-                  MonetaryAmount(currency: "ETB", amount: 1000 * 100),
-              tags: [],
-            ),
-            Category(
-              id: "mucpxo2ur3p98u32proxi34",
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              name: "Atmosphere",
-              budgetId: "614193c7f2ea51b47f5896ba",
-              parentId: "fpoq3cum4cpu43241u34",
-              allocatedAmount:
-                  MonetaryAmount(currency: "ETB", amount: 300 * 100),
-              tags: [],
-            ),
-            Category(
-              id: "614193c7f2ea51b47f5896b8",
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              name: "Medicine",
-              budgetId: "614193c7f2ea51b47f5896ba",
-              parentId: null,
-              allocatedAmount:
-                  MonetaryAmount(currency: "ETB", amount: 1000 * 100),
-              tags: ["pharma"],
-            ),
-            Category(
-              id: "614193c7f2ea51b47f5896b9",
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              name: "RejuvPill",
-              budgetId: "614193c7f2ea51b47f5896ba",
-              parentId: "614193c7f2ea51b47f5896b8",
-              allocatedAmount:
-                  MonetaryAmount(currency: "ETB", amount: 500 * 100),
-              tags: [],
-            ),
-          ],
+          categories: {
+            "fpoq3cum4cpu43241u34":
+                MonetaryAmount(currency: "ETB", amount: 1000 * 100),
+            "mucpxo2ur3p98u32proxi34":
+                MonetaryAmount(currency: "ETB", amount: 300 * 100),
+            "614193c7f2ea51b47f5896b8":
+                MonetaryAmount(currency: "ETB", amount: 1000 * 100),
+            "614193c7f2ea51b47f5896b9":
+                MonetaryAmount(currency: "ETB", amount: 500 * 100)
+          },
         ),
         Budget(
           id: "614193c7f2ea51b47f5896bb",
@@ -110,7 +55,41 @@ class MyApp extends StatelessWidget {
           endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
           allocatedAmount: MonetaryAmount(currency: "ETB", amount: 1000 * 100),
           frequency: OneTime(),
-          categories: [],
+          categories: {},
+        ),
+      ],
+      categories: [
+        Category(
+          id: "fpoq3cum4cpu43241u34",
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          name: "Mental health",
+          parentId: null,
+          tags: ["health"],
+        ),
+        Category(
+          id: "mucpxo2ur3p98u32proxi34",
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          name: "Atmosphere",
+          parentId: "fpoq3cum4cpu43241u34",
+          tags: [],
+        ),
+        Category(
+          id: "614193c7f2ea51b47f5896b8",
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          name: "Medicine",
+          parentId: null,
+          tags: ["pharma"],
+        ),
+        Category(
+          id: "614193c7f2ea51b47f5896b9",
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          name: "RejuvPill",
+          parentId: "614193c7f2ea51b47f5896b8",
+          tags: ["health", "pharma"],
         ),
       ],
       expenses: [
@@ -178,10 +157,8 @@ class MyApp extends StatelessWidget {
           }),
           RepositoryProvider(create: (context) {
             var repo = CategoryRepository();
-            for (var budget in defaultUser.budgets) {
-              for (var item in budget.categories) {
-                repo.setItem(item.id, item);
-              }
+            for (var item in defaultUser.categories) {
+              repo.setItem(item.id, item);
             }
             return repo;
           }),
@@ -200,33 +177,28 @@ class MyApp extends StatelessWidget {
               create: (context) => BudgetsBloc(context.read<BudgetRepository>())
                 ..add(LoadBudgets()),
             ),
-            BlocProvider(
-              create: (context) =>
-                  CategoriesBloc(context.read<CategoryRepository>())
-                    ..add(LoadCategories()),
-            ),
           ],
           child: MaterialApp(
-            title: 'Smuni',
-            localizationsDelegates: [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate
-            ],
-            supportedLocales: [
-              Locale('en', ''), //English
-              Locale('am', ''), //አማርኛ
-              Locale('ti', ''), //ትግርኛ
-              Locale('aa', ''), //አፋር
-              Locale('so', ''), //ሶማሊ
-              Locale('sgw', ''), //ሰባት ቤት ጉራጌ
-              Locale('sid', ''), //ሲዳሞ
-              Locale('wal', ''), //ወላይታ
-            ],
-            theme: ThemeData(primarySwatch: primarySmuniSwatch),
-            onGenerateRoute: Routes.myOnGenerateRoute,
-            home: SmuniHomeScreen(),
-          ),
+              title: 'Smuni',
+              localizationsDelegates: [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate
+              ],
+              supportedLocales: [
+                Locale('en', ''), //English
+                Locale('am', ''), //አማርኛ
+                Locale('ti', ''), //ትግርኛ
+                Locale('aa', ''), //አፋር
+                Locale('so', ''), //ሶማሊ
+                Locale('sgw', ''), //ሰባት ቤት ጉራጌ
+                Locale('sid', ''), //ሲዳሞ
+                Locale('wal', ''), //ወላይታ
+              ],
+              theme: ThemeData(primarySwatch: primarySmuniSwatch),
+              onGenerateRoute: Routes.myOnGenerateRoute,
+              // initialRoute: CategoryListPage.routeName,
+              home: SmuniHomeScreen()),
         ),
       );
 }

@@ -30,18 +30,19 @@ void main() {
         endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
         allocatedAmount: MonetaryAmount(currency: "ETB", amount: 700000),
         frequency: Recurring(2592000),
-        categories: [
-          Category(
-            id: "13m409yh29m",
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            name: "Printing",
-            parentId: null,
-            budgetId: "wnd9pucgyfwp8943yp",
-            allocatedAmount: MonetaryAmount(currency: "ETB", amount: 100000),
-            tags: ["paper"],
-          ),
-        ],
+        categories: {
+          "13m409yh29m": MonetaryAmount(currency: "ETB", amount: 100000),
+        },
+      ),
+    ],
+    categories: [
+      Category(
+        id: "13m409yh29m",
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        name: "Printing",
+        parentId: null,
+        tags: ["paper"],
       ),
     ],
     expenses: [
@@ -77,7 +78,7 @@ void main() {
     var db = await sqflite.openDatabase(inMemoryDatabasePath);
     var repo = SqliteCategoryRepository(db);
     await repo.migrate();
-    var item = user.budgets[0].categories[0];
+    var item = user.categories[0];
     await repo.setItem(user.id, item);
     var out = await repo.getItem(item.id);
     print(out?.toJSON());

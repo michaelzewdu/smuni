@@ -342,6 +342,37 @@ create table budgets (
   createdAt integer not null,
   updatedAt integer not null)
 ''');
+    await db.execute('''
+create table budgetCategories ( 
+  budgetId text primary key,
+  categoryId text primary key,
+  allocatedAmountCurrency text not null,
+  allocatedAmountValue integer not null,
+  createdAt integer not null,
+  updatedAt integer not null)
+''');
+  }
+
+  @override
+  Future<Budget?> getItem(
+    String id,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Iterable<Budget>> getItems() async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> removeItem(String id) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> setItem(String id, Budget item) async {
+    throw UnimplementedError();
   }
 }
 
@@ -357,17 +388,14 @@ class SqliteCategoryRepository extends SqliteRepository<String, Category> {
             "updatedAt",
             "name",
             "parentId",
-            "budgetId",
-            "allocatedAmountCurrency",
-            "allocatedAmountValue",
             "tags",
           ],
           toMap: (o) => o.toJSON()
             ..update("createdAt", (t) => o.updatedAt.millisecondsSinceEpoch)
             ..update("updatedAt", (t) => o.updatedAt.millisecondsSinceEpoch)
             ..update("tags", (t) => o.tags.join(","))
-            ..["allocatedAmountCurrency"] = o.allocatedAmount.currency
-            ..["allocatedAmountValue"] = o.allocatedAmount.amount
+            // ..["allocatedAmountCurrency"] = o.allocatedAmount.currency
+            // ..["allocatedAmountValue"] = o.allocatedAmount.amount
             ..remove("allocatedAmount")
             ..remove("categories"),
           fromMap: (m) => Category.fromJson(
@@ -398,10 +426,7 @@ class SqliteCategoryRepository extends SqliteRepository<String, Category> {
     await db.execute('''
 create table categories ( 
   _id text primary key,
-  budgetId text not null,
   name text not null,
-  allocatedAmountCurrency text not null,
-  allocatedAmountValue integer not null,
   parentId text,
   tags text not null,
   createdAt integer not null,

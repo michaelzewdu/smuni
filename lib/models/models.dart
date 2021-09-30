@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 class User {
   final String id;
   final DateTime createdAt;
@@ -9,6 +11,7 @@ class User {
   final String? pictureURL;
   final List<Budget> budgets;
   final List<Expense> expenses;
+  final List<Category> categories;
 
   User({
     required this.id,
@@ -21,6 +24,7 @@ class User {
     required this.pictureURL,
     required this.budgets,
     required this.expenses,
+    required this.categories,
   });
 
   Map<String, dynamic> toJSON() => {
@@ -33,6 +37,7 @@ class User {
         "phoneNumber": phoneNumber,
         "pictureURL": pictureURL,
         "budgets": budgets.map((e) => e.toJSON()),
+        "categories": categories.map((c) => c.toJSON()),
         "expenses": expenses.map((e) => e.toJSON()),
       };
 
@@ -59,6 +64,13 @@ class User {
                 ? []
                 : checkedConvertArray(
                     v as List<dynamic>, (_, v) => Expense.fromJson(v))),
+        categories: checkedConvert(
+            json,
+            "categories",
+            (v) => v == null
+                ? []
+                : checkedConvertArray(
+                    v as List<dynamic>, (_, v) => Category.fromJson(v))),
       );
 }
 
@@ -120,7 +132,7 @@ class Budget {
   final DateTime endTime;
   final MonetaryAmount allocatedAmount;
   final Frequency frequency;
-  final List<Category> categories;
+  final Map<String, MonetaryAmount> categories;
   Budget({
     required this.id,
     required this.createdAt,
@@ -142,7 +154,8 @@ class Budget {
         "endTime": endTime.toUtc().toString(),
         "allocatedAmount": allocatedAmount.toJSON(),
         "frequency": frequency.toJSON(),
-        "categories": categories.map((c) => c.toJSON()),
+        "categories":
+            categories.entries.map((e) => MapEntry(e.key, e.value.toJSON())),
       };
 
   factory Budget.fromJson(Map<String, dynamic> json) => Budget(
@@ -160,9 +173,9 @@ class Budget {
             json,
             "categories",
             (v) => v == null
-                ? []
-                : checkedConvertArray(
-                    v as List<dynamic>, (_, v) => Category.fromJson(v))),
+                ? {}
+                : checkedConvertMap(v as Map<String, dynamic>,
+                    (_, v) => MonetaryAmount.fromJson(v))),
       );
   factory Budget.from(
     Budget other, {
@@ -174,20 +187,19 @@ class Budget {
     DateTime? endTime,
     MonetaryAmount? allocatedAmount,
     Frequency? frequency,
-    List<Category>? categories,
-  }) {
-    return Budget(
-      id: id ?? other.id,
-      createdAt: createdAt ?? other.createdAt,
-      updatedAt: updatedAt ?? other.updatedAt,
-      name: name ?? other.name,
-      startTime: startTime ?? other.startTime,
-      endTime: endTime ?? other.endTime,
-      allocatedAmount: allocatedAmount ?? other.allocatedAmount,
-      frequency: frequency ?? other.frequency,
-      categories: categories ?? other.categories,
-    );
-  }
+    Map<String, MonetaryAmount>? categories,
+  }) =>
+      Budget(
+        id: id ?? other.id,
+        createdAt: createdAt ?? other.createdAt,
+        updatedAt: updatedAt ?? other.updatedAt,
+        name: name ?? other.name,
+        startTime: startTime ?? other.startTime,
+        endTime: endTime ?? other.endTime,
+        allocatedAmount: allocatedAmount ?? other.allocatedAmount,
+        frequency: frequency ?? other.frequency,
+        categories: categories ?? other.categories,
+      );
 }
 
 class Category {
@@ -195,8 +207,6 @@ class Category {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String name;
-  final MonetaryAmount allocatedAmount;
-  final String budgetId;
   final String? parentId;
   final List<String> tags;
   Category({
@@ -204,9 +214,7 @@ class Category {
     required this.createdAt,
     required this.updatedAt,
     required this.name,
-    required this.budgetId,
     this.parentId,
-    required this.allocatedAmount,
     required this.tags,
   });
 
@@ -216,8 +224,6 @@ class Category {
         "updatedAt": updatedAt.toIso8601String(),
         "name": name,
         "parentId": parentId,
-        "budgetId": budgetId,
-        "allocatedAmount": allocatedAmount.toJSON(),
         "tags": tags,
       };
 
@@ -232,9 +238,6 @@ class Category {
                 ? null
                 : checkedConvert(v, "_id", (v) => v as String)),
         name: checkedConvert(json, "name", (v) => v as String),
-        budgetId: checkedConvert(json, "budgetId", (v) => v as String),
-        allocatedAmount: checkedConvert(
-            json, "allocatedAmount", (v) => MonetaryAmount.fromJson(v)),
         tags: checkedConvert(
             json,
             "tags",
@@ -250,21 +253,17 @@ class Category {
     DateTime? updatedAt,
     String? name,
     MonetaryAmount? allocatedAmount,
-    String? budgetId,
     String? parentId,
     List<String>? tags,
-  }) {
-    return Category(
-      id: id ?? other.id,
-      createdAt: createdAt ?? other.createdAt,
-      updatedAt: updatedAt ?? other.updatedAt,
-      name: name ?? other.name,
-      allocatedAmount: allocatedAmount ?? other.allocatedAmount,
-      budgetId: budgetId ?? other.budgetId,
-      parentId: parentId ?? other.parentId,
-      tags: tags ?? other.tags,
-    );
-  }
+  }) =>
+      Category(
+        id: id ?? other.id,
+        createdAt: createdAt ?? other.createdAt,
+        updatedAt: updatedAt ?? other.updatedAt,
+        name: name ?? other.name,
+        parentId: parentId ?? other.parentId,
+        tags: tags ?? other.tags,
+      );
 }
 
 class Expense {
@@ -295,19 +294,18 @@ class Expense {
         "amount": amount.toJSON(),
       };
 
-  factory Expense.fromJson(Map<String, dynamic> json) {
-    return Expense(
-      id: checkedConvert(json, "_id", (v) => v as String),
-      createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
-      updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
-      name: checkedConvert(json, "name", (v) => v as String),
-      categoryId: checkedConvert(json, "category",
-          (v) => checkedConvert(v, "_id", (v) => v as String)),
-      budgetId: checkedConvert(json, "category",
-          (v) => checkedConvert(v, "budgetId", (v) => v as String)),
-      amount: checkedConvert(json, "amount", (v) => MonetaryAmount.fromJson(v)),
-    );
-  }
+  factory Expense.fromJson(Map<String, dynamic> json) => Expense(
+        id: checkedConvert(json, "_id", (v) => v as String),
+        createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
+        updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
+        name: checkedConvert(json, "name", (v) => v as String),
+        categoryId: checkedConvert(json, "category",
+            (v) => checkedConvert(v, "_id", (v) => v as String)),
+        budgetId: checkedConvert(json, "category",
+            (v) => checkedConvert(v, "budgetId", (v) => v as String)),
+        amount:
+            checkedConvert(json, "amount", (v) => MonetaryAmount.fromJson(v)),
+      );
 
   factory Expense.from(
     Expense other, {
@@ -318,17 +316,16 @@ class Expense {
     String? categoryId,
     String? budgetId,
     MonetaryAmount? amount,
-  }) {
-    return Expense(
-      id: id ?? other.id,
-      createdAt: createdAt ?? other.createdAt,
-      updatedAt: updatedAt ?? other.updatedAt,
-      name: name ?? other.name,
-      categoryId: categoryId ?? other.categoryId,
-      budgetId: budgetId ?? other.budgetId,
-      amount: amount ?? other.amount,
-    );
-  }
+  }) =>
+      Expense(
+        id: id ?? other.id,
+        createdAt: createdAt ?? other.createdAt,
+        updatedAt: updatedAt ?? other.updatedAt,
+        name: name ?? other.name,
+        categoryId: categoryId ?? other.categoryId,
+        budgetId: budgetId ?? other.budgetId,
+        amount: amount ?? other.amount,
+      );
 }
 
 T enumFromString<T>(Iterable<T> values, String value) {
@@ -365,3 +362,10 @@ List<T> checkedConvertArray<T>(
     return extract(index, e);
   }).toList();
 }
+
+Map<String, T> checkedConvertMap<T>(
+  Map<String, dynamic> json,
+  T Function(String, dynamic) extract,
+  // {bool checkForNull = true}
+) =>
+    HashMap.fromIterable(json.entries.map((e) => extract(e.key, e.value)));

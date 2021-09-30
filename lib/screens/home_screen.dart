@@ -4,6 +4,8 @@ import 'package:smuni/constants.dart';
 import 'package:smuni/screens/Budget/budgets_list_screen.dart';
 import 'package:smuni/screens/Expense/expense_list_page.dart';
 
+import 'Category/category_list_2.dart';
+
 class SmuniHomeScreen extends StatelessWidget {
   SmuniHomeScreen({Key? key}) : super(key: key);
 
@@ -44,6 +46,13 @@ class SmuniHomeScreen extends StatelessWidget {
                       buttonName: 'Expense',
                       drawerButtonAction: () => Navigator.pushNamed(
                           context, ExpenseListPage.routeName)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: DrawerButtons(
+                      buttonName: 'Categories',
+                      drawerButtonAction: () => Navigator.pushNamed(
+                          context, CategoryListPage.routeName)),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),

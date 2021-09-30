@@ -4,8 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
-import 'package:smuni/utilities.dart';
-import 'package:smuni/widgets/expense_list_view.dart';
 
 import 'category_edit_page.dart';
 
@@ -17,19 +15,7 @@ class CategoryDetailsPage extends StatelessWidget {
         builder: (context) => BlocProvider(
           create: (context) => DetailsPageBloc<String, Category>(
               context.read<CategoryRepository>(), id),
-          child: BlocProvider(
-            create: (context) => ExpenseListPageBloc(
-              context.read<ExpenseRepository>(),
-              context.read<CategoryRepository>(),
-              const DateRangeFilter(
-                "All",
-                DateRange(),
-                FilterLevel.All,
-              ),
-              id,
-            ),
-            child: CategoryDetailsPage(),
-          ),
+          child: CategoryDetailsPage(),
         ),
       );
 
@@ -87,11 +73,11 @@ class CategoryDetailsPage extends StatelessWidget {
             )
           ],
         ),
-        body: BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
-          builder: (context, expensesState) => Column(
-            children: <Widget>[
-              Text(state.item.name),
-              expensesState is ExpensesLoadSuccess
+        body: Column(
+          children: <Widget>[
+            Text(state.item.name),
+            /*  BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
+          builder: (context, expensesState) => expensesState is ExpensesLoadSuccess
                   ? Builder(builder: (context) {
                       final currency = state.item.allocatedAmount.currency;
                       final totalAlocated = state.item.allocatedAmount.amount;
@@ -119,31 +105,12 @@ class CategoryDetailsPage extends StatelessWidget {
                       );
                     })
                   : const Text("Loading expenses..."),
-              Text("id: ${state.item.id}"),
-              Text("budget: ${state.item.budgetId}"),
-              Text("tags: ${state.item.tags}"),
-              Text("createdAt: ${state.item.createdAt}"),
-              Text("updatedAt: ${state.item.updatedAt}"),
-              Column(
-                children: expensesState is ExpensesLoadSuccess
-                    ? [
-                        const Text("Expenses:"),
-                        ExpenseListView(
-                          items: expensesState.items,
-                          allDateRanges: expensesState.dateRangeFilters.values,
-                          displayedRange: expensesState.range,
-                          loadRange: (range) => context
-                              .read<ExpenseListPageBloc>()
-                              .add(LoadExpenses(range, state.item.id)),
-                        )
-                      ]
-                    : [
-                        const Text("Loading expenses..."),
-                        Center(child: CircularProgressIndicator.adaptive())
-                      ],
-              ),
-            ],
-          ),
+        ), */
+            Text("id: ${state.item.id}"),
+            Text("tags: ${state.item.tags}"),
+            Text("createdAt: ${state.item.createdAt}"),
+            Text("updatedAt: ${state.item.updatedAt}"),
+          ],
         ),
       );
   @override

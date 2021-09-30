@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/repositories/repositories.dart';
-import 'package:smuni/utilities.dart';
 
 import 'category_details_page.dart';
 import 'category_edit_page.dart';
@@ -45,11 +44,7 @@ class _CategoryListPageState extends State<CategoryListPage> {
                         return ListTile(
                           title: Text(item.name),
                           subtitle: Text(
-                            "${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}",
-                          ),
-                          trailing: Text(
-                            "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
-                          ),
+                              item.tags.map((e) => "#$e").toList().join(" ")),
                           onTap: () => Navigator.pushNamed(
                             context,
                             CategoryDetailsPage.routeName,

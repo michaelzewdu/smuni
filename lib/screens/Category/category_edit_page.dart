@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/category_edit_page.dart';
+import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
-import 'package:smuni/widgets/budget_selector.dart';
 import 'package:smuni/widgets/category_selector.dart';
-import 'package:smuni/widgets/money_editor.dart';
 
 class CategoryEditPage extends StatefulWidget {
   static const String routeName = "categoryEdit";
@@ -31,8 +30,6 @@ class CategoryEditPage extends StatefulWidget {
           updatedAt: now,
           name: "",
           tags: [],
-          budgetId: "",
-          allocatedAmount: MonetaryAmount(currency: "ETB", amount: 0),
         );
         return BlocProvider(
           create: (context) => CategoryEditPageBloc.modified(
@@ -51,7 +48,6 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
   int _amountCents = 0;
   String _name = "";
   bool _isSubcategory = false;
-  String _budgetId = "";
   String? _parentId;
 
   Widget _showForm(BuildContext context, UnmodifiedEditState state) => Form(
@@ -68,13 +64,14 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                     context.read<CategoryEditPageBloc>()
                       ..add(
                         ModifyItem(
-                          Category.from(state.unmodified,
-                              name: _name,
-                              allocatedAmount: MonetaryAmount(
-                                  currency: "ETB",
-                                  amount: (_amountWholes * 100) + _amountCents),
-                              parentId: _parentId,
-                              budgetId: _budgetId),
+                          Category.from(
+                            state.unmodified,
+                            name: _name,
+                            allocatedAmount: MonetaryAmount(
+                                currency: "ETB",
+                                amount: (_amountWholes * 100) + _amountCents),
+                            parentId: _parentId,
+                          ),
                         ),
                       )
                       ..add(SaveChanges());
@@ -97,96 +94,62 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
               ),
             ],
           ),
-          body: BlocBuilder<CategoryEditPageBloc, CategoryEditPageBlocState>(
-            builder: (context, state) => Column(
-              children: <Widget>[
-                if (state is UnmodifiedEditState)
-                  TextFormField(
-                    initialValue: state.unmodified.name,
-                    onSaved: (value) {
-                      setState(() {
-                        _name = value!;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Name can't be empty";
-                      }
-                    },
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      hintText: "Name",
-                      helperText: "Name",
-                    ),
-                  ),
-                if (state is UnmodifiedEditState)
-                  MoneyEditor(
-                    initial: state.unmodified.allocatedAmount,
-                    onSavedWhole: (v) => setState(() {
-                      _amountWholes = v;
-                    }),
-                    onSavedCents: (v) => setState(() {
-                      _amountCents = v;
-                    }),
-                  ),
-                if (state is UnmodifiedEditState)
-                  Text("id: ${state.unmodified.id}"),
-                if (state is UnmodifiedEditState)
-                  Text("createdAt: ${state.unmodified.createdAt}"),
-                if (state is UnmodifiedEditState)
-                  Text("updatedAt: ${state.unmodified.updatedAt}"),
-                if (state is UnmodifiedEditState)
-                  Text("budget: ${state.unmodified.budgetId}"),
-                // Text("category: ${state.unmodified.categoryId}"),
-                Column(
-                  children: [
-                    CheckboxListTile(
-                      value: _isSubcategory,
-                      onChanged: (value) => setState(() {
-                        _isSubcategory = value!;
-                      }),
-                      title: const Text("Is Subcategory"),
-                    ),
-                    if (state is UnmodifiedEditState)
-                      _isSubcategory
-                          ? CategorySelector(
-                              caption: "Parent category",
-                              initialValue: state.unmodified.parentId == null
-                                  ? null
-                                  : CategorySelectorState(
-                                      state.unmodified.parentId!,
-                                      state.unmodified.budgetId),
-                              onSaved: (value) {
-                                setState(() {
-                                  _parentId = value!.id;
-                                  _budgetId = value.budgetId;
-                                });
-                              },
-                              validator: (value) {
-                                if (value == null) {
-                                  return "Parent category not selected";
-                                }
-                              },
-                            )
-                          : BudgetSelector(
-                              initialValue: state.unmodified.budgetId.isEmpty
-                                  ? null
-                                  : state.unmodified.budgetId,
-                              onSaved: (value) {
-                                setState(() {
-                                  _budgetId = value!;
-                                });
-                              },
-                              validator: (value) {
-                                if (value == null) {
-                                  return "No budget selected";
-                                }
-                              },
-                            )
-                  ],
+          body: Column(
+            children: <Widget>[
+              TextFormField(
+                initialValue: state.unmodified.name,
+                onSaved: (value) {
+                  setState(() {
+                    _name = value!;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Name can't be empty";
+                  }
+                },
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  hintText: "Name",
+                  helperText: "Name",
                 ),
-              ],
-            ),
+              ),
+              Text("id: ${state.unmodified.id}"),
+              Text("createdAt: ${state.unmodified.createdAt}"),
+              Text("updatedAt: ${state.unmodified.updatedAt}"),
+              // Text("category: ${state.unmodified.categoryId}"),
+              Column(
+                children: [
+                  CheckboxListTile(
+                    value: _isSubcategory,
+                    onChanged: (value) => setState(() {
+                      _isSubcategory = value!;
+                    }),
+                  ),
+                  if (_isSubcategory)
+                    BlocProvider(
+                        create: (context) => CategoryListPageBloc(
+                            context.read<CategoryRepository>()),
+                        child: CategorySelector(
+                          caption: "Parent category",
+                          initialValue: state.unmodified.parentId == null
+                              ? null
+                              : CategorySelectorState(
+                                  state.unmodified.parentId!),
+                          onSaved: (value) {
+                            setState(() {
+                              _parentId = value!.id;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null) {
+                              return "Parent category not selected";
+                            }
+                          },
+                        )),
+                ],
+              ),
+            ],
           ),
         ),
       );

@@ -1,19 +1,16 @@
-import 'dart:collection';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:smuni/blocs/categories.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/blocs/blocs.dart';
-import 'package:smuni/screens/Category/category_edit_page.dart';
 
 class CategorySelectorState {
   final String id;
-  final String budgetId;
 
-  CategorySelectorState(this.id, this.budgetId);
+  CategorySelectorState(
+    this.id,
+  );
 }
 
 class CategorySelector extends StatefulWidget {
@@ -55,9 +52,6 @@ class _CategorySelectorState extends State<CategorySelector> {
             Text("id: ${item.id}"),
             Text("createdAt: ${item.createdAt}"),
             Text("updatedAt: ${item.updatedAt}"),
-            Text(
-              "allocatedAmount: ETB ${item.allocatedAmount.amount / 100}",
-            ),
             Text("parentId: ${item.parentId}"),
           ],
         );
@@ -69,66 +63,41 @@ class _CategorySelectorState extends State<CategorySelector> {
     }
   }
 
-  Widget _selecting(
+  Widget _catDisplay(
     FormFieldState<CategorySelectorState> state,
     CategoriesLoadSuccess itemsState,
-  ) =>
-      BlocBuilder<BudgetsBloc, BudgetsBlocState>(
-          builder: (context, budgetsState) {
-        if (budgetsState is BudgetsLoadSuccess) {
-          // show the selection list
-          final items = itemsState.items;
-          final budgets = budgetsState.items;
-          final bins = new HashMap<String, Budget>();
-          for (final item in items.values) {
-            final budget = budgets[item.budgetId];
-            if (budget != null) {
-              bins.update(
-                budget.id,
-                (budget) => budget..categories.add(item),
-                ifAbsent: () => Budget.from(budget, categories: [item]),
-              );
-            } else {
-              return Text("Error: Budget not found for category $item.name");
-            }
-          }
-          final keys = bins.keys;
-          return bins.isNotEmpty
-              ? SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.4,
-                  child: ListView.builder(
-                    itemCount: keys.length,
-                    itemBuilder: (context, index) {
-                      final item = bins[keys.elementAt(index)]!;
-                      return Column(
-                        children: [
-                          ListTile(
-                            title: Text(item.name),
-                            trailing: Text(
-                              "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(
-                                left: MediaQuery.of(context).size.width * 0.1),
-                            child: Column(
-                              children: [
-                                ...item.categories.map(
-                                  (e) => ListTile(
-                                    title: Text(e.name),
-                                    trailing: Text(
-                                      "${e.allocatedAmount.currency} ${e.allocatedAmount.amount / 100}",
-                                    ),
-                                    onTap: () {
-                                      state.didChange(
-                                          CategorySelectorState(e.id, item.id));
-                                      setState(() {
-                                        _isSelecting = false;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                /*ListTile(
+    String id,
+  ) {
+    final item = itemsState.items[id];
+    final itemNode = itemsState.ancestryGraph[id];
+    if (item == null) return Text("Error: Category under id $id not found");
+    if (itemNode == null)
+      return Text("Error: Category under id $id not found in ancestryGraph");
+
+    Widget listTile(Category item) => ListTile(
+          title: Text(item.name),
+          subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
+          onTap: () {
+            state.didChange(CategorySelectorState(id));
+            setState(() {
+              _isSelecting = false;
+            });
+          },
+        );
+    return itemNode.children.isEmpty
+        ? listTile(item)
+        : Column(
+            children: [
+              listTile(item),
+              if (itemNode.children.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(
+                      left: MediaQuery.of(context).size.width * 0.1),
+                  child: Column(
+                    children: [
+                      ...itemNode.children
+                          .map((e) => _catDisplay(state, itemsState, e)),
+                      /*ListTile(
                                   title: const Text("Add new category"),
                                   onTap: () {
                                     Navigator.pushNamed(
@@ -137,20 +106,44 @@ class _CategorySelectorState extends State<CategorySelector> {
                                     );
                                   },
                                 ),*/
-                              ],
-                            ),
-                          )
-                        ],
-                      );
-                    },
+                    ],
                   ),
                 )
-              : const Center(child: const Text("No categories."));
-        } else if (budgetsState is BudgetsLoading) {
-          return const Center(child: const Text("Loading budgets..."));
-        }
-        throw Exception("Unhandeled state");
-      });
+            ],
+          );
+  }
+
+  Widget _selecting(
+    FormFieldState<CategorySelectorState> state,
+    CategoriesLoadSuccess itemsState,
+  ) {
+    // show the selection list
+    final topNodes =
+        itemsState.ancestryGraph.values.where((e) => e.parent == null).toList();
+    /*final bins = new HashMap<String, List<String>>();
+    for (final item in items.values) {
+      final budget = budgets[item.budgetId];
+      if (budget != null) {
+        bins.update(
+          budget.id,
+          (budget) => budget..categories.add(item),
+          ifAbsent: () => Budget.from(budget, categories: [item]),
+        );
+      } else {
+        return Text("Error: Budget not found for category $item.name");
+      }
+    }*/
+    return topNodes.isNotEmpty
+        ? SizedBox(
+            height: MediaQuery.of(context).size.height * 0.4,
+            child: ListView.builder(
+              itemCount: topNodes.length,
+              itemBuilder: (context, index) =>
+                  _catDisplay(state, itemsState, topNodes[index].item),
+            ),
+          )
+        : const Center(child: const Text("No categories."));
+  }
 
   @override
   Widget build(BuildContext context) => FormField<CategorySelectorState>(
@@ -177,7 +170,7 @@ class _CategorySelectorState extends State<CategorySelector> {
                 },
               )
             ]),
-            BlocBuilder<CategoriesBloc, CategoriesBlocState>(
+            BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
                 builder: (context, itemsState) {
               if (itemsState is CategoriesLoadSuccess) {
                 if (_isSelecting) {

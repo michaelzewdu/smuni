@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/expense_edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
-import 'package:smuni/widgets/category_selector.dart';
 import 'package:smuni/widgets/money_editor.dart';
 
 class ExpenseEditPage extends StatefulWidget {
@@ -130,23 +129,6 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
               Text("createdAt: ${state.unmodified.createdAt}"),
               Text("updatedAt: ${state.unmodified.updatedAt}"),
               // Text("category: ${state.unmodified.categoryId}"),
-              CategorySelector(
-                initialValue: state.unmodified.categoryId.isEmpty
-                    ? null
-                    : CategorySelectorState(
-                        state.unmodified.categoryId, state.unmodified.budgetId),
-                onSaved: (value) {
-                  setState(() {
-                    _categoryId = value!.id;
-                    _budgetId = value.budgetId;
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return "No category selected";
-                  }
-                },
-              ),
             ],
           ),
         ),

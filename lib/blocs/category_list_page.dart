@@ -33,9 +33,11 @@ class CategoriesLoading extends CategoryListPageBlocState {
 
 class CategoriesLoadSuccess extends CategoryListPageBlocState {
   final Map<String, Category> items;
+  final Map<String, TreeNode<String>> ancestryGraph;
 
   CategoriesLoadSuccess(
     this.items,
+    this.ancestryGraph,
   ) : super();
 }
 
@@ -59,15 +61,16 @@ class CategoryListPageBloc
   ) async* {
     if (event is LoadCategories) {
       final items = await repo.getItems();
+      final ancestryGraph = await repo.ancestryGraph;
 
       // TODO:  load from fs
       yield CategoriesLoadSuccess(
-        HashMap.fromIterable(
-          items,
-          key: (i) => i.id,
-          value: (i) => i,
-        ),
-      );
+          HashMap.fromIterable(
+            items,
+            key: (i) => i.id,
+            value: (i) => i,
+          ),
+          ancestryGraph);
       return;
     } else if (event is DeleteCategory) {
       final current = state;
@@ -76,7 +79,7 @@ class CategoryListPageBloc
         await repo.removeItem(event.id);
         current.items.remove(event.id);
 
-        yield CategoriesLoadSuccess(current.items);
+        yield CategoriesLoadSuccess(current.items, await repo.ancestryGraph);
         return;
       } else if (current is CategoriesLoading) {
         await Future.delayed(const Duration(milliseconds: 500));
