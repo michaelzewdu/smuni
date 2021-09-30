@@ -130,6 +130,8 @@ abstract class Frequency {
             checkedConvert(json, "recurringIntervalSecs", (v) => v as int));
     }
   }
+  @override
+  String toString() => "${this.runtimeType.toString()}  { kind: $kind }";
 }
 
 class OneTime extends Frequency {
@@ -145,6 +147,10 @@ class Recurring extends Frequency {
 
   Map<String, dynamic> toJSON() =>
       {"kind": kind, "recurringIntervalSecs": recurringIntervalSecs};
+
+  @override
+  String toString() =>
+      "${this.runtimeType.toString()}  { recurringIntervalSecs: $recurringIntervalSecs }";
 }
 
 class MonetaryAmount {

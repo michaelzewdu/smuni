@@ -76,36 +76,6 @@ class CategoryDetailsPage extends StatelessWidget {
         body: Column(
           children: <Widget>[
             Text(state.item.name),
-            /*  BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
-          builder: (context, expensesState) => expensesState is ExpensesLoadSuccess
-                  ? Builder(builder: (context) {
-                      final currency = state.item.allocatedAmount.currency;
-                      final totalAlocated = state.item.allocatedAmount.amount;
-                      var totalUsed = 0;
-                      for (final expenseAmount in expensesState.items.values
-                          .map((e) => e.amount.amount)) {
-                        totalUsed += expenseAmount;
-                      }
-                      return Column(
-                        children: [
-                          Text(
-                            "Allocated:  $currency ${totalAlocated / 100}",
-                          ),
-                          Text(
-                            "Used:  $currency ${totalUsed / 100}",
-                          ),
-                          Text(
-                            "Remaining:  $currency ${(totalAlocated - totalUsed) / 100}",
-                          ),
-                          if (totalAlocated > 0)
-                            LinearProgressIndicator(
-                              value: totalUsed / totalAlocated,
-                            )
-                        ],
-                      );
-                    })
-                  : const Text("Loading expenses..."),
-        ), */
             Text("id: ${state.item.id}"),
             Text("tags: ${state.item.tags}"),
             Text("createdAt: ${state.item.createdAt}"),

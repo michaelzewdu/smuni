@@ -15,12 +15,13 @@ abstract class ExpensesListBlocEvent {
 
 class LoadExpenses extends ExpensesListBlocEvent {
   final DateRangeFilter range;
+  final String? ofBudget;
   final String? ofCategory;
-  const LoadExpenses(this.range, [this.ofCategory]);
+  const LoadExpenses(this.range, [this.ofBudget, this.ofCategory]);
 
   @override
   String toString() =>
-      "${this.runtimeType.toString()} { range: $range, ofCategory: $ofCategory }";
+      "${this.runtimeType.toString()} { range: $range, ofBudget: $ofBudget , ofCategory: $ofCategory }";
 }
 
 class DeleteExpense extends ExpensesListBlocEvent {
@@ -41,19 +42,22 @@ abstract class ExpenseListPageBlocState {
 }
 
 class ExpensesLoading extends ExpenseListPageBlocState {
+  final String? ofBudget;
   final String? ofCategory;
   ExpensesLoading(
     DateRangeFilter range, [
+    this.ofBudget,
     this.ofCategory,
   ]) : super(range);
 
   @override
   String toString() =>
-      "${this.runtimeType.toString()} { range: $range, ofCategory: $ofCategory }";
+      "${this.runtimeType.toString()} { range: $range, ofBudget: $ofBudget , ofCategory: $ofCategory }";
 }
 
 class ExpensesLoadSuccess extends ExpenseListPageBlocState {
   Map<DateRange, DateRangeFilter> dateRangeFilters;
+  final String? budgetFilter;
   final List<String>? categoryFilter;
   final Map<String, Expense> items;
 
@@ -61,12 +65,13 @@ class ExpensesLoadSuccess extends ExpenseListPageBlocState {
     this.items,
     DateRangeFilter range,
     this.dateRangeFilters, [
+    this.budgetFilter,
     this.categoryFilter,
   ]) : super(range);
 
   @override
   String toString() =>
-      "${this.runtimeType.toString()} { range: $range, dateRangeFilters: $dateRangeFilters, categoryFilter: $categoryFilter, categoryFilter: $items }";
+      "${this.runtimeType.toString()} { range: $range, dateRangeFilters: $dateRangeFilters, budgetFilter: $budgetFilter, categoryFilter: $categoryFilter, items: $items }";
 }
 
 // BLOC
@@ -79,20 +84,31 @@ class ExpenseListPageBloc
     this.repo,
     this.categoryRepo,
     DateRangeFilter initialRangeToLoad, [
+    String? initialBudgetToLoad,
     String? initialCategoryToLoad,
   ]) : super(
-          ExpensesLoading(initialRangeToLoad, initialCategoryToLoad),
+          ExpensesLoading(
+            initialRangeToLoad,
+            initialBudgetToLoad,
+            initialCategoryToLoad,
+          ),
         ) {
     repo.changedItems.listen((ids) {
       add(LoadExpenses(
-          const DateRangeFilter(
-            "All",
-            DateRange(),
-            FilterLevel.All,
-          ),
-          initialCategoryToLoad));
+        const DateRangeFilter(
+          "All",
+          DateRange(),
+          FilterLevel.All,
+        ),
+        initialBudgetToLoad,
+        initialCategoryToLoad,
+      ));
     });
-    add(LoadExpenses(initialRangeToLoad, initialCategoryToLoad));
+    add(LoadExpenses(
+      initialRangeToLoad,
+      initialBudgetToLoad,
+      initialCategoryToLoad,
+    ));
   }
 
   @override
@@ -103,7 +119,11 @@ class ExpenseListPageBloc
       final catFilter = event.ofCategory != null
           ? await categoryRepo.getCategoryDescendantsTree(event.ofCategory!)
           : null;
-      final items = await repo.getItemsInRange(event.range.range, catFilter);
+      final items = await repo.getItemsInRange(
+        event.range.range,
+        event.ofBudget,
+        catFilter,
+      );
       final dateRangeFilters = await repo.getDateRangeFilters(catFilter);
       // TODO:  load from fs
       yield ExpensesLoadSuccess(
@@ -114,6 +134,7 @@ class ExpenseListPageBloc
         ),
         event.range,
         dateRangeFilters,
+        event.ofBudget,
         catFilter,
       );
       return;
@@ -130,6 +151,7 @@ class ExpenseListPageBloc
           current.items,
           current.range,
           dateRangeFilters,
+          current.budgetFilter,
           current.categoryFilter,
         );
         return;

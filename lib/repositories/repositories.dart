@@ -145,10 +145,23 @@ class ExpenseRepository extends HashMapRepository<String, Expense> {
   }
 
   Future<Iterable<Expense>> getItemsInRange(DateRange range,
-      [List<String>? belongingtoCategories]) async {
-    return this._items.values.where((e) =>
-        range.containsTimestamp(e.createdAt) &&
-        (belongingtoCategories?.contains(e.categoryId) ?? true));
+      [String? belongingToBudget, List<String>? belongingtoCategories]) async {
+    return this._items.values.where(
+          belongingToBudget != null && belongingtoCategories != null
+              ? (e) =>
+                  range.containsTimestamp(e.createdAt) &&
+                  e.budgetId == belongingToBudget &&
+                  belongingtoCategories.contains(e.categoryId)
+              : belongingToBudget != null
+                  ? (e) =>
+                      range.containsTimestamp(e.createdAt) &&
+                      e.budgetId == belongingToBudget
+                  : belongingtoCategories != null
+                      ? (e) =>
+                          range.containsTimestamp(e.createdAt) &&
+                          belongingtoCategories.contains(e.categoryId)
+                      : (e) => range.containsTimestamp(e.createdAt),
+        );
   }
 }
 

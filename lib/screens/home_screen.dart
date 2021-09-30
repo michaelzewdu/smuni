@@ -9,7 +9,7 @@ import 'package:smuni/screens/Budget/budgets_list_screen.dart';
 import 'package:smuni/screens/Expense/expense_list_page.dart';
 import 'package:smuni/widgets/budget_selector.dart';
 
-import 'Category/category_list_2.dart';
+import 'Category/category_list_page.dart';
 
 class SmuniHomeScreen extends StatelessWidget {
   SmuniHomeScreen({Key? key}) : super(key: key);

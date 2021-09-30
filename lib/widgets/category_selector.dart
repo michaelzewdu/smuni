@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:smuni/models/models.dart';
 import 'package:smuni/blocs/blocs.dart';
+
+import 'category_list_view.dart';
 
 class CategorySelectorState {
   final String id;
@@ -63,87 +64,20 @@ class _CategorySelectorState extends State<CategorySelector> {
     }
   }
 
-  Widget _catDisplay(
-    FormFieldState<CategorySelectorState> state,
-    CategoriesLoadSuccess itemsState,
-    String id,
-  ) {
-    final item = itemsState.items[id];
-    final itemNode = itemsState.ancestryGraph[id];
-    if (item == null) return Text("Error: Category under id $id not found");
-    if (itemNode == null)
-      return Text("Error: Category under id $id not found in ancestryGraph");
-
-    Widget listTile(Category item) => ListTile(
-          title: Text(item.name),
-          subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
-          onTap: () {
-            state.didChange(CategorySelectorState(id));
-            setState(() {
-              _isSelecting = false;
-            });
-          },
-        );
-    return itemNode.children.isEmpty
-        ? listTile(item)
-        : Column(
-            children: [
-              listTile(item),
-              if (itemNode.children.isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(
-                      left: MediaQuery.of(context).size.width * 0.1),
-                  child: Column(
-                    children: [
-                      ...itemNode.children
-                          .map((e) => _catDisplay(state, itemsState, e)),
-                      /*ListTile(
-                                  title: const Text("Add new category"),
-                                  onTap: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      CategoryEditPage.routeName,
-                                    );
-                                  },
-                                ),*/
-                    ],
-                  ),
-                )
-            ],
-          );
-  }
-
   Widget _selecting(
     FormFieldState<CategorySelectorState> state,
     CategoriesLoadSuccess itemsState,
-  ) {
-    // show the selection list
-    final topNodes =
-        itemsState.ancestryGraph.values.where((e) => e.parent == null).toList();
-    /*final bins = new HashMap<String, List<String>>();
-    for (final item in items.values) {
-      final budget = budgets[item.budgetId];
-      if (budget != null) {
-        bins.update(
-          budget.id,
-          (budget) => budget..categories.add(item),
-          ifAbsent: () => Budget.from(budget, categories: [item]),
-        );
-      } else {
-        return Text("Error: Budget not found for category $item.name");
-      }
-    }*/
-    return topNodes.isNotEmpty
-        ? SizedBox(
-            height: MediaQuery.of(context).size.height * 0.4,
-            child: ListView.builder(
-              itemCount: topNodes.length,
-              itemBuilder: (context, index) =>
-                  _catDisplay(state, itemsState, topNodes[index].item),
-            ),
-          )
-        : const Center(child: const Text("No categories."));
-  }
+  ) =>
+      Expanded(
+        child: CategoryListView(
+            state: itemsState,
+            onSelect: (id) {
+              state.didChange(CategorySelectorState(id));
+              setState(() {
+                _isSelecting = false;
+              });
+            }),
+      );
 
   @override
   Widget build(BuildContext context) => FormField<CategorySelectorState>(

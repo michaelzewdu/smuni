@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/repositories/repositories.dart';
+import 'package:smuni/widgets/category_list_view.dart';
 
 import 'category_details_page.dart';
 import 'category_edit_page.dart';
@@ -34,26 +35,14 @@ class _CategoryListPageState extends State<CategoryListPage> {
         body: BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
           builder: (context, state) {
             if (state is CategoriesLoadSuccess) {
-              final items = state.items;
-              final keys = items.keys;
-              return items.isNotEmpty
-                  ? ListView.builder(
-                      itemCount: keys.length,
-                      itemBuilder: (context, index) {
-                        final item = items[keys.elementAt(index)]!;
-                        return ListTile(
-                          title: Text(item.name),
-                          subtitle: Text(
-                              item.tags.map((e) => "#$e").toList().join(" ")),
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            CategoryDetailsPage.routeName,
-                            arguments: item.id,
-                          ),
-                        );
-                      },
-                    )
-                  : Center(child: const Text("No categories."));
+              return CategoryListView(
+                state: state,
+                onSelect: (id) => Navigator.pushNamed(
+                  context,
+                  CategoryDetailsPage.routeName,
+                  arguments: id,
+                ),
+              );
             }
             return Center(child: CircularProgressIndicator.adaptive());
           },

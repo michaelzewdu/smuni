@@ -9,14 +9,16 @@ class ExpenseListView extends StatelessWidget {
   final void Function(DateRangeFilter) loadRange;
   final DateRangeFilter displayedRange;
   final Iterable<DateRangeFilter> allDateRanges;
+  final bool dense;
 
-  const ExpenseListView(
-      {Key? key,
-      required this.items,
-      required this.loadRange,
-      required this.displayedRange,
-      required this.allDateRanges})
-      : super(key: key);
+  const ExpenseListView({
+    Key? key,
+    required this.items,
+    required this.loadRange,
+    required this.displayedRange,
+    required this.allDateRanges,
+    this.dense = false,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +150,7 @@ class ExpenseListView extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final item = items[keys.elementAt(index)]!;
                   return ListTile(
+                    dense: dense,
                     title: Text(item.name),
                     subtitle: Text(
                       "${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}",

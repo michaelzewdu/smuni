@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/constants.dart';
 import 'package:smuni/models/models.dart';
-import 'package:smuni/screens/Budget/budget_detail.dart';
+import 'package:smuni/screens/Budget/budget_detail_page.dart';
 import 'package:smuni/widgets/money_editor.dart';
 
 class BudgetListPage extends StatefulWidget {
@@ -62,7 +62,8 @@ class _BudgetListPageState extends State<BudgetListPage> {
                       'to  ${budgetItem.endTime.month} ${budgetItem.endTime.day} ${budgetItem.endTime.year}')
                 ]),
                 onTap: () {
-                  Navigator.pushNamed(context, BudgetDetails.routeName);
+                  Navigator.pushNamed(context, BudgetDetailsPage.routeName,
+                      arguments: budgetItem.id);
                 },
               );
             },

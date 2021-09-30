@@ -118,36 +118,38 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
               Text("createdAt: ${state.unmodified.createdAt}"),
               Text("updatedAt: ${state.unmodified.updatedAt}"),
               // Text("category: ${state.unmodified.categoryId}"),
+
+              CheckboxListTile(
+                value: _isSubcategory,
+                title: const Text("Is Subcategory"),
+                onChanged: (value) => setState(() {
+                  _isSubcategory = value!;
+                }),
+              ),
+              if (_isSubcategory)
+                BlocProvider(
+                    create: (context) => CategoryListPageBloc(
+                        context.read<CategoryRepository>()),
+                    child: Expanded(
+                      child: CategorySelector(
+                        caption: "Parent category",
+                        initialValue: state.unmodified.parentId == null
+                            ? null
+                            : CategorySelectorState(state.unmodified.parentId!),
+                        onSaved: (value) {
+                          setState(() {
+                            _parentId = value!.id;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return "Parent category not selected";
+                          }
+                        },
+                      ),
+                    )),
               Column(
-                children: [
-                  CheckboxListTile(
-                    value: _isSubcategory,
-                    onChanged: (value) => setState(() {
-                      _isSubcategory = value!;
-                    }),
-                  ),
-                  if (_isSubcategory)
-                    BlocProvider(
-                        create: (context) => CategoryListPageBloc(
-                            context.read<CategoryRepository>()),
-                        child: CategorySelector(
-                          caption: "Parent category",
-                          initialValue: state.unmodified.parentId == null
-                              ? null
-                              : CategorySelectorState(
-                                  state.unmodified.parentId!),
-                          onSaved: (value) {
-                            setState(() {
-                              _parentId = value!.id;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null) {
-                              return "Parent category not selected";
-                            }
-                          },
-                        )),
-                ],
+                children: [],
               ),
             ],
           ),

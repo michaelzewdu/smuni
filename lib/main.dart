@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:smuni/screens/home_screen.dart';
 
 import 'bloc_observer.dart';
+import 'screens/home_screen.dart';
 import 'screens/routes.dart';
 import 'repositories/repositories.dart';
 import 'models/models.dart';
 import 'blocs/blocs.dart';
 import 'constants.dart';
-import 'models/models.dart';
-import 'repositories/repositories.dart';
-import 'screens/routes.dart';
 
 void main() async {
   Bloc.observer = SimpleBlocObserver();
@@ -59,9 +56,16 @@ class MyApp extends StatelessWidget {
           name: "Special budget",
           startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
           endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
-          allocatedAmount: MonetaryAmount(currency: "ETB", amount: 1000 * 100),
+          allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
           frequency: OneTime(),
-          categories: {},
+          categories: {
+            "jfaksdpofjasodf":
+                MonetaryAmount(currency: "ETB", amount: 500 * 100),
+            "jfasodifjasodjffasdasd":
+                MonetaryAmount(currency: "ETB", amount: 500 * 100),
+            "614193c7f2ea51b47f5896b9":
+                MonetaryAmount(currency: "ETB", amount: 500 * 100)
+          },
         ),
       ],
       categories: [
@@ -96,6 +100,22 @@ class MyApp extends StatelessWidget {
           name: "RejuvPill",
           parentId: "614193c7f2ea51b47f5896b8",
           tags: ["health", "pharma"],
+        ),
+        Category(
+          id: "jfaksdpofjasodf",
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          name: "P's & Q's",
+          parentId: null,
+          tags: ["Id"],
+        ),
+        Category(
+          id: "jfasodifjasodjffasdasd",
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          name: "And O's",
+          parentId: "jfaksdpofjasodf",
+          tags: ["Ego"],
         ),
       ],
       expenses: [
@@ -142,6 +162,15 @@ class MyApp extends StatelessWidget {
           name: "Private eye hire",
           categoryId: "fpoq3cum4cpu43241u34",
           budgetId: "614193c7f2ea51b47f5896ba",
+          amount: MonetaryAmount(currency: "ETB", amount: 300 * 100),
+        ),
+        Expense(
+          id: "x1u423rxip3h42c9",
+          createdAt: now.add(Duration(days: -400)),
+          updatedAt: now.add(Duration(days: -400)),
+          name: "Mia Culpa Groceries",
+          categoryId: "jfasodifjasodjffasdasd",
+          budgetId: "614193c7f2ea51b47f5896bb",
           amount: MonetaryAmount(currency: "ETB", amount: 300 * 100),
         ),
       ],
