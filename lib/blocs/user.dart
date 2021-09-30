@@ -16,33 +16,39 @@ class LoadUser extends UserEvent {
 class UpdateUser extends UserEvent {
   final User update;
   UpdateUser(this.update);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { update: $update }";
 }
 
 // STATE
 
-abstract class UserState {
-  const UserState();
+abstract class UserBlocState {
+  const UserBlocState();
 }
 
-class UsersLoading extends UserState {}
+class UserLoading extends UserBlocState {}
 
-class UsersLoadSuccess extends UserState {
-  final User user;
+class UserLoadSuccess extends UserBlocState {
+  final User item;
 
-  UsersLoadSuccess(this.user);
+  UserLoadSuccess(this.item);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { item: $item }";
 }
 
 // BLOC
 
-class UsersBloc extends Bloc<UserEvent, UserState> {
-  UsersBloc(User user) : super(UsersLoadSuccess(user));
+class UserBloc extends Bloc<UserEvent, UserBlocState> {
+  UserBloc(User user) : super(UserLoadSuccess(user));
 
   @override
-  Stream<UserState> mapEventToState(
+  Stream<UserBlocState> mapEventToState(
     UserEvent event,
   ) async* {
     if (event is UpdateUser) {
-      yield UsersLoadSuccess(event.update);
+      yield UserLoadSuccess(event.update);
     } else if (event is LoadUser) {}
   }
 }

@@ -17,11 +17,18 @@ class LoadExpenses extends ExpensesListBlocEvent {
   final DateRangeFilter range;
   final String? ofCategory;
   const LoadExpenses(this.range, [this.ofCategory]);
+
+  @override
+  String toString() =>
+      "${this.runtimeType.toString()} { range: $range, ofCategory: $ofCategory }";
 }
 
 class DeleteExpense extends ExpensesListBlocEvent {
   final String id;
   DeleteExpense(this.id);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { id: $id }";
 }
 
 // STATE
@@ -39,6 +46,10 @@ class ExpensesLoading extends ExpenseListPageBlocState {
     DateRangeFilter range, [
     this.ofCategory,
   ]) : super(range);
+
+  @override
+  String toString() =>
+      "${this.runtimeType.toString()} { range: $range, ofCategory: $ofCategory }";
 }
 
 class ExpensesLoadSuccess extends ExpenseListPageBlocState {
@@ -52,6 +63,10 @@ class ExpensesLoadSuccess extends ExpenseListPageBlocState {
     this.dateRangeFilters, [
     this.categoryFilter,
   ]) : super(range);
+
+  @override
+  String toString() =>
+      "${this.runtimeType.toString()} { range: $range, dateRangeFilters: $dateRangeFilters, categoryFilter: $categoryFilter, categoryFilter: $items }";
 }
 
 // BLOC

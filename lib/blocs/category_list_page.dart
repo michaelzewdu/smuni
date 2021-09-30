@@ -19,6 +19,9 @@ class LoadCategories extends CategoriesListBlocEvent {
 class DeleteCategory extends CategoriesListBlocEvent {
   final String id;
   DeleteCategory(this.id);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { id: $id,  }";
 }
 
 // STATE
@@ -39,6 +42,10 @@ class CategoriesLoadSuccess extends CategoryListPageBlocState {
     this.items,
     this.ancestryGraph,
   ) : super();
+
+  @override
+  String toString() =>
+      "${this.runtimeType.toString()} { items: $items, ancestryGraph: $ancestryGraph, }";
 }
 
 // BLOC

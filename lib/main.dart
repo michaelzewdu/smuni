@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc/bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:smuni/screens/home_screen.dart';
 
+import 'bloc_observer.dart';
+import 'screens/routes.dart';
+import 'repositories/repositories.dart';
+import 'models/models.dart';
 import 'blocs/blocs.dart';
 import 'constants.dart';
 import 'models/models.dart';
@@ -10,6 +15,7 @@ import 'repositories/repositories.dart';
 import 'screens/routes.dart';
 
 void main() async {
+  Bloc.observer = SimpleBlocObserver();
   runApp(MyApp());
 }
 
@@ -172,7 +178,7 @@ class MyApp extends StatelessWidget {
         ],
         child: MultiBlocProvider(
           providers: [
-            BlocProvider(create: (context) => UsersBloc(defaultUser)),
+            BlocProvider(create: (context) => UserBloc(defaultUser)),
             BlocProvider(
               create: (context) => BudgetsBloc(context.read<BudgetRepository>())
                 ..add(LoadBudgets()),

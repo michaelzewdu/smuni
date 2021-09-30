@@ -311,7 +311,7 @@ class _BudgetListPageState extends State<BudgetListPage> {
                                               : Recurring(
                                                   daytimeToSecondsConverter(
                                                       recurringIntervals)),
-                                          categories: [],
+                                          categories: {},
                                         )));
                                     Navigator.pushReplacementNamed(
                                         context, BudgetListPage.routeName);

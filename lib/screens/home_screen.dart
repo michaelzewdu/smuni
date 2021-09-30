@@ -1,8 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/constants.dart';
+import 'package:smuni/models/models.dart';
 import 'package:smuni/screens/Budget/budgets_list_screen.dart';
 import 'package:smuni/screens/Expense/expense_list_page.dart';
+import 'package:smuni/widgets/budget_selector.dart';
 
 import 'Category/category_list_2.dart';
 
@@ -66,170 +71,242 @@ class SmuniHomeScreen extends StatelessWidget {
           ],
         ),
       )),
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            toolbarHeight: 60,
-            title: Text('Home'),
-            actions: [
-              IconButton(
-                  onPressed: () => print('Profile'),
-                  icon: Icon(Icons.account_circle_outlined))
-            ],
-            shape: RoundedRectangleBorder(
-                side: BorderSide.none,
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(30))),
-            expandedHeight: 250,
-            pinned: true,
-            //floating: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 60, 0, 0),
+      body: BlocBuilder<UserBloc, UserBlocState>(builder: (context, state) {
+        if (state is UserLoadSuccess) {
+          if (state.item.mainBudget != null)
+            return CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  toolbarHeight: 60,
+                  title: Text('Home'),
+                  actions: [
+                    IconButton(
+                        onPressed: () => print('Profile'),
+                        icon: Icon(Icons.account_circle_outlined))
+                  ],
+                  shape: RoundedRectangleBorder(
+                      side: BorderSide.none,
+                      borderRadius:
+                          BorderRadius.vertical(bottom: Radius.circular(30))),
+                  expandedHeight: 250,
+                  pinned: true,
+                  //floating: true,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 60, 0, 0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RichText(
+                                text: TextSpan(children: [
+                              TextSpan(
+                                  text: 'Current  ',
+                                  style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w200)),
+                              TextSpan(
+                                  text: 'Standing',
+                                  style: TextStyle(fontSize: 23))
+                            ])),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '-15,000 Br',
+                                  textScaleFactor: 3,
+                                  style:
+                                      TextStyle(backgroundColor: Colors.white),
+                                ),
+                                Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(0, 8, 0, 0),
+                                    child: RichText(
+                                        text: TextSpan(children: [
+                                      TextSpan(
+                                          text: 'Off ',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w200,
+                                              fontSize: 16)),
+                                      TextSpan(
+                                          text: '5000.00 Br',
+                                          style: TextStyle(fontSize: 16))
+                                    ]))),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    // margin: EdgeInsets.fromLTRB(8, 8, 0, 8),
+                    //height: 150,
                     children: [
-                      RichText(
-                          text: TextSpan(children: [
-                        TextSpan(
-                            text: 'Current  ',
-                            style: TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.w200)),
-                        TextSpan(
-                            text: 'Standing', style: TextStyle(fontSize: 23))
-                      ])),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '-15,000 Br',
-                            textScaleFactor: 3,
-                            style: TextStyle(backgroundColor: Colors.white),
-                          ),
-                          Padding(
-                              padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
+                      Container(
+                        height: 125,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            HorizontalCards(),
+                            HorizontalCards(),
+                            HorizontalCards(),
+                            HorizontalCards(),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8.0, horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
                               child: RichText(
                                   text: TextSpan(children: [
                                 TextSpan(
-                                    text: 'Off ',
+                                    text: 'Total ',
                                     style: TextStyle(
-                                        fontWeight: FontWeight.w200,
-                                        fontSize: 16)),
+                                        fontSize: 23,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w300)),
                                 TextSpan(
-                                    text: '5000.00 Br',
-                                    style: TextStyle(fontSize: 16))
-                              ]))),
-                        ],
-                      ),
+                                    text: 'Spend',
+                                    style: TextStyle(
+                                        fontSize: 23,
+                                        color: semuni600,
+                                        fontWeight: FontWeight.w600))
+                              ])),
+                            ),
+                            Text('65,099.76 Br',
+                                style:
+                                    TextStyle(fontSize: 23, color: semuni600))
+                          ],
+                        ),
+                      )
                     ],
                   ),
                 ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
+                SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                        (BuildContext context, int index) => Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'This Month',
+                                    style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Bills',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w300),
+                                      ),
+                                      Text(
+                                        '2635.12Br',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w300),
+                                      )
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  ListTile(
+                                    leading: Icon(Icons.water),
+                                    title: Text(
+                                      'Water',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                    subtitle: Text('Utility'),
+                                    trailing: Text('-120 Br'),
+                                  )
+                                ],
+                              ),
+                            ),
+                        childCount: 20))
+              ],
+            );
+          else {
+            return _mainBudgetSelector(context, state);
+          }
+        } else if (state is UserLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        throw Exception("unexpected state");
+      }),
+    );
+  }
+
+  Widget _mainBudgetSelector(BuildContext context, UserLoadSuccess state) =>
+      CustomScrollView(slivers: [
+        SliverAppBar(
+          title: Text('Home'),
+          pinned: true,
+        ),
+        SliverFillRemaining(
+            child: Center(
+          child: Form(
             child: Column(
-              // margin: EdgeInsets.fromLTRB(8, 8, 0, 8),
-              //height: 150,
               children: [
-                Container(
-                  height: 125,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      HorizontalCards(),
-                      HorizontalCards(),
-                      HorizontalCards(),
-                      HorizontalCards(),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        child: RichText(
-                            text: TextSpan(children: [
-                          TextSpan(
-                              text: 'Total ',
-                              style: TextStyle(
-                                  fontSize: 23,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w300)),
-                          TextSpan(
-                              text: 'Spend',
-                              style: TextStyle(
-                                  fontSize: 23,
-                                  color: semuni600,
-                                  fontWeight: FontWeight.w600))
-                        ])),
+                Text("Main budget not selected:"),
+                ElevatedButton(
+                  onPressed: () {
+                    final selectorKey = GlobalKey<FormFieldState<String>>();
+                    var budgetId = "";
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => StatefulBuilder(
+                        builder: (builder, setState) => Column(children: [
+                          BudgetFormSelector(
+                            key: selectorKey,
+                            onChanged: (value) {
+                              setState(() {
+                                budgetId = value!;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null) {
+                                return "No budget selected";
+                              }
+                            },
+                          ),
+                          ElevatedButton(
+                              onPressed: budgetId.isNotEmpty
+                                  ? () {
+                                      final selector = selectorKey.currentState;
+                                      if (selector != null &&
+                                          selector.validate()) {
+                                        selector.save();
+                                        context.read<UserBloc>().add(
+                                              UpdateUser(User.from(state.item,
+                                                  mainBudget: budgetId)),
+                                            );
+                                        Navigator.pop(context);
+                                      }
+                                    }
+                                  : null,
+                              child: const Text("Save Selection"))
+                        ]),
                       ),
-                      Text('65,099.76 Br',
-                          style: TextStyle(fontSize: 23, color: semuni600))
-                    ],
-                  ),
+                    );
+                  },
+                  child: const Text("Select Main Budget"),
                 )
               ],
             ),
           ),
-          SliverList(
-              delegate:
-                  SliverChildBuilderDelegate((BuildContext context, int index) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'This Month',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Bills',
-                        style: TextStyle(fontWeight: FontWeight.w300),
-                      ),
-                      Text(
-                        '2635.12Br',
-                        style: TextStyle(fontWeight: FontWeight.w300),
-                      )
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  ListTile(
-                    leading: Icon(Icons.water),
-                    title: Text(
-                      'Water',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                    subtitle: Text('Utility'),
-                    trailing: Text('-120 Br'),
-                  )
-                ],
-              ),
-            );
-
-            /*
-            return Container(
-              color: index.isOdd ? Colors.white : Colors.black12,
-              height: 100.0,
-              child: Center(
-                child: Text('$index', textScaleFactor: 5),
-              ),
-            );*/
-          }, childCount: 20))
-        ],
-      ),
-    );
-  }
+        ))
+      ]);
 }
 
 class DrawerButtons extends StatelessWidget {

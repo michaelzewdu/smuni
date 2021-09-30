@@ -19,16 +19,25 @@ class LoadCategories extends CategoriesBlocEvent {
 class UpdateCategory extends CategoriesBlocEvent {
   final Category update;
   UpdateCategory(this.update);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { update: $update, }";
 }
 
 class CreateCategory extends CategoriesBlocEvent {
   final Category item;
   CreateCategory(this.item);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { item: $item, }";
 }
 
 class DeleteCategory extends CategoriesBlocEvent {
   final String id;
   DeleteCategory(this.id);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { id: $id, }";
 }
 
 // STATE
@@ -43,6 +52,9 @@ class CategoriesLoadSuccess extends CategoriesBlocState {
   final Map<String, Category> items;
 
   CategoriesLoadSuccess(this.items);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { items: $items, }";
 }
 
 // BLOC

@@ -5,38 +5,77 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/budgets.dart';
 import 'package:smuni/blocs/blocs.dart';
 
+class BudgetFormSelector extends FormField<String> {
+  BudgetFormSelector({
+    Key? key,
+    Widget? caption,
+    String? initialValue,
+    FormFieldSetter<String>? onSaved,
+    void Function(String?)? onChanged,
+    FormFieldValidator<String>? validator,
+    // AutovalidateMode? autovalidateMode,
+    // bool? enabled,
+    String? restorationId,
+  }) : super(
+          key: key,
+          initialValue: initialValue,
+          validator: validator,
+          onSaved: onSaved,
+          restorationId: restorationId,
+          builder: (state) => BudgetSelector(
+            caption: state.errorText != null
+                ? Text(state.errorText!, style: TextStyle(color: Colors.red))
+                : caption != null
+                    ? caption
+                    : null,
+            initialValue: state.value,
+            onChanged: (value) {
+              state.didChange(value);
+              onChanged?.call(value);
+            },
+          ),
+        );
+
+  // @override
+  // _BudgetSelectorState createState() => _BudgetSelectorState();
+}
+
 class BudgetSelector extends StatefulWidget {
-  final String? caption;
+  final Widget? caption;
   final String? initialValue;
-  final FormFieldSetter<String>? onSaved;
-  final FormFieldValidator<String>? validator;
-  final String? restorationId;
+  final void Function(String)? onChanged;
 
   const BudgetSelector({
     Key? key,
     this.caption,
+    this.onChanged,
     this.initialValue,
-    this.onSaved,
-    this.validator,
-    // AutovalidateMode? autovalidateMode,
-    // bool? enabled,
-    this.restorationId,
   }) : super(key: key);
 
   @override
-  _BudgetSelectorState createState() => _BudgetSelectorState();
+  _BudgetSelectorState createState() => _BudgetSelectorState(initialValue);
 }
 
 class _BudgetSelectorState extends State<BudgetSelector> {
   bool _isSelecting = false;
+  String? _selectedBudgetId;
+
+  _BudgetSelectorState(this._selectedBudgetId);
+
+  void _selectBudget(String id) {
+    setState(() {
+      _selectedBudgetId = id;
+      _isSelecting = false;
+    });
+    widget.onChanged?.call(id);
+  }
 
   Widget _viewing(
-    FormFieldState<String> state,
+    // FormFieldState<String> state,
     BudgetsLoadSuccess itemsState,
   ) {
-    final value = state.value;
-    if (value != null) {
-      final item = itemsState.items[value];
+    if (_selectedBudgetId != null) {
+      final item = itemsState.items[_selectedBudgetId];
       if (item != null) {
         return Column(
           children: [
@@ -61,7 +100,7 @@ class _BudgetSelectorState extends State<BudgetSelector> {
   }
 
   Widget _selecting(
-    FormFieldState<String> state,
+    // FormFieldState<String> state,
     BudgetsLoadSuccess itemsState,
   ) {
     // show the selection list
@@ -75,19 +114,11 @@ class _BudgetSelectorState extends State<BudgetSelector> {
               itemBuilder: (context, index) {
                 final item = items[keys.elementAt(index)]!;
                 return ListTile(
-                  title: Text(item.name),
-                  trailing: Text(
-                    "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
-                  ),
-                  onTap: () {
-                    state.didChange(
-                      item.id,
-                    );
-                    setState(() {
-                      _isSelecting = false;
-                    });
-                  },
-                );
+                    title: Text(item.name),
+                    trailing: Text(
+                      "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
+                    ),
+                    onTap: () => _selectBudget(item.id));
               },
             ),
           )
@@ -95,46 +126,40 @@ class _BudgetSelectorState extends State<BudgetSelector> {
   }
 
   @override
-  Widget build(BuildContext context) => FormField<String>(
-        initialValue: widget.initialValue,
-        validator: widget.validator,
-        onSaved: widget.onSaved,
-        builder: (state) => Column(
-          children: [
-            // the top bar
-            Row(children: [
-              Expanded(
-                  child: Text(
-                state.errorText ?? widget.caption ?? "Budget",
-                style: TextStyle(
-                    color: state.errorText != null ? Colors.red : null),
-              )),
-              TextButton(
-                child:
-                    _isSelecting ? const Text("Cancel") : const Text("Select"),
-                onPressed: () {
-                  setState(() {
-                    _isSelecting = !_isSelecting;
-                  });
-                },
-              )
-            ]),
-            BlocBuilder<BudgetsBloc, BudgetsBlocState>(
-                builder: (context, itemsState) {
-              if (itemsState is BudgetsLoadSuccess) {
-                if (_isSelecting) {
-                  return _selecting(state, itemsState);
-                } else {
-                  return _viewing(state, itemsState);
-                }
-              } else if (itemsState is BudgetsLoading) {
-                return const Center(
-                  child: const Text("Loading budgets..."),
-                );
+  Widget build(BuildContext context) => Column(
+        children: [
+          // the top bar
+          Row(children: [
+            Expanded(
+              child: widget.caption ??
+                  const Text(
+                    "Budget",
+                  ),
+            ),
+            TextButton(
+              child: _isSelecting ? const Text("Cancel") : const Text("Select"),
+              onPressed: () {
+                setState(() {
+                  _isSelecting = !_isSelecting;
+                });
+              },
+            )
+          ]),
+          BlocBuilder<BudgetsBloc, BudgetsBlocState>(
+              builder: (context, itemsState) {
+            if (itemsState is BudgetsLoadSuccess) {
+              if (_isSelecting) {
+                return _selecting(itemsState);
+              } else {
+                return _viewing(itemsState);
               }
-              throw Exception("Unhandeled state");
-            })
-          ],
-        ),
+            } else if (itemsState is BudgetsLoading) {
+              return const Center(
+                child: const Text("Loading budgets..."),
+              );
+            }
+            throw Exception("Unhandeled state");
+          })
+        ],
       );
 }

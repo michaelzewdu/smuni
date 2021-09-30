@@ -13,6 +13,9 @@ abstract class DetailsPageEvent<Identifier, Item> {
 class LoadItem<Identifier, Item> extends DetailsPageEvent<Identifier, Item> {
   final Identifier id;
   const LoadItem(this.id);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { id: $id, }";
 }
 
 class DeleteItem<Identifier, Item> extends DetailsPageEvent<Identifier, Item> {
@@ -28,12 +31,18 @@ abstract class DetailsPageState<Identifier, Item> {
 class LoadingItem<Identifier, Item> extends DetailsPageState<Identifier, Item> {
   final Identifier id;
   const LoadingItem(this.id);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { id: $id, }";
 }
 
 class ItemNotFound<Identifier, Item>
     extends DetailsPageState<Identifier, Item> {
   final Identifier id;
   const ItemNotFound(this.id);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { id: $id, }";
 }
 
 class LoadSuccess<Identifer, Item> extends DetailsPageState<Identifer, Item> {
@@ -41,6 +50,10 @@ class LoadSuccess<Identifer, Item> extends DetailsPageState<Identifer, Item> {
   final Item item;
 
   LoadSuccess(this.id, this.item);
+
+  @override
+  String toString() =>
+      "${this.runtimeType.toString()} { id: $id, item: $item }";
 }
 
 // BLOC

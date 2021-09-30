@@ -9,6 +9,7 @@ class User {
   final String email;
   final String phoneNumber;
   final String? pictureURL;
+  final String? mainBudget;
   final List<Budget> budgets;
   final List<Expense> expenses;
   final List<Category> categories;
@@ -21,7 +22,8 @@ class User {
     required this.username,
     required this.email,
     required this.phoneNumber,
-    required this.pictureURL,
+    this.pictureURL,
+    this.mainBudget,
     required this.budgets,
     required this.expenses,
     required this.categories,
@@ -36,6 +38,7 @@ class User {
         "email": email,
         "phoneNumber": phoneNumber,
         "pictureURL": pictureURL,
+        "mainBudget": mainBudget,
         "budgets": budgets.map((e) => e.toJSON()),
         "categories": categories.map((c) => c.toJSON()),
         "expenses": expenses.map((e) => e.toJSON()),
@@ -50,27 +53,61 @@ class User {
         email: checkedConvert(json, "email", (v) => v as String),
         phoneNumber: checkedConvert(json, "phoneNumber", (v) => v as String),
         pictureURL: checkedConvert(json, "pictureURL", (v) => v as String?),
+        mainBudget: checkedConvert(json, "mainBudget", (v) => v as String?),
         budgets: checkedConvert(
-            json,
-            "budgets",
-            (v) => v == null
-                ? []
-                : checkedConvertArray(
-                    v as List<dynamic>, (_, v) => Budget.fromJson(v))),
+          json,
+          "budgets",
+          (v) => v == null
+              ? []
+              : checkedConvertArray(
+                  v as List<dynamic>, (_, v) => Budget.fromJson(v)),
+        ),
         expenses: checkedConvert(
-            json,
-            "expenses",
-            (v) => v == null
-                ? []
-                : checkedConvertArray(
-                    v as List<dynamic>, (_, v) => Expense.fromJson(v))),
+          json,
+          "expenses",
+          (v) => v == null
+              ? []
+              : checkedConvertArray(
+                  v as List<dynamic>, (_, v) => Expense.fromJson(v)),
+        ),
         categories: checkedConvert(
-            json,
-            "categories",
-            (v) => v == null
-                ? []
-                : checkedConvertArray(
-                    v as List<dynamic>, (_, v) => Category.fromJson(v))),
+          json,
+          "categories",
+          (v) => v == null
+              ? []
+              : checkedConvertArray(
+                  v as List<dynamic>, (_, v) => Category.fromJson(v)),
+        ),
+      );
+
+  factory User.from(
+    User other, {
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? firebaseId,
+    String? username,
+    String? email,
+    String? phoneNumber,
+    String? pictureURL,
+    String? mainBudget,
+    List<Budget>? budgets,
+    List<Expense>? expenses,
+    List<Category>? categories,
+  }) =>
+      User(
+        id: id ?? other.id,
+        createdAt: createdAt ?? other.createdAt,
+        updatedAt: updatedAt ?? other.updatedAt,
+        firebaseId: firebaseId ?? other.firebaseId,
+        username: username ?? other.username,
+        email: email ?? other.email,
+        phoneNumber: phoneNumber ?? other.phoneNumber,
+        pictureURL: pictureURL ?? other.pictureURL,
+        mainBudget: mainBudget ?? other.mainBudget,
+        budgets: budgets ?? other.budgets,
+        expenses: expenses ?? other.expenses,
+        categories: categories ?? other.categories,
       );
 }
 
@@ -154,8 +191,9 @@ class Budget {
         "endTime": endTime.toUtc().toString(),
         "allocatedAmount": allocatedAmount.toJSON(),
         "frequency": frequency.toJSON(),
-        "categories":
-            categories.entries.map((e) => MapEntry(e.key, e.value.toJSON())),
+        "categories": categories.entries.map(
+          (e) => MapEntry(e.key, e.value.toJSON()),
+        ),
       };
 
   factory Budget.fromJson(Map<String, dynamic> json) => Budget(
@@ -170,12 +208,13 @@ class Budget {
         allocatedAmount: checkedConvert(
             json, "allocatedAmount", (v) => MonetaryAmount.fromJson(v)),
         categories: checkedConvert(
-            json,
-            "categories",
-            (v) => v == null
-                ? {}
-                : checkedConvertMap(v as Map<String, dynamic>,
-                    (_, v) => MonetaryAmount.fromJson(v))),
+          json,
+          "categories",
+          (v) => v == null
+              ? {}
+              : checkedConvertMap(v as Map<String, dynamic>,
+                  (_, v) => MonetaryAmount.fromJson(v)),
+        ),
       );
   factory Budget.from(
     Budget other, {

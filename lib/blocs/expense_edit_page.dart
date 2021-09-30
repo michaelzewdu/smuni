@@ -14,12 +14,18 @@ abstract class ExpenseEditPageBlocEvent {
 class LoadItem extends ExpenseEditPageBlocEvent {
   final String id;
   const LoadItem(this.id);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { id: $id }";
 }
 
 class ModifyItem extends ExpenseEditPageBlocEvent {
   final Expense modified;
 
   ModifyItem(this.modified);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { modified: $modified }";
 }
 
 class DiscardChanges extends ExpenseEditPageBlocEvent {
@@ -39,11 +45,17 @@ class ExpenseEditPageBlocState {
 class LoadingItem extends ExpenseEditPageBlocState {
   final String id;
   const LoadingItem(this.id);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { id: $id }";
 }
 
 class ItemNotFound extends ExpenseEditPageBlocState {
   final String id;
   const ItemNotFound(this.id);
+
+  @override
+  String toString() => "${this.runtimeType.toString()} { id: $id }";
 }
 
 class UnmodifiedEditState extends ExpenseEditPageBlocState {
@@ -52,6 +64,10 @@ class UnmodifiedEditState extends ExpenseEditPageBlocState {
   UnmodifiedEditState({
     required this.unmodified,
   });
+
+  @override
+  String toString() =>
+      "${this.runtimeType.toString()} { unmodified: $unmodified }";
 }
 
 class ModifiedEditState extends UnmodifiedEditState {
@@ -59,6 +75,9 @@ class ModifiedEditState extends UnmodifiedEditState {
 
   ModifiedEditState({required Expense unmodified, required this.modified})
       : super(unmodified: unmodified);
+  @override
+  String toString() =>
+      "${this.runtimeType.toString()} { unmodified: $unmodified, modified: $modified }";
 }
 
 // BLOC
