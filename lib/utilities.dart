@@ -7,6 +7,40 @@ class Pair<A, B> {
   const Pair(this.a, this.b);
 }
 
+class EnemeratedIterator<T> extends Iterator<Pair<int, T>> {
+  int currentCount = -1;
+  final Iterator<T> iterator;
+
+  EnemeratedIterator(this.iterator);
+
+  @override
+  get current => Pair(currentCount, iterator.current);
+
+  @override
+  bool moveNext() {
+    if (iterator.moveNext()) {
+      currentCount += 1;
+      return true;
+    }
+    return false;
+  }
+}
+
+class EnemeratedIterable<T> extends Iterable<Pair<int, T>> {
+  int currentCount = 0;
+  final Iterable<T> iterable;
+
+  EnemeratedIterable(this.iterable);
+
+  @override
+  // TODO: implement iterator
+  Iterator<Pair<int, T>> get iterator => EnemeratedIterator(iterable.iterator);
+}
+
+extension IterableExt<T> on Iterable<T> {
+  EnemeratedIterable<T> enumerated() => EnemeratedIterable(this);
+}
+
 class DateRange {
   final int startTime;
   final int endTime;

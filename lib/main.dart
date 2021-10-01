@@ -230,7 +230,11 @@ class MyApp extends StatelessWidget {
                 Locale('sid', ''), //ሲዳሞ
                 Locale('wal', ''), //ወላይታ
               ],
-              theme: ThemeData(primarySwatch: primarySmuniSwatch),
+              theme: ThemeData(
+                primarySwatch: primarySmuniSwatch,
+                buttonTheme:
+                    ButtonThemeData(textTheme: ButtonTextTheme.primary),
+              ),
               onGenerateRoute: Routes.myOnGenerateRoute,
               // initialRoute: CategoryListPage.routeName,
               home: SmuniHomeScreen()),

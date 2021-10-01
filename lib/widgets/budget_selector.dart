@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:smuni/blocs/budgets.dart';
-import 'package:smuni/blocs/blocs.dart';
+import 'package:smuni/blocs/budget_list_page.dart';
+
+import 'budget_list_view.dart';
 
 class BudgetFormSelector extends FormField<String> {
   BudgetFormSelector({
@@ -102,28 +103,10 @@ class _BudgetSelectorState extends State<BudgetSelector> {
   Widget _selecting(
     // FormFieldState<String> state,
     BudgetsLoadSuccess itemsState,
-  ) {
-    // show the selection list
-    final items = itemsState.items;
-    final keys = items.keys;
-    return items.isNotEmpty
-        ? SizedBox(
-            height: MediaQuery.of(context).size.height * 0.4,
-            child: ListView.builder(
-              itemCount: keys.length,
-              itemBuilder: (context, index) {
-                final item = items[keys.elementAt(index)]!;
-                return ListTile(
-                    title: Text(item.name),
-                    trailing: Text(
-                      "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
-                    ),
-                    onTap: () => _selectBudget(item.id));
-              },
-            ),
-          )
-        : const Center(child: const Text("No budgets."));
-  }
+  ) =>
+      Expanded(
+          child: BudgetListView(
+              state: itemsState, onSelect: (id) => _selectBudget(id)));
 
   @override
   Widget build(BuildContext context) => Column(
@@ -145,7 +128,7 @@ class _BudgetSelectorState extends State<BudgetSelector> {
               },
             )
           ]),
-          BlocBuilder<BudgetsBloc, BudgetsBlocState>(
+          BlocBuilder<BudgetListPageBloc, BudgetListPageBlocState>(
               builder: (context, itemsState) {
             if (itemsState is BudgetsLoadSuccess) {
               if (_isSelecting) {

@@ -14,11 +14,15 @@ class CategoryListPage extends StatefulWidget {
   static Route route() {
     return MaterialPageRoute(
       settings: const RouteSettings(name: routeName),
-      builder: (context) => BlocProvider(
-        create: (context) =>
-            CategoryListPageBloc(context.read<CategoryRepository>()),
-        child: CategoryListPage(),
-      ),
+      builder: (context) => page(),
+    );
+  }
+
+  static BlocProvider<CategoryListPageBloc> page() {
+    return BlocProvider(
+      create: (context) =>
+          CategoryListPageBloc(context.read<CategoryRepository>()),
+      child: CategoryListPage(),
     );
   }
 

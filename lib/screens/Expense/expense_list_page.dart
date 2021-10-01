@@ -5,15 +5,10 @@ import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/expense_list_view.dart';
 
-import 'expense_edit_page.dart';
-
 class ExpenseListPage extends StatefulWidget {
   static const String routeName = "/expenseList";
 
-  static Route route() {
-    return MaterialPageRoute(
-      settings: const RouteSettings(name: routeName),
-      builder: (context) => BlocProvider(
+  static Widget page() => BlocProvider(
         create: (context) => ExpenseListPageBloc(
           context.read<ExpenseRepository>(),
           context.read<CategoryRepository>(),
@@ -24,9 +19,12 @@ class ExpenseListPage extends StatefulWidget {
           ),
         ),
         child: ExpenseListPage(),
-      ),
-    );
-  }
+      );
+
+  static Route route() => MaterialPageRoute(
+        settings: const RouteSettings(name: routeName),
+        builder: (context) => ExpenseListPage.page(),
+      );
 
   @override
   State<StatefulWidget> createState() => _ExpenseListPageState();
@@ -52,14 +50,6 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
             }
             return Center(child: CircularProgressIndicator.adaptive());
           },
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => Navigator.pushNamed(
-            context,
-            ExpenseEditPage.routeName,
-          ),
-          child: Icon(Icons.add),
-          tooltip: "Add",
         ),
       );
 }

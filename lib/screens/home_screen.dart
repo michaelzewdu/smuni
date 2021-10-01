@@ -3,15 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/blocs.dart';
-import 'package:smuni/constants.dart';
+import 'package:smuni/blocs/budget_list_page.dart';
 import 'package:smuni/models/models.dart';
-import 'package:smuni/screens/Budget/budgets_list_screen.dart';
-import 'package:smuni/screens/Expense/expense_list_page.dart';
+import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/budget_selector.dart';
 
+import 'Budget/budgets_list_screen.dart';
+import 'Expense/expense_list_page.dart';
+import 'Budget/budget_detail_page.dart';
 import 'Category/category_list_page.dart';
+import 'settings_page.dart';
 
-class SmuniHomeScreen extends StatelessWidget {
+class SmuniHomeScreen extends StatefulWidget {
   SmuniHomeScreen({Key? key}) : super(key: key);
 
   static const String routeName = '/homeScreen';
@@ -23,317 +26,142 @@ class SmuniHomeScreen extends StatelessWidget {
   }
 
   @override
+  State<SmuniHomeScreen> createState() => _SmuniHomeScreenState();
+}
+
+class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
+  int _selectedPage = 0;
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: Drawer(
-          child: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Text(
-              'Kamasio',
-              style: TextStyle(
-                  fontSize: 32, fontWeight: FontWeight.w900, color: semuni500),
-            ),
-            Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: DrawerButtons(
-                    buttonName: 'Budget',
-                    drawerButtonAction: () =>
-                        Navigator.pushNamed(context, BudgetListPage.routeName),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: DrawerButtons(
-                      buttonName: 'Expense',
-                      drawerButtonAction: () => Navigator.pushNamed(
-                          context, ExpenseListPage.routeName)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: DrawerButtons(
-                      buttonName: 'Categories',
-                      drawerButtonAction: () => Navigator.pushNamed(
-                          context, CategoryListPage.routeName)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: DrawerButtons(
-                      buttonName: 'About Us',
-                      drawerButtonAction: () => print(
-                          'This will lead to the About Us screen in the future')),
-                )
-              ],
-            ),
-          ],
-        ),
-      )),
-      body: BlocBuilder<UserBloc, UserBlocState>(builder: (context, state) {
+      bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedPage,
+          onTap: (idx) => setState(() => _selectedPage = idx),
+          items: const <List<dynamic>>[
+            [Icons.home_filled, Icons.home, "Home"],
+            [Icons.add_chart_outlined, Icons.add_chart, "Budgets"],
+            [
+              Icons.playlist_add_check_sharp,
+              Icons.playlist_add_check_rounded,
+              "Expenses"
+            ],
+            [
+              Icons.align_horizontal_left_sharp,
+              Icons.align_horizontal_center,
+              "Categories"
+            ],
+            [
+              Icons.account_circle_sharp,
+              Icons.account_circle_outlined,
+              "Profile"
+            ],
+          ]
+              .map((e) => BottomNavigationBarItem(
+                    icon: Icon(e[0]),
+                    label: e[2],
+                    activeIcon: Icon(e[1]),
+                  ))
+              .toList()),
+      body: Builder(builder: (context) {
+        // return Center(child: Text("Shit"));
+        switch (_selectedPage) {
+          case 4:
+            return SettingsPage();
+          case 3:
+            return CategoryListPage.page();
+          case 2:
+            return ExpenseListPage.page();
+          case 1:
+            return BudgetListPage();
+          case 0:
+          default:
+            return _homePage();
+        }
+      }),
+    );
+  }
+
+  Widget _homePage() =>
+      BlocBuilder<UserBloc, UserBlocState>(builder: (context, state) {
         if (state is UserLoadSuccess) {
-          if (state.item.mainBudget != null)
-            return CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  toolbarHeight: 60,
-                  title: Text('Home'),
-                  actions: [
-                    IconButton(
-                        onPressed: () => print('Profile'),
-                        icon: Icon(Icons.account_circle_outlined))
-                  ],
-                  shape: RoundedRectangleBorder(
-                      side: BorderSide.none,
-                      borderRadius:
-                          BorderRadius.vertical(bottom: Radius.circular(30))),
-                  expandedHeight: 250,
-                  pinned: true,
-                  //floating: true,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 60, 0, 0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            RichText(
-                                text: TextSpan(children: [
-                              TextSpan(
-                                  text: 'Current  ',
-                                  style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w200)),
-                              TextSpan(
-                                  text: 'Standing',
-                                  style: TextStyle(fontSize: 23))
-                            ])),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '-15,000 Br',
-                                  textScaleFactor: 3,
-                                  style:
-                                      TextStyle(backgroundColor: Colors.white),
-                                ),
-                                Padding(
-                                    padding:
-                                        const EdgeInsets.fromLTRB(0, 8, 0, 0),
-                                    child: RichText(
-                                        text: TextSpan(children: [
-                                      TextSpan(
-                                          text: 'Off ',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w200,
-                                              fontSize: 16)),
-                                      TextSpan(
-                                          text: '5000.00 Br',
-                                          style: TextStyle(fontSize: 16))
-                                    ]))),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Column(
-                    // margin: EdgeInsets.fromLTRB(8, 8, 0, 8),
-                    //height: 150,
-                    children: [
-                      Container(
-                        height: 125,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            HorizontalCards(),
-                            HorizontalCards(),
-                            HorizontalCards(),
-                            HorizontalCards(),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8.0, horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              child: RichText(
-                                  text: TextSpan(children: [
-                                TextSpan(
-                                    text: 'Total ',
-                                    style: TextStyle(
-                                        fontSize: 23,
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w300)),
-                                TextSpan(
-                                    text: 'Spend',
-                                    style: TextStyle(
-                                        fontSize: 23,
-                                        color: semuni600,
-                                        fontWeight: FontWeight.w600))
-                              ])),
-                            ),
-                            Text('65,099.76 Br',
-                                style:
-                                    TextStyle(fontSize: 23, color: semuni600))
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-                SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                        (BuildContext context, int index) => Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'This Month',
-                                    style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  SizedBox(height: 12),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Bills',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w300),
-                                      ),
-                                      Text(
-                                        '2635.12Br',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w300),
-                                      )
-                                    ],
-                                  ),
-                                  SizedBox(height: 8),
-                                  ListTile(
-                                    leading: Icon(Icons.water),
-                                    title: Text(
-                                      'Water',
-                                      style: TextStyle(fontSize: 20),
-                                    ),
-                                    subtitle: Text('Utility'),
-                                    trailing: Text('-120 Br'),
-                                  )
-                                ],
-                              ),
-                            ),
-                        childCount: 20))
-              ],
-            );
-          else {
+          if (state.item.mainBudget != null) {
+            return BudgetDetailsPage.page(state.item.mainBudget!);
+          } else {
             return _mainBudgetSelector(context, state);
           }
         } else if (state is UserLoading) {
           return const Center(child: CircularProgressIndicator());
         }
         throw Exception("unexpected state");
-      }),
-    );
-  }
+      });
 
   Widget _mainBudgetSelector(BuildContext context, UserLoadSuccess state) =>
-      CustomScrollView(slivers: [
-        SliverAppBar(
-          title: Text('Home'),
-          pinned: true,
-        ),
-        SliverFillRemaining(
-            child: Center(
-          child: Form(
-            child: Column(
-              children: [
-                Text("Main budget not selected:"),
-                ElevatedButton(
-                  onPressed: () {
-                    final selectorKey = GlobalKey<FormFieldState<String>>();
-                    var budgetId = "";
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (context) => StatefulBuilder(
-                        builder: (builder, setState) => Column(children: [
-                          BudgetFormSelector(
-                            key: selectorKey,
-                            onChanged: (value) {
-                              setState(() {
-                                budgetId = value!;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null) {
-                                return "No budget selected";
-                              }
-                            },
-                          ),
-                          ElevatedButton(
-                              onPressed: budgetId.isNotEmpty
-                                  ? () {
-                                      final selector = selectorKey.currentState;
-                                      if (selector != null &&
-                                          selector.validate()) {
-                                        selector.save();
-                                        context.read<UserBloc>().add(
-                                              UpdateUser(User.from(state.item,
-                                                  mainBudget: budgetId)),
-                                            );
-                                        Navigator.pop(context);
-                                      }
-                                    }
-                                  : null,
-                              child: const Text("Save Selection"))
-                        ]),
-                      ),
-                    );
-                  },
-                  child: const Text("Select Main Budget"),
-                )
-              ],
-            ),
+      Scaffold(
+          appBar: AppBar(
+            title: Text('Home'),
           ),
-        ))
-      ]);
-}
-
-class DrawerButtons extends StatelessWidget {
-  final String buttonName;
-  final Function() drawerButtonAction;
-  const DrawerButtons(
-      {Key? key, required this.buttonName, required this.drawerButtonAction})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-        onPressed: drawerButtonAction,
-        child: Text(
-          buttonName,
-          style: TextStyle(fontSize: 20),
-        ),
-        style: ElevatedButton.styleFrom(
-            fixedSize: Size(250, 60),
-            primary: Colors.transparent,
-            shadowColor: Colors.transparent,
-            onPrimary: semuni500,
-            // padding: EdgeInsets.symmetric(vertical: 16, horizontal: 72),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            side: BorderSide(color: semuni500, width: 2)));
-  }
+          body: Center(
+            child: Form(
+              child: Column(
+                children: [
+                  Text("Main budget not selected:"),
+                  ElevatedButton(
+                    onPressed: () {
+                      final selectorKey = GlobalKey<FormFieldState<String>>();
+                      var budgetId = "";
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (context) => StatefulBuilder(
+                          builder: (builder, setState) => Column(children: [
+                            BlocProvider(
+                              create: (context) => BudgetListPageBloc(
+                                  context.read<BudgetRepository>()),
+                              child: SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.4,
+                                child: BudgetFormSelector(
+                                  key: selectorKey,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      budgetId = value!;
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (value == null) {
+                                      return "No budget selected";
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                                onPressed: budgetId.isNotEmpty
+                                    ? () {
+                                        final selector =
+                                            selectorKey.currentState;
+                                        if (selector != null &&
+                                            selector.validate()) {
+                                          selector.save();
+                                          context.read<UserBloc>().add(
+                                                UpdateUser(User.from(state.item,
+                                                    mainBudget: budgetId)),
+                                              );
+                                          Navigator.pop(context);
+                                        }
+                                      }
+                                    : null,
+                                child: const Text("Save Selection"))
+                          ]),
+                        ),
+                      );
+                    },
+                    child: const Text("Select Main Budget"),
+                  )
+                ],
+              ),
+            ),
+          ));
 }
 
 class HorizontalCards extends StatelessWidget {
