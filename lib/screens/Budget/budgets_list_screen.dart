@@ -22,8 +22,8 @@ class BudgetListPage extends StatefulWidget {
   _BudgetListPageState createState() => _BudgetListPageState();
 }
 
-DateTime? startDate;
-DateTime? endDate;
+DateTime? _startDate;
+DateTime? _endDate;
 
 class _BudgetListPageState extends State<BudgetListPage> {
   @override
@@ -88,7 +88,7 @@ class _BudgetListPageState extends State<BudgetListPage> {
               builder: (context) {
                 //final formKey = GlobalKey<FormState>();
 
-                String recurringIntervals = 'Every month';
+                String recurringIntervals = 'Every Month';
                 final TextEditingController startDateController =
                     TextEditingController();
 
@@ -205,13 +205,14 @@ class _BudgetListPageState extends State<BudgetListPage> {
                                     DropdownButton(
                                         onChanged: (String? newValue) {
                                           recurringIntervals = newValue!;
+                                          setModalState(() {});
                                         },
                                         value: recurringIntervals,
                                         items: <String>[
-                                          'Every day',
+                                          'Every Day',
                                           'Every Week',
-                                          'Every two weeks',
-                                          'Every month'
+                                          'Every two Weeks',
+                                          'Every Month'
                                         ]
                                             .map((String value) =>
                                                 DropdownMenuItem(
@@ -232,15 +233,17 @@ class _BudgetListPageState extends State<BudgetListPage> {
                                     fieldName: 'Start Date',
                                     helpText: 'Start date of your new budget',
                                   ),
-                                  Text(
-                                    'To',
-                                    textScaleFactor: 1.5,
-                                  ),
-                                  CalendarPicker(
-                                    dateController: endDateController,
-                                    fieldName: 'End Date',
-                                    helpText: 'End date of your new budget',
-                                  )
+                                  if (isOneTime == true)
+                                    Text(
+                                      'To',
+                                      textScaleFactor: 1.5,
+                                    ),
+                                  if (isOneTime == true)
+                                    CalendarPicker(
+                                      dateController: endDateController,
+                                      fieldName: 'End Date',
+                                      helpText: 'End date of your new budget',
+                                    )
                                 ],
                               ),
                             ),
@@ -254,7 +257,7 @@ class _BudgetListPageState extends State<BudgetListPage> {
                                 onPressed: () {
                                   print('Add Budget Clicked');
                                   print(
-                                      'newBudgetName: $newBudgetName budgetAmount: $budgetAmount startDate: $startDate endDate: $endDate');
+                                      'newBudgetName: $newBudgetName budgetAmount: $budgetAmount startDate: $_startDate endDate: $_endDate');
 
                                   /*
                                     final form = formKey.currentState;
@@ -288,9 +291,9 @@ class _BudgetListPageState extends State<BudgetListPage> {
                                   if (isNewBudgetValid(
                                       context: context,
                                       newBudgetName: newBudgetName,
-                                      budgetAmount: budgetAmount,
-                                      startDate: startDate,
-                                      endDate: endDate)) {
+                                      budgetAmount: amountWholes,
+                                      startDate: _startDate,
+                                      endDate: _endDate)) {
                                     print("passed the VAlIDATION");
                                     amount = amountWholes.toString() +
                                         amountCents.toString();
@@ -302,8 +305,12 @@ class _BudgetListPageState extends State<BudgetListPage> {
                                           createdAt: DateTime.now(),
                                           updatedAt: DateTime.now(),
                                           name: newBudgetName,
-                                          startTime: startDate!,
-                                          endTime: endDate!,
+                                          startTime: _startDate!,
+                                          endTime: isOneTime
+                                              ? _endDate!
+                                              : budgetEndDateCalculator(
+                                                  startDate: _startDate!,
+                                                  interval: recurringIntervals),
                                           allocatedAmount: MonetaryAmount(
                                               amount: int.parse(amount),
                                               currency: currency),
@@ -342,17 +349,33 @@ class _BudgetListPageState extends State<BudgetListPage> {
     // TODO: implement dispose
     super.dispose();
   }
+
+  DateTime budgetEndDateCalculator(
+      {required DateTime startDate, required String interval}) {
+    switch (interval) {
+      case 'Every day':
+        return startDate.add(Duration(days: 1));
+      case 'Every Week':
+        return startDate.add(Duration(days: 7));
+      case 'Every two Weeks':
+        return startDate.add(Duration(days: 14));
+      case 'Every Month':
+        return startDate.add(Duration(days: 30));
+      default:
+        return startDate.add(Duration(days: 30));
+    }
+  }
 }
 
 class CalendarPicker extends StatelessWidget {
   final String fieldName;
   final String helpText;
-  CalendarPicker(
-      {Key? key,
-      required this.dateController,
-      required this.fieldName,
-      required this.helpText})
-      : super(key: key);
+  CalendarPicker({
+    Key? key,
+    required this.dateController,
+    required this.fieldName,
+    required this.helpText,
+  }) : super(key: key);
 
   final TextEditingController dateController;
 
@@ -372,23 +395,42 @@ class CalendarPicker extends StatelessWidget {
               autofocus: true,
               icon: Icon(Icons.calendar_today),
               onPressed: () async {
-                DateTime? pickedDay = await showDatePicker(
-                    context: context,
-                    helpText: helpText,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime(9999));
-                if (fieldName == 'Start Date')
-                  startDate = pickedDay;
-                else if (fieldName == 'End Date') endDate = pickedDay;
-                if (pickedDay != null)
-                  dateController.text =
-                      '${pickedDay.month.toString()}/${pickedDay.month.toString()}/${pickedDay.year.toString()}';
+                if (fieldName == 'Start Date') {
+                  DateTime? pickedDay = await showDatePicker(
+                      context: context,
+                      helpText: helpText,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(9999));
+                  _startDate = pickedDay;
+                  if (pickedDay != null)
+                    dateController.text =
+                        '${pickedDay.month.toString()}/${pickedDay.day.toString()}/${pickedDay.year.toString()}';
+                } else if (fieldName == 'End Date') {
+                  if (_startDate == null) {
+                    var snackBar =
+                        SnackBar(content: Text("Choose start day first"));
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                    return;
+                  }
+                  DateTime? pickedDay = await showDatePicker(
+                      context: context,
+                      helpText: helpText,
+                      initialDate: _startDate!,
+                      firstDate: _startDate!,
+                      lastDate: DateTime(9999));
+                  _endDate = pickedDay;
+                  if (pickedDay != null)
+                    dateController.text =
+                        '${pickedDay.month.toString()}/${pickedDay.day.toString()}/${pickedDay.year.toString()}';
+                }
               },
             )),
       ),
     );
   }
+
+  //DateTime pickedDate(DateTime
 }
 
 int daytimeToSecondsConverter(String chosenTime) {
@@ -422,7 +464,7 @@ bool isNewBudgetValid(
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
     print('No name given');
     return false;
-  } else if (budgetAmount == 0) {
+  } else if (budgetAmount == null) {
     snackBar = SnackBar(content: Text("Budget Amount wasn't given"));
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
     print('No amount given');

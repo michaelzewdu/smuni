@@ -25,8 +25,8 @@ class MoneyEditor extends StatelessWidget {
                 textAlign: TextAlign.end,
                 keyboardType: TextInputType.numberWithOptions(),
                 initialValue: (initial.amount / 100).truncate().toString(),
-                onSaved: (value) {
-                  onSavedWhole(int.parse(value!));
+                onChanged: (value) {
+                  onSavedWhole(int.parse(value));
                 },
                 validator: (value) {
                   if (value == null || int.tryParse(value) == null) {
@@ -52,8 +52,8 @@ class MoneyEditor extends StatelessWidget {
                   inputFormatters: [LengthLimitingTextInputFormatter(2)],
                   keyboardType: TextInputType.numberWithOptions(),
                   initialValue: (initial.amount % 100).toString(),
-                  onSaved: (value) {
-                    onSavedCents(int.parse(value!));
+                  onChanged: (value) {
+                    onSavedCents(int.parse(value));
                   },
                   validator: (value) {
                     if (value == null || int.tryParse(value) == null) {
