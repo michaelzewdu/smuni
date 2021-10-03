@@ -27,6 +27,7 @@ class BudgetDetailsPage extends StatefulWidget {
       BlocProvider(
         create: (BuildContext context) => ExpenseListPageBloc(
             context.read<ExpenseRepository>(),
+            context.read<BudgetRepository>(),
             context.read<CategoryRepository>(),
             const DateRangeFilter(
               "All",
@@ -182,6 +183,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                   builder: (context) => BlocProvider(
                                       create: (context) => ExpenseListPageBloc(
                                             context.read<ExpenseRepository>(),
+                                            context.read<BudgetRepository>(),
                                             context.read<CategoryRepository>(),
                                             const DateRangeFilter(
                                               "All",
@@ -217,8 +219,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                                   loadRange: (range) => context
                                                       .read<
                                                           ExpenseListPageBloc>()
-                                                      .add(
-                                                          LoadExpenses(range))),
+                                                      .add(LoadExpenses(
+                                                        range,
+                                                        ofBudget: state.item.id,
+                                                      ))),
                                             ],
                                           );
                                         }
@@ -244,7 +248,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                       if (catListState is CategoriesLoadSuccess) {
                         Set<String> nodes = new LinkedHashSet();
                         Set<String> rootNodes = new LinkedHashSet();
-                        for (final id in state.item.categories.keys) {
+                        for (final id in state.item.categoryAllocation.keys) {
                           final node = catListState.ancestryGraph[id];
                           if (node == null) throw Exception("unexpected null");
                           var curNode = node;
@@ -302,7 +306,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
 
     final children = itemNode.children.where((e) => nodesToShow.contains(e));
 
-    final allocatedAmount = state.item.categories[id];
+    final allocatedAmount = state.item.categoryAllocation[id];
     return Column(
       children: [
         allocatedAmount != null
@@ -316,9 +320,9 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                     width: MediaQuery.of(context).size.width * 0.5,
                     child: Column(
                       children: [
-                        Text("${used / 100} / ${allocatedAmount.amount / 100}"),
+                        Text("${used / 100} / ${allocatedAmount / 100}"),
                         LinearProgressIndicator(
-                          value: used / allocatedAmount.amount,
+                          value: used / allocatedAmount,
                         )
                       ],
                     ),
@@ -332,10 +336,9 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   }),
                 );
               })
-            : Row(
-                children: [
-                  Text(item.name),
-                ],
+            : ListTile(
+                dense: true,
+                title: Text(item.name),
               ),
         if (children.isNotEmpty || _selectedCategory == id)
           Padding(
@@ -367,6 +370,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                             builder: (context) => BlocProvider(
                                 create: (context) => ExpenseListPageBloc(
                                       context.read<ExpenseRepository>(),
+                                      context.read<BudgetRepository>(),
                                       context.read<CategoryRepository>(),
                                       const DateRangeFilter(
                                         "All",
@@ -398,7 +402,9 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                             displayedRange: expensesState.range,
                                             loadRange: (range) => context
                                                 .read<ExpenseListPageBloc>()
-                                                .add(LoadExpenses(range))),
+                                                .add(LoadExpenses(range,
+                                                    ofBudget: state.item.id,
+                                                    ofCategory: item.id))),
                                       ],
                                     );
                                   }

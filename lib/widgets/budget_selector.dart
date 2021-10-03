@@ -14,6 +14,7 @@ class BudgetFormSelector extends FormField<String> {
     FormFieldSetter<String>? onSaved,
     void Function(String?)? onChanged,
     FormFieldValidator<String>? validator,
+    bool isSelecting = false,
     // AutovalidateMode? autovalidateMode,
     // bool? enabled,
     String? restorationId,
@@ -24,6 +25,7 @@ class BudgetFormSelector extends FormField<String> {
           onSaved: onSaved,
           restorationId: restorationId,
           builder: (state) => BudgetSelector(
+            isSelecting: isSelecting,
             caption: state.errorText != null
                 ? Text(state.errorText!, style: TextStyle(color: Colors.red))
                 : caption != null
@@ -36,32 +38,32 @@ class BudgetFormSelector extends FormField<String> {
             },
           ),
         );
-
-  // @override
-  // _BudgetSelectorState createState() => _BudgetSelectorState();
 }
 
 class BudgetSelector extends StatefulWidget {
   final Widget? caption;
   final String? initialValue;
   final void Function(String)? onChanged;
+  final bool isSelecting;
 
   const BudgetSelector({
     Key? key,
     this.caption,
     this.onChanged,
     this.initialValue,
+    this.isSelecting = false,
   }) : super(key: key);
 
   @override
-  _BudgetSelectorState createState() => _BudgetSelectorState(initialValue);
+  _BudgetSelectorState createState() =>
+      _BudgetSelectorState(isSelecting, initialValue);
 }
 
 class _BudgetSelectorState extends State<BudgetSelector> {
-  bool _isSelecting = false;
+  bool _isSelecting;
   String? _selectedBudgetId;
 
-  _BudgetSelectorState(this._selectedBudgetId);
+  _BudgetSelectorState(this._isSelecting, this._selectedBudgetId);
 
   void _selectBudget(String id) {
     setState(() {
@@ -101,12 +103,13 @@ class _BudgetSelectorState extends State<BudgetSelector> {
   }
 
   Widget _selecting(
-    // FormFieldState<String> state,
     BudgetsLoadSuccess itemsState,
   ) =>
       Expanded(
           child: BudgetListView(
-              state: itemsState, onSelect: (id) => _selectBudget(id)));
+        state: itemsState,
+        onSelect: (id) => _selectBudget(id),
+      ));
 
   @override
   Widget build(BuildContext context) => Column(

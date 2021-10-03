@@ -12,7 +12,7 @@ void main() {
 
     expect(user.id, equals("613b67bc9aeded76daaa9b79"));
     expect(user.budgets.length, equals(2));
-    expect(user.budgets[0].categories.length, equals(2));
+    expect(user.budgets[0].categoryAllocation.length, equals(2));
     expect(user.expenses.length, equals(2));
   });
 }

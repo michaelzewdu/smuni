@@ -11,6 +11,7 @@ class ExpenseListPage extends StatefulWidget {
   static Widget page() => BlocProvider(
         create: (context) => ExpenseListPageBloc(
           context.read<ExpenseRepository>(),
+          context.read<BudgetRepository>(),
           context.read<CategoryRepository>(),
           const DateRangeFilter(
             "All",

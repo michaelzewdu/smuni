@@ -6,46 +6,84 @@ import 'package:smuni/blocs/blocs.dart';
 
 import 'category_list_view.dart';
 
-class CategorySelectorState {
-  final String id;
-
-  CategorySelectorState(
-    this.id,
-  );
+class CategoryFormSelector extends FormField<String> {
+  CategoryFormSelector({
+    Key? key,
+    Widget? caption,
+    String? initialValue,
+    FormFieldSetter<String>? onSaved,
+    void Function(String?)? onChanged,
+    FormFieldValidator<String>? validator,
+    bool isSelecting = false,
+    Set<String>? disabledItems,
+    // AutovalidateMode? autovalidateMode,
+    // bool? enabled,
+    String? restorationId,
+  }) : super(
+          key: key,
+          initialValue: initialValue,
+          validator: validator,
+          onSaved: onSaved,
+          restorationId: restorationId,
+          builder: (state) => CategorySelector(
+            isSelecting: isSelecting,
+            disabledItems: disabledItems ?? const {},
+            caption: state.errorText != null
+                ? Text(state.errorText!, style: TextStyle(color: Colors.red))
+                : caption != null
+                    ? caption
+                    : null,
+            initialValue: state.value,
+            onChanged: (value) {
+              state.didChange(value);
+              onChanged?.call(value);
+            },
+          ),
+        );
 }
 
 class CategorySelector extends StatefulWidget {
-  final String? caption;
-  final CategorySelectorState? initialValue;
-  final FormFieldSetter<CategorySelectorState>? onSaved;
-  final FormFieldValidator<CategorySelectorState>? validator;
-  final String? restorationId;
+  final Widget? caption;
+  final String? initialValue;
+  final void Function(String)? onChanged;
+  final bool isSelecting;
+  final Set<String> disabledItems;
 
   const CategorySelector({
     Key? key,
     this.caption,
     this.initialValue,
-    this.onSaved,
-    this.validator,
-    // AutovalidateMode? autovalidateMode,
-    // bool? enabled,
-    this.restorationId,
+    this.onChanged,
+    this.isSelecting = false,
+    this.disabledItems = const {},
   }) : super(key: key);
 
   @override
-  _CategorySelectorState createState() => _CategorySelectorState();
+  _CategorySelectorState createState() => _CategorySelectorState(
+        isSelecting,
+        initialValue,
+      );
 }
 
 class _CategorySelectorState extends State<CategorySelector> {
-  bool _isSelecting = false;
+  bool _isSelecting;
+  String? _selectedCategoryId;
+
+  _CategorySelectorState(this._isSelecting, this._selectedCategoryId);
+
+  void _selectCategory(String id) {
+    setState(() {
+      _selectedCategoryId = id;
+      _isSelecting = false;
+    });
+    widget.onChanged?.call(id);
+  }
 
   Widget _viewing(
-    FormFieldState<CategorySelectorState> state,
     CategoriesLoadSuccess itemsState,
   ) {
-    final value = state.value;
-    if (value != null) {
-      final item = itemsState.items[value.id];
+    if (_selectedCategoryId != null) {
+      final item = itemsState.items[_selectedCategoryId];
       if (item != null) {
         return Column(
           children: [
@@ -65,61 +103,51 @@ class _CategorySelectorState extends State<CategorySelector> {
   }
 
   Widget _selecting(
-    FormFieldState<CategorySelectorState> state,
     CategoriesLoadSuccess itemsState,
   ) =>
       Expanded(
         child: CategoryListView(
-            state: itemsState,
-            onSelect: (id) {
-              state.didChange(CategorySelectorState(id));
-              setState(() {
-                _isSelecting = false;
-              });
-            }),
+          state: itemsState,
+          disabledItems: widget.disabledItems,
+          onSelect: (id) => _selectCategory(id),
+        ),
       );
 
   @override
-  Widget build(BuildContext context) => FormField<CategorySelectorState>(
-        initialValue: widget.initialValue,
-        validator: widget.validator,
-        onSaved: widget.onSaved,
-        builder: (state) => Column(
-          children: [
-            // the top bar
-            Row(children: [
-              Expanded(
-                  child: Text(
-                state.errorText ?? widget.caption ?? "Category",
-                style: TextStyle(
-                    color: state.errorText != null ? Colors.red : null),
-              )),
-              TextButton(
-                child:
-                    _isSelecting ? const Text("Cancel") : const Text("Select"),
-                onPressed: () {
-                  setState(() {
-                    _isSelecting = !_isSelecting;
-                  });
-                },
-              )
-            ]),
-            BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
-                builder: (context, itemsState) {
-              if (itemsState is CategoriesLoadSuccess) {
-                if (_isSelecting) {
-                  return _selecting(state, itemsState);
-                } else {
-                  return _viewing(state, itemsState);
-                }
-              } else if (itemsState is CategoriesLoading) {
-                return const Center(
-                  child: const Text("Loading categories..."),
-                );
+  Widget build(BuildContext context) => Column(
+        children: [
+          // the top bar
+          Row(children: [
+            Expanded(
+              child: widget.caption ??
+                  const Text(
+                    "Budget",
+                  ),
+            ),
+            TextButton(
+              child: _isSelecting ? const Text("Cancel") : const Text("Select"),
+              onPressed: () {
+                setState(() {
+                  _isSelecting = !_isSelecting;
+                });
+              },
+            )
+          ]),
+          BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
+              builder: (context, itemsState) {
+            if (itemsState is CategoriesLoadSuccess) {
+              if (_isSelecting) {
+                return _selecting(itemsState);
+              } else {
+                return _viewing(itemsState);
               }
-              throw Exception("Unhandeled state");
-            })
-          ],
-        ),
+            } else if (itemsState is CategoriesLoading) {
+              return const Center(
+                child: const Text("Loading categories..."),
+              );
+            }
+            throw Exception("Unhandeled state");
+          })
+        ],
       );
 }

@@ -75,11 +75,6 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                         ),
                       )
                       ..add(SaveChanges());
-                    /* Navigator.popAndPushNamed(
-                      context,
-                      CategoryDetailsPage.routeName,
-                      arguments: bloc.state.unmodified.id,
-                    ); */
                     Navigator.pop(context, true);
                   }
                 },
@@ -118,7 +113,6 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
               Text("createdAt: ${state.unmodified.createdAt}"),
               Text("updatedAt: ${state.unmodified.updatedAt}"),
               // Text("category: ${state.unmodified.categoryId}"),
-
               CheckboxListTile(
                 value: _isSubcategory,
                 title: const Text("Is Subcategory"),
@@ -131,14 +125,14 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                     create: (context) => CategoryListPageBloc(
                         context.read<CategoryRepository>()),
                     child: Expanded(
-                      child: CategorySelector(
-                        caption: "Parent category",
+                      child: CategoryFormSelector(
+                        caption: Text("Parent category"),
                         initialValue: state.unmodified.parentId == null
                             ? null
-                            : CategorySelectorState(state.unmodified.parentId!),
-                        onSaved: (value) {
+                            : state.unmodified.parentId!,
+                        onChanged: (value) {
                           setState(() {
-                            _parentId = value!.id;
+                            _parentId = value!;
                           });
                         },
                         validator: (value) {

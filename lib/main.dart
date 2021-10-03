@@ -38,15 +38,11 @@ class MyApp extends StatelessWidget {
           endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
           allocatedAmount: MonetaryAmount(currency: "ETB", amount: 7000 * 100),
           frequency: Recurring(2592000),
-          categories: {
-            "fpoq3cum4cpu43241u34":
-                MonetaryAmount(currency: "ETB", amount: 1000 * 100),
-            "mucpxo2ur3p98u32proxi34":
-                MonetaryAmount(currency: "ETB", amount: 300 * 100),
-            "614193c7f2ea51b47f5896b8":
-                MonetaryAmount(currency: "ETB", amount: 1000 * 100),
-            "614193c7f2ea51b47f5896b9":
-                MonetaryAmount(currency: "ETB", amount: 500 * 100)
+          categoryAllocation: {
+            "fpoq3cum4cpu43241u34": 1000 * 100,
+            "mucpxo2ur3p98u32proxi34": 300 * 100,
+            "614193c7f2ea51b47f5896b8": 1000 * 100,
+            "614193c7f2ea51b47f5896b9": 500 * 100
           },
         ),
         Budget(
@@ -58,13 +54,10 @@ class MyApp extends StatelessWidget {
           endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
           allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
           frequency: OneTime(),
-          categories: {
-            "jfaksdpofjasodf":
-                MonetaryAmount(currency: "ETB", amount: 500 * 100),
-            "jfasodifjasodjffasdasd":
-                MonetaryAmount(currency: "ETB", amount: 500 * 100),
-            "614193c7f2ea51b47f5896b9":
-                MonetaryAmount(currency: "ETB", amount: 500 * 100)
+          categoryAllocation: {
+            "jfaksdpofjasodf": 500 * 100,
+            "jfasodifjasodjffasdasd": 500 * 100,
+            "614193c7f2ea51b47f5896b9": 500 * 100
           },
         ),
       ],

@@ -8,9 +8,9 @@ import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/budget_selector.dart';
 
-import 'Budget/budgets_list_screen.dart';
+import 'Budget/budget_list_page.dart';
 import 'Expense/expense_list_page.dart';
-import 'Budget/budget_detail_page.dart';
+import 'Budget/budget_details_page.dart';
 import 'Category/category_list_page.dart';
 import 'settings_page.dart';
 
@@ -73,7 +73,7 @@ class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
           case 2:
             return ExpenseListPage.page();
           case 1:
-            return BudgetListPage();
+            return BudgetListPage.page();
           case 0:
           default:
             return _homePage();
@@ -122,6 +122,7 @@ class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
                                     MediaQuery.of(context).size.height * 0.4,
                                 child: BudgetFormSelector(
                                   key: selectorKey,
+                                  isSelecting: true,
                                   onChanged: (value) {
                                     setState(() {
                                       budgetId = value!;

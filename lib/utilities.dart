@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:flutter/material.dart' as flutter;
+
 class Pair<A, B> {
   final A a;
   final B b;
@@ -46,21 +48,27 @@ class DateRange {
   final int endTime;
 
   const DateRange({this.startTime = 0, this.endTime = 8640000000000000});
-  DateRange.usingDates({DateTime? startTime, DateTime? endTime})
+
+  DateRange.fromFlutter(flutter.DateTimeRange from)
       : this(
-          startTime: startTime?.millisecondsSinceEpoch ?? 0,
-          endTime: endTime?.millisecondsSinceEpoch ?? 8640000000000000,
+          startTime: from.start.millisecondsSinceEpoch,
+          endTime: from.end.millisecondsSinceEpoch,
+        );
+  DateRange.usingDates({DateTime? start, DateTime? end})
+      : this(
+          startTime: start?.millisecondsSinceEpoch ?? 0,
+          endTime: end?.millisecondsSinceEpoch ?? 8640000000000000,
         );
   DateRange.yearRange(DateTime timestamp)
       : this.usingDates(
-          startTime: DateTime(timestamp.year),
-          endTime: DateTime(timestamp.year + 1),
+          start: DateTime(timestamp.year),
+          end: DateTime(timestamp.year + 1),
         );
   DateRange.weekRange(DateTime timestamp)
       : this.usingDates(
-          startTime: DateTime(timestamp.year, timestamp.month,
+          start: DateTime(timestamp.year, timestamp.month,
               timestamp.day - timestamp.weekday),
-          endTime: DateTime(
+          end: DateTime(
             timestamp.year,
             timestamp.month,
             timestamp.day - (7 - timestamp.weekday),
@@ -68,18 +76,22 @@ class DateRange {
         );
   DateRange.monthRange(DateTime timestamp)
       : this.usingDates(
-          startTime: DateTime(timestamp.year, timestamp.month),
-          endTime: DateTime(timestamp.year, timestamp.month + 1),
+          start: DateTime(timestamp.year, timestamp.month),
+          end: DateTime(timestamp.year, timestamp.month + 1),
         );
   DateRange.dayRange(DateTime timestamp)
       : this.usingDates(
-          startTime: DateTime(timestamp.year, timestamp.month, timestamp.day),
-          endTime: DateTime(
+          start: DateTime(timestamp.year, timestamp.month, timestamp.day),
+          end: DateTime(
             timestamp.year,
             timestamp.month,
             timestamp.day + 1,
           ),
         );
+
+  DateTime get start => DateTime.fromMillisecondsSinceEpoch(startTime);
+  DateTime get end => DateTime.fromMillisecondsSinceEpoch(endTime);
+  Duration get duration => Duration(milliseconds: endTime - startTime);
 
   bool contains(DateRange other) =>
       this.startTime <= other.startTime && this.endTime >= other.endTime;
@@ -91,6 +103,9 @@ class DateRange {
 
   bool overlaps(DateRange other) =>
       this.startTime <= other.endTime && this.endTime >= other.startTime;
+
+  flutter.DateTimeRange toFlutter() =>
+      flutter.DateTimeRange(start: start, end: end);
 
   @override
   String toString() => "DateRange{ startTime: $startTime, endTime: $endTime }";
@@ -105,7 +120,7 @@ class DateRange {
   int get hashCode => startTime ^ endTime;
 }
 
-enum FilterLevel { Day, Week, Month, Year, All }
+enum FilterLevel { Day, Week, Month, Year, All, Custom }
 
 class DateRangeFilter {
   final String name;

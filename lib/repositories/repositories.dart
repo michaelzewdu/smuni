@@ -136,30 +136,38 @@ class ExpenseRepository extends HashMapRepository<String, Expense> {
   } */
 
   Future<Map<DateRange, DateRangeFilter>> getDateRangeFilters(
-      [List<String>? belongingtoCategories]) async {
+      {Set<String>? ofBudgets, Set<String>? ofCategories}) async {
     return generateDateRangesFilters(this
         ._items
         .values
-        .where((e) => (belongingtoCategories?.contains(e.categoryId) ?? true))
+        .where(ofBudgets != null && ofCategories != null
+            ? (e) =>
+                ofBudgets.contains(e.budgetId) &&
+                ofCategories.contains(e.categoryId)
+            : ofBudgets != null
+                ? (e) => ofBudgets.contains(e.budgetId)
+                : ofCategories != null
+                    ? (e) => ofCategories.contains(e.categoryId)
+                    : (e) => true)
         .map((e) => e.createdAt));
   }
 
   Future<Iterable<Expense>> getItemsInRange(DateRange range,
-      [String? belongingToBudget, List<String>? belongingtoCategories]) async {
+      {Set<String>? ofBudgets, Set<String>? ofCategories}) async {
     return this._items.values.where(
-          belongingToBudget != null && belongingtoCategories != null
+          ofBudgets != null && ofCategories != null
               ? (e) =>
                   range.containsTimestamp(e.createdAt) &&
-                  e.budgetId == belongingToBudget &&
-                  belongingtoCategories.contains(e.categoryId)
-              : belongingToBudget != null
+                  ofBudgets.contains(e.budgetId) &&
+                  ofCategories.contains(e.categoryId)
+              : ofBudgets != null
                   ? (e) =>
                       range.containsTimestamp(e.createdAt) &&
-                      e.budgetId == belongingToBudget
-                  : belongingtoCategories != null
+                      ofBudgets.contains(e.budgetId)
+                  : ofCategories != null
                       ? (e) =>
                           range.containsTimestamp(e.createdAt) &&
-                          belongingtoCategories.contains(e.categoryId)
+                          ofCategories.contains(e.categoryId)
                       : (e) => range.containsTimestamp(e.createdAt),
         );
   }

@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/constants.dart';
 import 'package:smuni/models/models.dart';
-import 'package:smuni/screens/Budget/budget_detail_page.dart';
+import 'package:smuni/screens/Budget/budget_details_page.dart';
 import 'package:smuni/widgets/money_editor.dart';
 
 class BudgetListPage extends StatefulWidget {
@@ -78,11 +78,9 @@ class _BudgetListPageState extends State<BudgetListPage> {
         onPressed: () {
           String newBudgetName = '';
           int budgetAmount = 0;
-          String currency = 'Birr';
           bool isOneTime = false;
-          var amountWholes;
-          var amountCents;
-          String amount;
+          MonetaryAmount allocatedAmount =
+              MonetaryAmount(currency: "ETB", amount: 0);
           showModalBottomSheet(
               context: context,
               builder: (context) {
@@ -98,38 +96,39 @@ class _BudgetListPageState extends State<BudgetListPage> {
                 return Scaffold(
                   resizeToAvoidBottomInset: false,
                   body: StatefulBuilder(
-                    builder: (BuildContext context, StateSetter setModalState) {
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: [
+                    builder:
+                        (BuildContext context, StateSetter setModalState) =>
                             Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text('Add new budget',
-                                  textScaleFactor: 2,
-                                  style: TextStyle(color: semuni500)),
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text('Add new budget',
+                                textScaleFactor: 2,
+                                style: TextStyle(color: semuni500)),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: TextFormField(
+                              onChanged: (newText) {
+                                setState(() {
+                                  newBudgetName = newText;
+                                });
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "Name can't be empty";
+                                }
+                              },
+                              decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                      borderRadius:
+                                          BorderRadius.all(Radius.circular(8))),
+                                  hintText: 'Budget Name'),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: TextFormField(
-                                onChanged: (newText) {
-                                  setState(() {
-                                    newBudgetName = newText;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return "Name can't be empty";
-                                  }
-                                },
-                                decoration: InputDecoration(
-                                    border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.all(
-                                            Radius.circular(8))),
-                                    hintText: 'Budget Name'),
-                              ),
-                            ),
-                            /*
+                          ),
+                          /*
                             Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Row(
@@ -176,90 +175,84 @@ class _BudgetListPageState extends State<BudgetListPage> {
                                 ],
                               ),
                             ),*/
-                            MoneyEditor(
-                              initial:
-                                  MonetaryAmount(currency: "ETB", amount: 0),
-                              onSavedWhole: (v) => setState(() {
-                                amountWholes = v;
-                              }),
-                              onSavedCents: (v) => setState(() {
-                                amountCents = v;
-                              }),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(0, 4, 8, 0),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Checkbox(
-                                      value: isOneTime,
-                                      onChanged: (bool? value) => setModalState(
-                                          () => isOneTime = value!)),
-                                  Text('One Time'),
-                                  if (!isOneTime)
-                                    SizedBox(
-                                      width: 100,
-                                    ),
-                                  if (!isOneTime)
-                                    DropdownButton(
-                                        onChanged: (String? newValue) {
-                                          recurringIntervals = newValue!;
-                                          setModalState(() {});
-                                        },
-                                        value: recurringIntervals,
-                                        items: <String>[
-                                          'Every Day',
-                                          'Every Week',
-                                          'Every two Weeks',
-                                          'Every Month'
-                                        ]
-                                            .map((String value) =>
-                                                DropdownMenuItem(
-                                                    value: value,
-                                                    child: Text(value)))
-                                            .toList())
-                                ],
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  CalendarPicker(
-                                    dateController: startDateController,
-                                    fieldName: 'Start Date',
-                                    helpText: 'Start date of your new budget',
+                          MoneyFormEditor(
+                            initialValue:
+                                MonetaryAmount(currency: "ETB", amount: 0),
+                            onSaved: (v) =>
+                                setState(() => allocatedAmount = v!),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 4, 8, 0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Checkbox(
+                                    value: isOneTime,
+                                    onChanged: (bool? value) => setModalState(
+                                        () => isOneTime = value!)),
+                                Text('One Time'),
+                                if (!isOneTime)
+                                  SizedBox(
+                                    width: 100,
                                   ),
-                                  if (isOneTime == true)
-                                    Text(
-                                      'To',
-                                      textScaleFactor: 1.5,
-                                    ),
-                                  if (isOneTime == true)
-                                    CalendarPicker(
-                                      dateController: endDateController,
-                                      fieldName: 'End Date',
-                                      helpText: 'End date of your new budget',
-                                    )
-                                ],
-                              ),
+                                if (!isOneTime)
+                                  DropdownButton(
+                                      onChanged: (String? newValue) {
+                                        recurringIntervals = newValue!;
+                                        setModalState(() {});
+                                      },
+                                      value: recurringIntervals,
+                                      items: <String>[
+                                        'Every Day',
+                                        'Every Week',
+                                        'Every two Weeks',
+                                        'Every Month'
+                                      ]
+                                          .map((String value) =>
+                                              DropdownMenuItem(
+                                                  value: value,
+                                                  child: Text(value)))
+                                          .toList())
+                              ],
                             ),
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: ElevatedButton(
-                                style: ButtonStyle(
-                                    minimumSize:
-                                        MaterialStateProperty.resolveWith(
-                                            (states) => Size(150, 50))),
-                                onPressed: () {
-                                  print('Add Budget Clicked');
-                                  print(
-                                      'newBudgetName: $newBudgetName budgetAmount: $budgetAmount startDate: $_startDate endDate: $_endDate');
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                CalendarPicker(
+                                  dateController: startDateController,
+                                  fieldName: 'Start Date',
+                                  helpText: 'Start date of your new budget',
+                                ),
+                                if (isOneTime == true)
+                                  Text(
+                                    'To',
+                                    textScaleFactor: 1.5,
+                                  ),
+                                if (isOneTime == true)
+                                  CalendarPicker(
+                                    dateController: endDateController,
+                                    fieldName: 'End Date',
+                                    helpText: 'End date of your new budget',
+                                  )
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: ElevatedButton(
+                              style: ButtonStyle(
+                                  minimumSize:
+                                      MaterialStateProperty.resolveWith(
+                                          (states) => Size(150, 50))),
+                              onPressed: () {
+                                print('Add Budget Clicked');
+                                print(
+                                    'newBudgetName: $newBudgetName budgetAmount: $budgetAmount startDate: $_startDate endDate: $_endDate');
 
-                                  /*
+                                /*
                                     final form = formKey.currentState;
                                     if (form != null && form.validate()) {
                                       print("passed the VAlIDATION");
@@ -288,53 +281,46 @@ class _BudgetListPageState extends State<BudgetListPage> {
 
                                      */
 
-                                  if (isNewBudgetValid(
-                                      context: context,
-                                      newBudgetName: newBudgetName,
-                                      budgetAmount: amountWholes,
-                                      startDate: _startDate,
-                                      endDate: _endDate)) {
-                                    print("passed the VAlIDATION");
-                                    amount = amountWholes.toString() +
-                                        amountCents.toString();
-                                    context
-                                        .read<BudgetsBloc>()
-                                        .add(CreateBudget(
-                                            item: Budget(
-                                          id: 'hjdsf89y3rjhvo8309jde62m',
-                                          createdAt: DateTime.now(),
-                                          updatedAt: DateTime.now(),
-                                          name: newBudgetName,
-                                          startTime: _startDate!,
-                                          endTime: isOneTime
-                                              ? _endDate!
-                                              : budgetEndDateCalculator(
-                                                  startDate: _startDate!,
-                                                  interval: recurringIntervals),
-                                          allocatedAmount: MonetaryAmount(
-                                              amount: int.parse(amount),
-                                              currency: currency),
-                                          frequency: isOneTime
-                                              ? OneTime()
-                                              : Recurring(
-                                                  daytimeToSecondsConverter(
-                                                      recurringIntervals)),
-                                          categories: {},
-                                        )));
-                                    Navigator.pushReplacementNamed(
-                                        context, BudgetListPage.routeName);
-                                  }
+                                if (isNewBudgetValid(
+                                    context: context,
+                                    newBudgetName: newBudgetName,
+                                    budgetAmount: allocatedAmount.amount,
+                                    startDate: _startDate,
+                                    endDate: _endDate)) {
+                                  print("passed the VAlIDATION");
+                                  context.read<BudgetsBloc>().add(CreateBudget(
+                                          item: Budget(
+                                        id: 'hjdsf89y3rjhvo8309jde62m',
+                                        createdAt: DateTime.now(),
+                                        updatedAt: DateTime.now(),
+                                        name: newBudgetName,
+                                        startTime: _startDate!,
+                                        endTime: isOneTime
+                                            ? _endDate!
+                                            : budgetEndDateCalculator(
+                                                startDate: _startDate!,
+                                                interval: recurringIntervals),
+                                        allocatedAmount: allocatedAmount,
+                                        frequency: isOneTime
+                                            ? OneTime()
+                                            : Recurring(
+                                                daytimeToSecondsConverter(
+                                                    recurringIntervals)),
+                                        categoryAllocation: {},
+                                      )));
+                                  Navigator.pushReplacementNamed(
+                                      context, BudgetListPage.routeName);
+                                }
 
-                                  startDateController.dispose();
-                                  endDateController.dispose();
-                                },
-                                child: Text('Add Budget'),
-                              ),
-                            )
-                          ],
-                        ),
-                      );
-                    },
+                                startDateController.dispose();
+                                endDateController.dispose();
+                              },
+                              child: Text('Add Budget'),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
                   ),
                 );
               });

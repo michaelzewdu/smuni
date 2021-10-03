@@ -30,8 +30,8 @@ void main() {
         endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
         allocatedAmount: MonetaryAmount(currency: "ETB", amount: 700000),
         frequency: Recurring(2592000),
-        categories: {
-          "13m409yh29m": MonetaryAmount(currency: "ETB", amount: 100000),
+        categoryAllocation: {
+          "13m409yh29m": 100000,
         },
       ),
     ],

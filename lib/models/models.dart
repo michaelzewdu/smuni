@@ -164,6 +164,8 @@ class MonetaryAmount {
         currency: checkedConvert(json, "currency", (v) => v as String),
         amount: checkedConvert(json, "amount", (v) => v as int),
       );
+  int get wholes => (amount / 100).truncate();
+  int get cents => (amount % 100);
 }
 
 class Budget {
@@ -175,7 +177,7 @@ class Budget {
   final DateTime endTime;
   final MonetaryAmount allocatedAmount;
   final Frequency frequency;
-  final Map<String, MonetaryAmount> categories;
+  final Map<String, int> categoryAllocation;
   Budget({
     required this.id,
     required this.createdAt,
@@ -185,7 +187,7 @@ class Budget {
     required this.endTime,
     required this.allocatedAmount,
     required this.frequency,
-    required this.categories,
+    required this.categoryAllocation,
   });
 
   Map<String, dynamic> toJSON() => {
@@ -197,9 +199,7 @@ class Budget {
         "endTime": endTime.toUtc().toString(),
         "allocatedAmount": allocatedAmount.toJSON(),
         "frequency": frequency.toJSON(),
-        "categories": categories.entries.map(
-          (e) => MapEntry(e.key, e.value.toJSON()),
-        ),
+        "categories": HashMap.from(categoryAllocation),
       };
 
   factory Budget.fromJson(Map<String, dynamic> json) => Budget(
@@ -213,13 +213,13 @@ class Budget {
             checkedConvert(json, "frequency", (v) => Frequency.fromJson(v)),
         allocatedAmount: checkedConvert(
             json, "allocatedAmount", (v) => MonetaryAmount.fromJson(v)),
-        categories: checkedConvert(
+        categoryAllocation: checkedConvert(
           json,
           "categories",
           (v) => v == null
               ? {}
-              : checkedConvertMap(v as Map<String, dynamic>,
-                  (_, v) => MonetaryAmount.fromJson(v)),
+              : checkedConvertMap(
+                  v as Map<String, dynamic>, (_, v) => v as int),
         ),
       );
   factory Budget.from(
@@ -232,7 +232,7 @@ class Budget {
     DateTime? endTime,
     MonetaryAmount? allocatedAmount,
     Frequency? frequency,
-    Map<String, MonetaryAmount>? categories,
+    Map<String, int>? categoryAllocation,
   }) =>
       Budget(
         id: id ?? other.id,
@@ -243,7 +243,7 @@ class Budget {
         endTime: endTime ?? other.endTime,
         allocatedAmount: allocatedAmount ?? other.allocatedAmount,
         frequency: frequency ?? other.frequency,
-        categories: categories ?? other.categories,
+        categoryAllocation: categoryAllocation ?? other.categoryAllocation,
       );
 }
 

@@ -122,6 +122,142 @@ class SmuniApiClient {
     return User.fromJson(_json.decode(response.body));
   }
 
+  Future<User> updateUser(
+    String username,
+    String accessToken, {
+    String? newUsername,
+    String? email,
+    String? phoneNumber,
+    String? password,
+    String? pictureURL,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  Future<void> deleteUser(
+    String username,
+    String accessToken,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  Future<Budget> createBudget(
+    String username,
+    String accessToken, {
+    required String name,
+    required DateTime starTime,
+    required DateTime endTime,
+    required Frequency frequency,
+    required MonetaryAmount allocatedAmount,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  Future<Budget> getBudget(
+    String id,
+    String username,
+    String accessToken,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  Future<Budget> updateBudget(
+    String id,
+    String username,
+    String accessToken, {
+    String? name,
+    DateTime? starTime,
+    DateTime? endTime,
+    Frequency? frequency,
+    MonetaryAmount? allocatedAmount,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  Future<void> deleteBudget(
+    String id,
+    String username,
+    String accessToken,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  Future<Category> createCategory(
+    String username,
+    String accessToken, {
+    required String name,
+    required MonetaryAmount allocatedAmount,
+    required List<String>? tags,
+    String? parentCategory,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  Future<Category> getCategory(
+    String id,
+    String username,
+    String accessToken,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  Future<Category> updateCategory(
+    String id,
+    String username,
+    String accessToken, {
+    String? name,
+    MonetaryAmount? allocatedAmount,
+    List<String>? tags,
+    String? parentCategory,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  Future<void> deleteCategory(
+    String id,
+    String username,
+    String accessToken,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  Future<Expense> createExpense(
+    String username,
+    String accessToken, {
+    required String name,
+    required String budgetId,
+    required String categoryId,
+    required MonetaryAmount amount,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  Future<Expense> getExpense(
+    String id,
+    String username,
+    String accessToken,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  Future<Expense> updateExpense(
+    String id,
+    String username,
+    String accessToken, {
+    String? name,
+    MonetaryAmount? amount,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  Future<void> deleteExpense(
+    String id,
+    String username,
+    String accessToken,
+  ) async {
+    throw UnimplementedError();
+  }
+
   Future<http.Response> makeApiCall(
     String method,
     String path, {

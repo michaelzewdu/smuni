@@ -6,14 +6,24 @@ import 'package:smuni/models/models.dart';
 class CategoryListView extends StatelessWidget {
   final CategoriesLoadSuccess state;
   final void Function(String)? onSelect;
-  const CategoryListView({Key? key, required this.state, this.onSelect})
-      : super(key: key);
+  final Set<String> disabledItems;
+  const CategoryListView({
+    Key? key,
+    required this.state,
+    this.onSelect,
+    this.disabledItems = const {},
+  }) : super(key: key);
 
-  Widget _listTile(BuildContext context, Category item) => ListTile(
-        title: Text(item.name),
-        subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
-        onTap: () => onSelect?.call(item.id),
-      );
+  Widget _listTile(BuildContext context, Category item) {
+    final isDisabled = disabledItems.contains(item.id);
+    return ListTile(
+      dense: isDisabled,
+      title: Text(item.name),
+      subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
+      onTap: () => !isDisabled ? onSelect?.call(item.id) : null,
+    );
+  }
+
   Widget _catDisplay(
     BuildContext context,
     String id,

@@ -46,8 +46,7 @@ class ExpenseEditPage extends StatefulWidget {
 
 class _ExpenseEditPageState extends State<ExpenseEditPage> {
   final _formKey = GlobalKey<FormState>();
-  int _amountWholes = 0;
-  int _amountCents = 0;
+  MonetaryAmount _amount = MonetaryAmount(currency: "ETB", amount: 0);
   String _name = "";
 
   String _categoryId = "";
@@ -69,19 +68,12 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                         ModifyItem(
                           Expense.from(state.unmodified,
                               name: _name,
-                              amount: MonetaryAmount(
-                                  currency: "ETB",
-                                  amount: (_amountWholes * 100) + _amountCents),
+                              amount: _amount,
                               categoryId: _categoryId,
                               budgetId: _budgetId),
                         ),
                       )
                       ..add(SaveChanges());
-                    /* Navigator.popAndPushNamed(
-                      context,
-                      ExpenseDetailsPage.routeName,
-                      arguments: bloc.state.unmodified.id,
-                    ); */
                     Navigator.pop(context, true);
                   }
                 },
@@ -116,14 +108,9 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                   helperText: "Name",
                 ),
               ),
-              MoneyEditor(
-                initial: state.unmodified.amount,
-                onSavedWhole: (v) => setState(() {
-                  _amountWholes = v;
-                }),
-                onSavedCents: (v) => setState(() {
-                  _amountCents = v;
-                }),
+              MoneyFormEditor(
+                initialValue: state.unmodified.amount,
+                onSaved: (v) => setState(() => _amount = v!),
               ),
               Text("id: ${state.unmodified.id}"),
               Text("createdAt: ${state.unmodified.createdAt}"),

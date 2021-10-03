@@ -17,7 +17,7 @@ class LoadExpenses extends ExpensesListBlocEvent {
   final DateRangeFilter range;
   final String? ofBudget;
   final String? ofCategory;
-  const LoadExpenses(this.range, [this.ofBudget, this.ofCategory]);
+  const LoadExpenses(this.range, {this.ofBudget, this.ofCategory});
 
   @override
   String toString() =>
@@ -58,7 +58,7 @@ class ExpensesLoading extends ExpenseListPageBlocState {
 class ExpensesLoadSuccess extends ExpenseListPageBlocState {
   Map<DateRange, DateRangeFilter> dateRangeFilters;
   final String? budgetFilter;
-  final List<String>? categoryFilter;
+  final Set<String>? categoryFilter;
   final Map<String, Expense> items;
 
   ExpensesLoadSuccess(
@@ -79,9 +79,11 @@ class ExpensesLoadSuccess extends ExpenseListPageBlocState {
 class ExpenseListPageBloc
     extends Bloc<ExpensesListBlocEvent, ExpenseListPageBlocState> {
   ExpenseRepository repo;
+  BudgetRepository budgetRepo;
   CategoryRepository categoryRepo;
   ExpenseListPageBloc(
     this.repo,
+    this.budgetRepo,
     this.categoryRepo,
     DateRangeFilter initialRangeToLoad, [
     String? initialBudgetToLoad,
@@ -100,14 +102,14 @@ class ExpenseListPageBloc
           DateRange(),
           FilterLevel.All,
         ),
-        initialBudgetToLoad,
-        initialCategoryToLoad,
+        ofBudget: initialBudgetToLoad,
+        ofCategory: initialCategoryToLoad,
       ));
     });
     add(LoadExpenses(
       initialRangeToLoad,
-      initialBudgetToLoad,
-      initialCategoryToLoad,
+      ofBudget: initialBudgetToLoad,
+      ofCategory: initialCategoryToLoad,
     ));
   }
 
@@ -116,15 +118,26 @@ class ExpenseListPageBloc
     ExpensesListBlocEvent event,
   ) async* {
     if (event is LoadExpenses) {
-      final catFilter = event.ofCategory != null
-          ? await categoryRepo.getCategoryDescendantsTree(event.ofCategory!)
-          : null;
+      Set<String>? catFilter;
+      final ofCategory = event.ofCategory;
+      if (ofCategory != null) {
+        final tree =
+            (await categoryRepo.getCategoryDescendantsTree(ofCategory));
+        if (tree == null) throw Exception("category not found");
+        catFilter = tree.toSet();
+      }
+
+      final budgetFilter = event.ofBudget != null ? {event.ofBudget!} : null;
+
       final items = await repo.getItemsInRange(
         event.range.range,
-        event.ofBudget,
-        catFilter,
+        ofBudgets: budgetFilter,
+        ofCategories: catFilter,
       );
-      final dateRangeFilters = await repo.getDateRangeFilters(catFilter);
+      final dateRangeFilters = await repo.getDateRangeFilters(
+        ofCategories: catFilter,
+        ofBudgets: budgetFilter,
+      );
       // TODO:  load from fs
       yield ExpensesLoadSuccess(
         HashMap.fromIterable(
@@ -144,8 +157,8 @@ class ExpenseListPageBloc
         // TODO
         await repo.removeItem(event.id);
         current.items.remove(event.id);
-        final dateRangeFilters =
-            await repo.getDateRangeFilters(current.categoryFilter);
+        final dateRangeFilters = await repo.getDateRangeFilters(
+            ofCategories: current.categoryFilter);
 
         yield ExpensesLoadSuccess(
           current.items,

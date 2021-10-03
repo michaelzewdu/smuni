@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import 'Budget/budget_detail_page.dart';
+import 'Budget/budget_details_page.dart';
+import 'Budget/budget_edit_page.dart';
 import 'Budget/budgets_list_screen.dart';
 import 'Category/category_details_page.dart';
 import 'Category/category_edit_page.dart';
@@ -22,6 +23,10 @@ class Routes {
         return BudgetListPage.route();
       case BudgetDetailsPage.routeName:
         return BudgetDetailsPage.route(settings.arguments as String);
+      case BudgetEditPage.routeName:
+        return settings.arguments == null
+            ? BudgetEditPage.routeNew()
+            : BudgetEditPage.route(settings.arguments as String);
       case ExpenseListPage.routeName:
         return ExpenseListPage.route();
       case ExpenseDetailsPage.routeName:

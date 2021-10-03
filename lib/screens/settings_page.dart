@@ -31,8 +31,10 @@ class SettingsPage extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: DrawerButtons(
                   buttonName: 'About Us',
-                  drawerButtonAction: () => print(
-                      'This will lead to the About Us screen in the future')),
+                  drawerButtonAction: () => showAboutDialog(
+                        context: context,
+                        applicationName: "Smuni",
+                      )),
             ),
           ],
         ),

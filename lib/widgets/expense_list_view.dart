@@ -41,6 +41,7 @@ class ExpenseListView extends StatelessWidget {
           dayGroups.add(filter);
           break;
         case FilterLevel.All:
+        case FilterLevel.Custom:
           throw Exception("Unreachable code reached.");
       }
     }
