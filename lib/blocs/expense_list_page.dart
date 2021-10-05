@@ -56,22 +56,27 @@ class ExpensesLoading extends ExpenseListPageBlocState {
 }
 
 class ExpensesLoadSuccess extends ExpenseListPageBlocState {
+  final String? ofBudget;
+  final String? ofCategory;
+
+  /// cache the category filters
   Map<DateRange, DateRangeFilter> dateRangeFilters;
-  final String? budgetFilter;
   final Set<String>? categoryFilter;
+
   final Map<String, Expense> items;
 
   ExpensesLoadSuccess(
     this.items,
     DateRangeFilter range,
     this.dateRangeFilters, [
-    this.budgetFilter,
+    this.ofBudget,
+    this.ofCategory,
     this.categoryFilter,
   ]) : super(range);
 
   @override
   String toString() =>
-      "${this.runtimeType.toString()} { range: $range, dateRangeFilters: $dateRangeFilters, budgetFilter: $budgetFilter, categoryFilter: $categoryFilter, items: $items }";
+      "${this.runtimeType.toString()} { range: $range, dateRangeFilters: $dateRangeFilters, budgetFilter: $ofBudget, categoryFilter: $categoryFilter, items: $items }";
 }
 
 // BLOC
@@ -96,15 +101,21 @@ class ExpenseListPageBloc
           ),
         ) {
     repo.changedItems.listen((ids) {
-      add(LoadExpenses(
-        const DateRangeFilter(
-          "All",
-          DateRange(),
-          FilterLevel.All,
-        ),
-        ofBudget: initialBudgetToLoad,
-        ofCategory: initialCategoryToLoad,
-      ));
+      final current = state;
+      if (current is ExpensesLoadSuccess)
+        add(LoadExpenses(
+          current.range,
+          ofBudget: current.ofBudget,
+          ofCategory: current.ofCategory,
+        ));
+      else if (current is ExpensesLoading)
+        add(LoadExpenses(
+          current.range,
+          ofBudget: current.ofBudget,
+          ofCategory: current.ofCategory,
+        ));
+      else
+        throw Exception("Unhandled type.");
     });
     add(LoadExpenses(
       initialRangeToLoad,
@@ -148,6 +159,7 @@ class ExpenseListPageBloc
         event.range,
         dateRangeFilters,
         event.ofBudget,
+        event.ofCategory,
         catFilter,
       );
       return;
@@ -164,7 +176,8 @@ class ExpenseListPageBloc
           current.items,
           current.range,
           dateRangeFilters,
-          current.budgetFilter,
+          current.ofBudget,
+          current.ofCategory,
           current.categoryFilter,
         );
         return;

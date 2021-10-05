@@ -1,8 +1,10 @@
+// FIXME: most of these won't be need to be routed after the nav bar update
+
 import 'package:flutter/widgets.dart';
 
 import 'Budget/budget_details_page.dart';
 import 'Budget/budget_edit_page.dart';
-import 'Budget/budgets_list_screen.dart';
+import 'Budget/budget_list_page.dart';
 import 'Category/category_details_page.dart';
 import 'Category/category_edit_page.dart';
 import 'Category/category_list_page.dart';
@@ -32,8 +34,11 @@ class Routes {
       case ExpenseDetailsPage.routeName:
         return ExpenseDetailsPage.route(settings.arguments as String);
       case ExpenseEditPage.routeName:
-        return settings.arguments == null
-            ? ExpenseEditPage.routeNew()
+        if (settings.arguments == null)
+          throw Exception("Was expecting arguments found for route");
+        return settings.arguments is ExpenseEditPageNewArgs
+            ? ExpenseEditPage.routeNew(
+                settings.arguments as ExpenseEditPageNewArgs)
             : ExpenseEditPage.route(settings.arguments as String);
       case CategoryListPage.routeName:
         return CategoryListPage.route();

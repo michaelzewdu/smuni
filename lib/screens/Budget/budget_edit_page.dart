@@ -35,7 +35,7 @@ class BudgetEditPage extends StatefulWidget {
         final now = DateTime.now();
         final range = DateRange.monthRange(now);
         final item = Budget(
-          id: "new-id",
+          id: "id-${now.microsecondsSinceEpoch}",
           createdAt: now,
           updatedAt: now,
           name: "",
@@ -72,14 +72,17 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
   Map<String, int> _categoryAllocation = {};
   String? _selectedCategory;
 
-  String _categoryAllocationError = "";
-
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<BudgetEditPageBloc, BudgetEditPageBlocState>(
         listener: (context, state) {
           if (state is UnmodifiedEditState)
-            setState(() => _isOneTime = state.unmodified.frequency is OneTime);
+            setState(() {
+              _isOneTime = state.unmodified.frequency is OneTime;
+              _amount = state.unmodified.allocatedAmount;
+              _categoryAllocation =
+                  HashMap.from(state.unmodified.categoryAllocation);
+            });
         },
         builder: (context, state) {
           if (state is UnmodifiedEditState) {
@@ -116,8 +119,20 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
           actions: [
             ElevatedButton(
               onPressed: () {
+                final allocated = _categoryAllocation.isNotEmpty
+                    ? _categoryAllocation.values.reduce((a, b) => a + b)
+                    : 0;
+                final remaining = _amount.amount - allocated;
+
                 final form = this._formKey.currentState;
-                if (form != null && form.validate()) {
+                if (remaining != 0)
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(remaining > 0
+                        ? "Unallocated amount remains."
+                        : "Allocation over budget."),
+                    behavior: SnackBarBehavior.floating,
+                  ));
+                if (form != null && form.validate() && remaining == 0) {
                   form.save();
                   final modified = Budget.from(
                     state.unmodified,
@@ -203,33 +218,68 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                 final allocated = _categoryAllocation.isNotEmpty
                     ? _categoryAllocation.values.reduce((a, b) => a + b)
                     : 0;
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                final remaining = _amount.amount - allocated;
+                return Column(
                   children: [
-                    Text("Allocated: ${_amount.currency} ${allocated / 100}"),
-                    Text(
-                      "Remaining: ${_amount.currency} ${(_amount.amount - allocated) / 100}",
-                    )
+                    Text("Allocated categories"),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text(
+                            "Allocated: ${_amount.currency} ${allocated / 100}"),
+                        Text(
+                          "Remaining: ${_amount.currency} ${(remaining) / 100}",
+                          style: remaining == 0
+                              ? TextStyle(color: Colors.green)
+                              : TextStyle(color: Colors.red),
+                        )
+                      ],
+                    ),
+                    if (remaining != 0)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            remaining > 0
+                                ? "Unallocated amount remains."
+                                : "Allocation over budget.",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                          IconButton(
+                              onPressed: () => showDialog(
+                                  context: context,
+                                  builder: (context) => SimpleDialog(
+                                        children: [
+                                          Text(
+                                              "TODO: explain zero based budgeting")
+                                        ],
+                                      )),
+                              icon: Icon(Icons.info_outline))
+                        ],
+                      ),
+                    if (remaining > 0)
+                      TextButton(
+                        onPressed: _amount.amount > 0
+                            ? () async {
+                                final allocation =
+                                    await _allocateCategoryModal();
+                                if (allocation != null)
+                                  setState(() =>
+                                      _categoryAllocation[allocation.a] =
+                                          allocation.b.amount);
+                              }
+                            : null,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add),
+                            Text("Allocate Category"),
+                          ],
+                        ),
+                      ),
                   ],
                 );
               }),
-              TextButton(
-                onPressed: _amount.amount > 0
-                    ? () async {
-                        final allocation = await _allocateCategoryModal();
-                        if (allocation != null)
-                          setState(() => _categoryAllocation[allocation.a] =
-                              allocation.b.amount);
-                      }
-                    : null,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add),
-                    Text("Allocate Category"),
-                  ],
-                ),
-              ),
               Expanded(
                 child: BlocBuilder<CategoryListPageBloc,
                     CategoryListPageBlocState>(
@@ -387,8 +437,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     width: MediaQuery.of(context).size.width * 0.5,
                     child: Column(
                       children: [
-                        Text(
-                            "${allocatedAmount / 100} / ${_amount.amount / 100}"),
+                        Text("${allocatedAmount / 100}"),
                         LinearProgressIndicator(
                           value: allocatedAmount / _amount.amount,
                         )
@@ -459,7 +508,19 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (builder, setState) => Column(children: [
-            const Text("Allocate Category"),
+            ElevatedButton(
+              onPressed: categoryId.isNotEmpty
+                  ? () {
+                      final selector = selectorKey.currentState;
+                      if (selector != null && selector.validate()) {
+                        selector.save();
+                        Navigator.pop(
+                            context, Pair(categoryId, categoryAmount));
+                      }
+                    }
+                  : null,
+              child: const Text("Allocate Category"),
+            ),
             // TODO: slider
             /* Slider(
               activeColor:
@@ -477,7 +538,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
             ), */
             MoneyFormEditor(
               initialValue: categoryAmount,
-              onSaved: (v) => setState(() => categoryAmount = v!),
+              onChanged: (v) => setState(() => categoryAmount = v!),
               validator: (v) {
                 if (v == null || v.amount > unused)
                   return "Over budget allocation";
@@ -491,6 +552,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                 child: CategoryFormSelector(
                   key: selectorKey,
                   disabledItems: _categoryAllocation.keys.toSet(),
+                  isSelecting: true,
                   onChanged: (value) {
                     setState(() => categoryId = value!);
                   },
@@ -502,19 +564,6 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                 ),
               ),
             ),
-            ElevatedButton(
-              onPressed: categoryId.isNotEmpty
-                  ? () {
-                      final selector = selectorKey.currentState;
-                      if (selector != null && selector.validate()) {
-                        selector.save();
-                        Navigator.pop(
-                            context, Pair(categoryId, categoryAmount));
-                      }
-                    }
-                  : null,
-              child: const Text("Save"),
-            )
           ]),
         );
       },

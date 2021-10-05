@@ -10,6 +10,8 @@ import 'package:smuni/screens/Expense/expense_edit_page.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/expense_list_view.dart';
 
+import 'budget_edit_page.dart';
+
 class BudgetDetailsPage extends StatefulWidget {
   static const String routeName = "budgetDetails";
 
@@ -18,32 +20,93 @@ class BudgetDetailsPage extends StatefulWidget {
         builder: (context) => page(id),
       );
 
-  static Widget page(String id) {
-    return MultiBlocProvider(providers: [
-      BlocProvider(
-        create: (BuildContext context) => DetailsPageBloc<String, Budget>(
-            context.read<BudgetRepository>(), id),
-      ),
-      BlocProvider(
-        create: (BuildContext context) => ExpenseListPageBloc(
-            context.read<ExpenseRepository>(),
-            context.read<BudgetRepository>(),
-            context.read<CategoryRepository>(),
-            const DateRangeFilter(
-              "All",
-              DateRange(),
-              FilterLevel.All,
-            ),
-            id),
-      ),
-      BlocProvider(
-        create: (BuildContext context) =>
-            CategoryListPageBloc(context.read<CategoryRepository>()),
-      ),
-    ], child: BudgetDetailsPage());
+  static Widget page(
+    String id, [
+    List<Widget> Function(BuildContext, LoadSuccess<String, Budget>)
+        actionsListBuilder = defaultActionsListBuilder,
+  ]) {
+    return MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (BuildContext context) => DetailsPageBloc<String, Budget>(
+                context.read<BudgetRepository>(), id),
+          ),
+          BlocProvider(
+            create: (BuildContext context) => ExpenseListPageBloc(
+                context.read<ExpenseRepository>(),
+                context.read<BudgetRepository>(),
+                context.read<CategoryRepository>(),
+                const DateRangeFilter(
+                  "All",
+                  DateRange(),
+                  FilterLevel.All,
+                ),
+                id),
+          ),
+          BlocProvider(
+            create: (BuildContext context) =>
+                CategoryListPageBloc(context.read<CategoryRepository>()),
+          ),
+        ],
+        child: BudgetDetailsPage(
+          actionsListBuilder: actionsListBuilder,
+        ));
   }
 
-  const BudgetDetailsPage({Key? key}) : super(key: key);
+  static List<Widget> defaultActionsListBuilder(
+          BuildContext context, LoadSuccess<String, Budget> state) =>
+      [
+        ElevatedButton(
+          onPressed: () => Navigator.pushNamed(
+            context,
+            BudgetEditPage.routeName,
+            arguments: state.item.id,
+          ),
+          child: const Text("Edit"),
+        ),
+        ElevatedButton(
+          child: const Text("Delete"),
+          onPressed: () => showDialog<bool?>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Confirm deletion'),
+              content: Text(
+                  'Are you sure you want to delete entry ${state.item.name}?\nTODO: decide on how deletion works'),
+              actions: <Widget>[
+                TextButton(
+                  /* onPressed: () {
+                        Navigator.pop(context, true);
+                      }, */
+                  onPressed: null,
+                  child: const Text('TODO'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context, false);
+                  },
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ),
+          ).then(
+            (confirm) {
+              if (confirm != null && confirm) {
+                context
+                    .read<DetailsPageBloc<String, Expense>>()
+                    .add(DeleteItem());
+                Navigator.pop(context);
+              }
+            },
+          ),
+        )
+      ];
+
+  final List<Widget> Function(BuildContext, LoadSuccess<String, Budget>)
+      actionsListBuilder;
+
+  BudgetDetailsPage(
+      {Key? key, this.actionsListBuilder = defaultActionsListBuilder})
+      : super(key: key);
 
   @override
   State<BudgetDetailsPage> createState() => _BudgetDetailsPageState();
@@ -149,6 +212,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   ),
                 ),
               ),
+              actions: widget.actionsListBuilder(context, state),
             ),
             _totalUsed != null
                 ? SliverToBoxAdapter(
@@ -166,13 +230,22 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                             ),
                             Text(
                               "Used:  $currency ${_totalUsed! / 100}",
+                              style: _totalUsed! > totalAllocated
+                                  ? TextStyle(color: Colors.red)
+                                  : null,
                             ),
                             Text(
                               "Remaining:  $currency ${(totalAllocated - _totalUsed!) / 100}",
+                              style: _totalUsed! > totalAllocated
+                                  ? TextStyle(color: Colors.red)
+                                  : null,
                             ),
                             if (totalAllocated > 0)
                               LinearProgressIndicator(
                                 value: _totalUsed! / totalAllocated,
+                                color: _totalUsed! > totalAllocated
+                                    ? Colors.red
+                                    : null,
                               ),
                             ListTile(
                               leading: Icon(Icons.list),
@@ -323,6 +396,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                         Text("${used / 100} / ${allocatedAmount / 100}"),
                         LinearProgressIndicator(
                           value: used / allocatedAmount,
+                          color: used > allocatedAmount ? Colors.red : null,
                         )
                       ],
                     ),
@@ -359,6 +433,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                         onTap: () => Navigator.pushNamed(
                           context,
                           ExpenseEditPage.routeName,
+                          arguments: ExpenseEditPageNewArgs(
+                              budgetId: state.item.id, categoryId: item.id),
                         ),
                       ),
                       ListTile(
@@ -392,6 +468,9 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                           onPressed: () => Navigator.pushNamed(
                                             context,
                                             ExpenseEditPage.routeName,
+                                            arguments: ExpenseEditPageNewArgs(
+                                                budgetId: state.item.id,
+                                                categoryId: item.id),
                                           ),
                                         )),
                                         ExpenseListView(

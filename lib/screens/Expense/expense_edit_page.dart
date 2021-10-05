@@ -6,6 +6,14 @@ import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/money_editor.dart';
 
+class ExpenseEditPageNewArgs {
+  final String budgetId;
+  final String categoryId;
+
+  const ExpenseEditPageNewArgs(
+      {required this.budgetId, required this.categoryId});
+}
+
 class ExpenseEditPage extends StatefulWidget {
   static const String routeName = "expenseEdit";
 
@@ -20,7 +28,7 @@ class ExpenseEditPage extends StatefulWidget {
         ),
       );
 
-  static Route routeNew() => MaterialPageRoute(
+  static Route routeNew(ExpenseEditPageNewArgs args) => MaterialPageRoute(
       settings: const RouteSettings(name: routeName),
       builder: (context) {
         final now = DateTime.now();
@@ -29,8 +37,8 @@ class ExpenseEditPage extends StatefulWidget {
           createdAt: now,
           updatedAt: now,
           name: "",
-          categoryId: "",
-          budgetId: "",
+          categoryId: args.categoryId,
+          budgetId: args.budgetId,
           amount: MonetaryAmount(currency: "ETB", amount: 0),
         );
         return BlocProvider(
@@ -49,9 +57,6 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
   MonetaryAmount _amount = MonetaryAmount(currency: "ETB", amount: 0);
   String _name = "";
 
-  String _categoryId = "";
-  String _budgetId = "";
-
   Widget _showForm(BuildContext context, UnmodifiedEditState state) => Form(
         key: _formKey,
         child: Scaffold(
@@ -66,11 +71,11 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                     context.read<ExpenseEditPageBloc>()
                       ..add(
                         ModifyItem(
-                          Expense.from(state.unmodified,
-                              name: _name,
-                              amount: _amount,
-                              categoryId: _categoryId,
-                              budgetId: _budgetId),
+                          Expense.from(
+                            state.unmodified,
+                            name: _name,
+                            amount: _amount,
+                          ),
                         ),
                       )
                       ..add(SaveChanges());
@@ -115,7 +120,8 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
               Text("id: ${state.unmodified.id}"),
               Text("createdAt: ${state.unmodified.createdAt}"),
               Text("updatedAt: ${state.unmodified.updatedAt}"),
-              // Text("category: ${state.unmodified.categoryId}"),
+              Text("budget: ${state.unmodified.budgetId}"),
+              Text("category: ${state.unmodified.categoryId}"),
             ],
           ),
         ),

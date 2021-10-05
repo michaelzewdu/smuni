@@ -30,6 +30,7 @@ class HashMapRepository<Identfier, Item> extends Repository<Identfier, Item> {
   @override
   Future<void> removeItem(Identfier id) async {
     _items.remove(id);
+    this._changedItemsController.add([id]);
   }
 
   @override

@@ -49,6 +49,7 @@ class UserBloc extends Bloc<UserEvent, UserBlocState> {
   ) async* {
     if (event is UpdateUser) {
       yield UserLoadSuccess(event.update);
+      return;
     } else if (event is LoadUser) {}
   }
 }

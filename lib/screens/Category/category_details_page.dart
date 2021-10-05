@@ -43,13 +43,14 @@ class CategoryDetailsPage extends StatelessWidget {
                 builder: (context) => AlertDialog(
                   title: const Text('Confirm deletion'),
                   content: Text(
-                      'Are you sure you want to delete entry ${state.item.name}?'),
+                      'Are you sure you want to delete entry ${state.item.name}?\nTODO: decide on how deletion works'),
                   actions: <Widget>[
                     TextButton(
-                      onPressed: () {
+                      /* onPressed: () {
                         Navigator.pop(context, true);
-                      },
-                      child: const Text('Confirm'),
+                      }, */
+                      onPressed: null,
+                      child: const Text('TODO'),
                     ),
                     TextButton(
                       onPressed: () {
