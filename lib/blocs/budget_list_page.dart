@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
-
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 

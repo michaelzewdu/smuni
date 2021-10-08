@@ -2,7 +2,6 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/budget_edit_page.dart';
 import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/models/models.dart';
@@ -694,6 +693,7 @@ class _SimpleDateRangeEditorState extends State<SimpleDateRangeEditor> {
                   helpText: "Custom Budget Day Range",
                   fieldStartLabelText: "Start Date",
                   fieldEndLabelText: "End Date",
+                  initialEntryMode: DatePickerEntryMode.input,
                   initialDateRange: custom.range.toFlutter(),
                   firstDate: DateTime.fromMillisecondsSinceEpoch(0),
                   lastDate:

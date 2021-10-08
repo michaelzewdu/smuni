@@ -28,11 +28,11 @@
 - [ ] Expenses List
 - [ ] Expense Details
 - [ ] Expense Edit 
-- [ ] Expense Add
 - [ ] Categories list
 - [ ] Category details and subcategory
 - [ ] Category Add
-- [ ] Dept payoff plans list
+- [ ] Dept payoff pla- [ ] Expense Add
+  ns list
 - [ ] Dept payoff plans details
 - [ ] Dept payoff plans add 
 - [ ] Dept payoff plans edit
