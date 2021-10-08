@@ -228,10 +228,6 @@ class MyApp extends StatelessWidget {
         child: MultiBlocProvider(
           providers: [
             BlocProvider(create: (context) => UserBloc(defaultUser)),
-            BlocProvider(
-              create: (context) => BudgetsBloc(context.read<BudgetRepository>())
-                ..add(LoadBudgets()),
-            ),
           ],
           child: MaterialApp(
               title: 'Smuni',

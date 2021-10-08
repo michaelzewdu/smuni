@@ -25,7 +25,7 @@ class CategoryEditPage extends StatefulWidget {
       builder: (context) {
         final now = DateTime.now();
         final item = Category(
-          id: "new-id",
+          id: "id-${now.microsecondsSinceEpoch}",
           createdAt: now,
           updatedAt: now,
           name: "",

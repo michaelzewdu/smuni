@@ -83,86 +83,95 @@ class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
   }
 
   Widget _homePage() =>
-      BlocBuilder<UserBloc, UserBlocState>(builder: (context, state) {
-        if (state is UserLoadSuccess) {
-          if (state.item.mainBudget != null) {
-            return BudgetDetailsPage.page(state.item.mainBudget!);
+      BlocBuilder<UserBloc, UserBlocState>(builder: (context, userState) {
+        if (userState is UserLoadSuccess) {
+          if (userState.item.mainBudget != null) {
+            return BudgetDetailsPage.page(
+              userState.item.mainBudget!,
+              (context, state) => [
+                ElevatedButton(
+                  onPressed: () =>
+                      _showMainBudgetSelectorModal(context, userState),
+                  child: const Text("Change"),
+                ),
+              ],
+            );
           } else {
-            return _mainBudgetSelector(context, state);
+            return Scaffold(
+                appBar: AppBar(
+                  title: Text('Home'),
+                ),
+                body: Center(
+                  child: Form(
+                    child: Column(
+                      children: [
+                        Text("Main budget not selected:"),
+                        ElevatedButton(
+                          onPressed: () =>
+                              _showMainBudgetSelectorModal(context, userState),
+                          child: const Text("Select Main Budget"),
+                        )
+                      ],
+                    ),
+                  ),
+                ));
           }
-        } else if (state is UserLoading) {
+        } else if (userState is UserLoading) {
           return const Center(child: CircularProgressIndicator());
         }
         throw Exception("unexpected state");
       });
 
-  Widget _mainBudgetSelector(BuildContext context, UserLoadSuccess state) =>
-      Scaffold(
-          appBar: AppBar(
-            title: Text('Home'),
-          ),
-          body: Center(
-            child: Form(
-              child: Column(
-                children: [
-                  Text("Main budget not selected:"),
-                  ElevatedButton(
-                    onPressed: () {
-                      final selectorKey = GlobalKey<FormFieldState<String>>();
-                      var budgetId = "";
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (context) => StatefulBuilder(
-                          builder: (builder, setState) => Column(children: [
-                            BlocProvider(
-                              create: (context) => BudgetListPageBloc(
-                                  context.read<BudgetRepository>()),
-                              child: SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.4,
-                                child: BudgetFormSelector(
-                                  key: selectorKey,
-                                  isSelecting: true,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      budgetId = value!;
-                                    });
-                                  },
-                                  validator: (value) {
-                                    if (value == null) {
-                                      return "No budget selected";
-                                    }
-                                  },
-                                ),
-                              ),
-                            ),
-                            ElevatedButton(
-                                onPressed: budgetId.isNotEmpty
-                                    ? () {
-                                        final selector =
-                                            selectorKey.currentState;
-                                        if (selector != null &&
-                                            selector.validate()) {
-                                          selector.save();
-                                          context.read<UserBloc>().add(
-                                                UpdateUser(User.from(state.item,
-                                                    mainBudget: budgetId)),
-                                              );
-                                          Navigator.pop(context);
-                                        }
-                                      }
-                                    : null,
-                                child: const Text("Save Selection"))
-                          ]),
-                        ),
-                      );
-                    },
-                    child: const Text("Select Main Budget"),
-                  )
-                ],
+  void _showMainBudgetSelectorModal(
+    BuildContext context,
+    UserLoadSuccess state,
+  ) {
+    final selectorKey = GlobalKey<FormFieldState<String>>();
+    var budgetId = "";
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (builder, setState) => Column(children: [
+          BlocProvider(
+            create: (context) =>
+                BudgetListPageBloc(context.read<BudgetRepository>()),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: BudgetFormSelector(
+                key: selectorKey,
+                isSelecting: true,
+                onChanged: (value) {
+                  setState(() {
+                    budgetId = value!;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return "No budget selected";
+                  }
+                },
               ),
             ),
-          ));
+          ),
+          ElevatedButton(
+              onPressed: budgetId.isNotEmpty
+                  ? () {
+                      final selector = selectorKey.currentState;
+                      if (selector != null && selector.validate()) {
+                        selector.save();
+                        context.read<UserBloc>().add(
+                              UpdateUser(
+                                  User.from(state.item, mainBudget: budgetId)),
+                            );
+                        Navigator.pop(context);
+                      }
+                    }
+                  : null,
+              child: const Text("Save Selection"))
+        ]),
+      ),
+    );
+  }
 }
 
 class HorizontalCards extends StatelessWidget {

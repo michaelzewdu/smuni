@@ -119,11 +119,10 @@ class _CategorySelectorState extends State<CategorySelector> {
           // the top bar
           Row(children: [
             Expanded(
-              child: widget.caption ??
-                  const Text(
-                    "Budget",
-                  ),
-            ),
+                child: widget.caption ??
+                    const Text(
+                      "Category",
+                    )),
             TextButton(
               child: _isSelecting ? const Text("Cancel") : const Text("Select"),
               onPressed: () {

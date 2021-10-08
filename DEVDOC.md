@@ -4,13 +4,12 @@
 
 ## To-do
 
-- [ ] Validate allocated amount is under budget/parent during category creation
+- [ ] Search feature for the list pages
 
 ## Design doc
 
 ### Entities thinking map
 
-- Income: expected inflow
 - Expense: committed expenditure 
 - Budget: planned expense
 - Debt payoff plan: special type of budget
@@ -28,11 +27,11 @@
 - [ ] Expenses List
 - [ ] Expense Details
 - [ ] Expense Edit 
+- [ ] Expense Add
 - [ ] Categories list
 - [ ] Category details and subcategory
 - [ ] Category Add
-- [ ] Dept payoff pla- [ ] Expense Add
-  ns list
+- [ ] Dept payoff plans list
 - [ ] Dept payoff plans details
 - [ ] Dept payoff plans add 
 - [ ] Dept payoff plans edit
@@ -43,21 +42,14 @@
 - [ ] Sign up bloc
 - [ ] Sign in bloc
 - [ ] User bloc
-- [ ] Budgets bloc
-- [ ] Budgets list/search bloc
-- [ ] Budget details/edit bloc
-- [ ] Expenses bloc
-- [ ] Expense list/search bloc
-- [ ] Expense details/edit bloc
-- [ ] Incomes bloc
-- [ ] Income list bloc
-- [ ] Income details/edit bloc
-- [ ] Categories bloc
-- [ ] Category list/search bloc
-- [ ] Category details/edit bloc
-- [ ] Dept payoff plans bloc
-- [ ] Dept payoff plan list bloc
-- [ ] Dept payoff plan details/edit bloc
+- [x] Budgets list/search bloc
+- [x] Budget details/edit bloc
+- [x] Expense list/search bloc
+- [x] Expense details/edit bloc
+- [x] Category list/search bloc
+- [x] Category details/edit bloc
+- [ ] Dept payoff list/search bloc
+- [ ] Dept payoff details/edit bloc
 - [ ] Finance bloc
 
 ### Features
