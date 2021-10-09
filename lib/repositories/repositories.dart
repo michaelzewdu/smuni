@@ -14,7 +14,7 @@ abstract class Repository<Identfier, Item> {
 }
 
 class HashMapRepository<Identfier, Item> extends Repository<Identfier, Item> {
-  HashMap<Identfier, Item> _items = new HashMap();
+  final Map<Identfier, Item> _items = {};
 
   @override
   Future<Item?> getItem(Identfier id) async {
@@ -24,13 +24,13 @@ class HashMapRepository<Identfier, Item> extends Repository<Identfier, Item> {
   @override
   Future<void> setItem(Identfier id, Item item) async {
     _items[id] = item;
-    this._changedItemsController.add([id]);
+    _changedItemsController.add([id]);
   }
 
   @override
   Future<void> removeItem(Identfier id) async {
     _items.remove(id);
-    this._changedItemsController.add([id]);
+    _changedItemsController.add([id]);
   }
 
   @override
@@ -38,7 +38,7 @@ class HashMapRepository<Identfier, Item> extends Repository<Identfier, Item> {
     return _items.values;
   }
 
-  StreamController<List<Identfier>> _changedItemsController =
+  final StreamController<List<Identfier>> _changedItemsController =
       StreamController.broadcast();
 
   @override
@@ -60,9 +60,7 @@ class TreeNode<T> {
 class CategoryRepository extends HashMapRepository<String, Category> {
   Future<Map<String, TreeNode<String>>>? _ancestryGraph;
   Future<Map<String, TreeNode<String>>> get ancestryGraph {
-    if (_ancestryGraph == null) {
-      _ancestryGraph = Future.value(_calcAncestryTree());
-    }
+    _ancestryGraph ??= Future.value(_calcAncestryTree());
     return _ancestryGraph!;
   }
 
@@ -81,9 +79,10 @@ class CategoryRepository extends HashMapRepository<String, Category> {
       if (node == null) {
         TreeNode<String>? parentNode;
         if (category.parentId != null) {
-          final parent = this._items[category.parentId];
-          if (parent == null)
+          final parent = _items[category.parentId];
+          if (parent == null) {
             throw Exception("parent not found at id: $category.parentId");
+          }
           parentNode = getTreeNode(parent);
           parentNode.children.add(category.id);
         }
@@ -93,7 +92,7 @@ class CategoryRepository extends HashMapRepository<String, Category> {
       return node;
     }
 
-    for (final category in this._items.values) {
+    for (final category in _items.values) {
       if (!nodes.containsKey(category.id)) {
         getTreeNode(category);
       }
@@ -113,8 +112,9 @@ class CategoryRepository extends HashMapRepository<String, Category> {
       descendants.addAll(node.children);
       for (final child in node.children) {
         final childNode = graph[child];
-        if (childNode == null)
+        if (childNode == null) {
           throw Exception("childNode not found in ancestryGraph at id: $child");
+        }
         appendChildren(childNode);
       }
     }
@@ -138,39 +138,39 @@ class ExpenseRepository extends HashMapRepository<String, Expense> {
 
   Future<Map<DateRange, DateRangeFilter>> getDateRangeFilters(
       {Set<String>? ofBudgets, Set<String>? ofCategories}) async {
-    return generateDateRangesFilters(this
-        ._items
-        .values
-        .where(ofBudgets != null && ofCategories != null
-            ? (e) =>
-                ofBudgets.contains(e.budgetId) &&
-                ofCategories.contains(e.categoryId)
-            : ofBudgets != null
-                ? (e) => ofBudgets.contains(e.budgetId)
-                : ofCategories != null
-                    ? (e) => ofCategories.contains(e.categoryId)
-                    : (e) => true)
-        .map((e) => e.createdAt));
+    return generateDateRangesFilters(
+      _items.values
+          .where(ofBudgets != null && ofCategories != null
+              ? (e) =>
+                  ofBudgets.contains(e.budgetId) &&
+                  ofCategories.contains(e.categoryId)
+              : ofBudgets != null
+                  ? (e) => ofBudgets.contains(e.budgetId)
+                  : ofCategories != null
+                      ? (e) => ofCategories.contains(e.categoryId)
+                      : (e) => true)
+          .map((e) => e.createdAt),
+    );
   }
 
   Future<Iterable<Expense>> getItemsInRange(DateRange range,
       {Set<String>? ofBudgets, Set<String>? ofCategories}) async {
-    return this._items.values.where(
-          ofBudgets != null && ofCategories != null
+    return _items.values.where(
+      ofBudgets != null && ofCategories != null
+          ? (e) =>
+              range.containsTimestamp(e.createdAt) &&
+              ofBudgets.contains(e.budgetId) &&
+              ofCategories.contains(e.categoryId)
+          : ofBudgets != null
               ? (e) =>
                   range.containsTimestamp(e.createdAt) &&
-                  ofBudgets.contains(e.budgetId) &&
-                  ofCategories.contains(e.categoryId)
-              : ofBudgets != null
+                  ofBudgets.contains(e.budgetId)
+              : ofCategories != null
                   ? (e) =>
                       range.containsTimestamp(e.createdAt) &&
-                      ofBudgets.contains(e.budgetId)
-                  : ofCategories != null
-                      ? (e) =>
-                          range.containsTimestamp(e.createdAt) &&
-                          ofCategories.contains(e.categoryId)
-                      : (e) => range.containsTimestamp(e.createdAt),
-        );
+                      ofCategories.contains(e.categoryId)
+                  : (e) => range.containsTimestamp(e.createdAt),
+    );
   }
 }
 
@@ -200,7 +200,7 @@ abstract class SqliteRepository<Identfier, Item>
   ) async {
     List<Map<String, Object?>> maps = await db.query(tableName,
         columns: columns, where: '$primaryColumnName = ?', whereArgs: [id]);
-    if (maps.length > 0) {
+    if (maps.isNotEmpty) {
       return fromMap(maps.first);
     }
     return null;
@@ -228,10 +228,10 @@ abstract class SqliteRepository<Identfier, Item>
       toMap(item),
       conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
     );
-    this._changedItemsController.add([id]);
+    _changedItemsController.add([id]);
   }
 
-  StreamController<List<Identfier>> _changedItemsController =
+  final StreamController<List<Identfier>> _changedItemsController =
       StreamController.broadcast();
 
   @override

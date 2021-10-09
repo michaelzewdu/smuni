@@ -30,20 +30,20 @@ class ExpenseListView extends StatelessWidget {
         dayGroups = [];
     for (final filter in allDateRanges) {
       switch (filter.level) {
-        case FilterLevel.Year:
+        case FilterLevel.year:
           yearGroups.add(filter);
           break;
-        case FilterLevel.Month:
+        case FilterLevel.month:
           monthGroups.add(filter);
           break;
-        case FilterLevel.Week:
+        case FilterLevel.week:
           weekGroups.add(filter);
           break;
-        case FilterLevel.Day:
+        case FilterLevel.day:
           dayGroups.add(filter);
           break;
-        case FilterLevel.All:
-        case FilterLevel.Custom:
+        case FilterLevel.all:
+        case FilterLevel.custom:
           throw Exception("Unreachable code reached.");
       }
     }
@@ -88,21 +88,21 @@ class ExpenseListView extends StatelessWidget {
             // All expenses button
             Builder(builder: (context) {
               final range =
-                  DateRangeFilter("All", DateRange(), FilterLevel.All);
-              return _tabButton("All", () => this.loadRange(range),
+                  DateRangeFilter("All", DateRange(), FilterLevel.all);
+              return _tabButton("All", () => loadRange(range),
                   displayedRange.range.contains(range.range));
             }),
             ...yearGroups.map(
-              (e) => _tabButton(e.name, () => this.loadRange(e),
+              (e) => _tabButton(e.name, () => loadRange(e),
                   displayedRange.range.contains(e.range)),
             ),
           ],
         ),
       ),
       // Month tab bar: only visible when year or lower selected
-      if (currentFilterLevel == FilterLevel.Year ||
-          currentFilterLevel == FilterLevel.Month ||
-          currentFilterLevel == FilterLevel.Day)
+      if (currentFilterLevel == FilterLevel.year ||
+          currentFilterLevel == FilterLevel.month ||
+          currentFilterLevel == FilterLevel.day)
         Builder(builder: (context) {
           final currentYearRange = DateRangeFilter(
               "All months",
@@ -110,26 +110,26 @@ class ExpenseListView extends StatelessWidget {
                 DateTime.fromMillisecondsSinceEpoch(
                     displayedRange.range.startTime),
               ),
-              FilterLevel.Year);
+              FilterLevel.year);
           return Container(
             height: 50,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
                 // All expenses in current year button
-                _tabButton("All", () => this.loadRange(currentYearRange),
+                _tabButton("All", () => loadRange(currentYearRange),
                     displayedRange.range.contains(currentYearRange.range)),
                 ...monthGroups
                     .where((e) => e.range.overlaps(currentYearRange.range))
-                    .map((e) => _tabButton(e.name, () => this.loadRange(e),
+                    .map((e) => _tabButton(e.name, () => loadRange(e),
                         displayedRange.range.contains(e.range))),
               ],
             ),
           );
         }),
       // Day tab bar
-      if (currentFilterLevel == FilterLevel.Month ||
-          currentFilterLevel == FilterLevel.Day)
+      if (currentFilterLevel == FilterLevel.month ||
+          currentFilterLevel == FilterLevel.day)
         Row(
           children: [
             // All days in current month button
@@ -140,15 +140,15 @@ class ExpenseListView extends StatelessWidget {
                     DateTime.fromMillisecondsSinceEpoch(
                         displayedRange.range.startTime),
                   ),
-                  FilterLevel.Month);
-              return _tabButton("All", () => this.loadRange(range),
+                  FilterLevel.month);
+              return _tabButton("All", () => loadRange(range),
                   displayedRange.range.contains(range.range));
             }),
             ...dayGroups
                 .where((e) => e.range.overlaps(displayedRange.range))
                 .map((e) => _tabButton(
                       e.name.split(" ")[1],
-                      () => this.loadRange(e),
+                      () => loadRange(e),
                       displayedRange.range.contains(e.range),
                     )),
           ],
@@ -257,10 +257,11 @@ class _ExpensesExpandableState extends State<ExpensesExpandable> {
           expansionCallback: (int index, bool isExpanded) {
             setState(() {
               final tappedId = widget.expenses[index].id;
-              if (tappedId != _expandedItem)
+              if (tappedId != _expandedItem) {
                 _expandedItem = tappedId;
-              else
+              } else {
                 _expandedItem = null;
+              }
             });
           },
           children: widget.expenses.map<ExpansionPanel>((e) {

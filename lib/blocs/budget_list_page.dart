@@ -20,7 +20,7 @@ class DeleteBudget extends BudgetsListBlocEvent {
   DeleteBudget(this.id);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { id: $id,  }";
+  String toString() => "${runtimeType.toString()} { id: $id,  }";
 }
 
 // STATE
@@ -41,7 +41,7 @@ class BudgetsLoadSuccess extends BudgetListPageBlocState {
   ) : super();
 
   @override
-  String toString() => "${this.runtimeType.toString()} { items: $items, }";
+  String toString() => "${runtimeType.toString()} { items: $items, }";
 }
 
 // BLOC

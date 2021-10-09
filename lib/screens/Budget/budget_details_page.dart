@@ -39,7 +39,7 @@ class BudgetDetailsPage extends StatefulWidget {
                 const DateRangeFilter(
                   "All",
                   DateRange(),
-                  FilterLevel.All,
+                  FilterLevel.all,
                 ),
                 id),
           ),
@@ -261,7 +261,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                             const DateRangeFilter(
                                               "All",
                                               DateRange(),
-                                              FilterLevel.All,
+                                              FilterLevel.all,
                                             ),
                                             state.item.id,
                                           ),
@@ -319,9 +319,11 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 ? BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
                     builder: (context, catListState) {
                       if (catListState is CategoriesLoadSuccess) {
-                        Set<String> nodes = new LinkedHashSet();
-                        Set<String> rootNodes = new LinkedHashSet();
-                        for (final id in state.item.categoryAllocation.keys) {
+                        // ignore: prefer_collection_literals
+                        Set<String> nodes = LinkedHashSet();
+                        // ignore: prefer_collection_literals
+                        Set<String> rootNodes = LinkedHashSet();
+                        for (final id in state.item.categoryAllocations.keys) {
                           final node = catListState.ancestryGraph[id];
                           if (node == null) throw Exception("unexpected null");
                           var curNode = node;
@@ -374,12 +376,13 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
     final item = catListState.items[id];
     final itemNode = catListState.ancestryGraph[id];
     if (item == null) return Text("Error: Category under id $id not found");
-    if (itemNode == null)
+    if (itemNode == null) {
       return Text("Error: Category under id $id not found in ancestryGraph");
+    }
 
     final children = itemNode.children.where((e) => nodesToShow.contains(e));
 
-    final allocatedAmount = state.item.categoryAllocation[id];
+    final allocatedAmount = state.item.categoryAllocations[id];
     return Column(
       children: [
         allocatedAmount != null
@@ -451,7 +454,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                       const DateRangeFilter(
                                         "All",
                                         DateRange(),
-                                        FilterLevel.All,
+                                        FilterLevel.all,
                                       ),
                                       state.item.id,
                                       id,

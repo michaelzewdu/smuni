@@ -17,9 +17,9 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  final User defaultUser = (() {
+  final UserDenorm defaultUser = (() {
     final now = DateTime.now();
-    return User(
+    return UserDenorm(
       id: "614193c7f2ea51b47f5896be",
       username: "superkind",
       createdAt: now,
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
           endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
           allocatedAmount: MonetaryAmount(currency: "ETB", amount: 7000 * 100),
           frequency: Recurring(2592000),
-          categoryAllocation: {
+          categoryAllocations: {
             "fpoq3cum4cpu43241u34": 1000 * 100,
             "mucpxo2ur3p98u32proxi34": 300 * 100,
             "614193c7f2ea51b47f5896b8": 1000 * 100,
@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
           endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
           allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
           frequency: OneTime(),
-          categoryAllocation: {
+          categoryAllocations: {
             "jfaksdpofjasodf": 500 * 100,
             "jfasodifjasodjffasdasd": 500 * 100,
             "614193c7f2ea51b47f5896b9": 500 * 100

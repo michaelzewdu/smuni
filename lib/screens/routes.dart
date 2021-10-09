@@ -34,8 +34,9 @@ class Routes {
       case ExpenseDetailsPage.routeName:
         return ExpenseDetailsPage.route(settings.arguments as String);
       case ExpenseEditPage.routeName:
-        if (settings.arguments == null)
+        if (settings.arguments == null) {
           throw Exception("Was expecting arguments found for route");
+        }
         return settings.arguments is ExpenseEditPageNewArgs
             ? ExpenseEditPage.routeNew(
                 settings.arguments as ExpenseEditPageNewArgs)

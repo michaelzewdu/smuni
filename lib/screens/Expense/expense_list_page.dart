@@ -17,7 +17,7 @@ class ExpenseListPage extends StatefulWidget {
           const DateRangeFilter(
             "All",
             DateRange(),
-            FilterLevel.All,
+            FilterLevel.all,
           ),
         ),
         child: ExpenseListPage(),

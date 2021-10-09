@@ -15,7 +15,7 @@ class LoadItem<Identifier, Item> extends DetailsPageEvent<Identifier, Item> {
   const LoadItem(this.id);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { id: $id, }";
+  String toString() => "${runtimeType.toString()} { id: $id, }";
 }
 
 class DeleteItem<Identifier, Item> extends DetailsPageEvent<Identifier, Item> {
@@ -33,7 +33,7 @@ class LoadingItem<Identifier, Item> extends DetailsPageState<Identifier, Item> {
   const LoadingItem(this.id);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { id: $id, }";
+  String toString() => "${runtimeType.toString()} { id: $id, }";
 }
 
 class ItemNotFound<Identifier, Item>
@@ -42,7 +42,7 @@ class ItemNotFound<Identifier, Item>
   const ItemNotFound(this.id);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { id: $id, }";
+  String toString() => "${runtimeType.toString()} { id: $id, }";
 }
 
 class LoadSuccess<Identifer, Item> extends DetailsPageState<Identifer, Item> {
@@ -52,8 +52,7 @@ class LoadSuccess<Identifer, Item> extends DetailsPageState<Identifer, Item> {
   LoadSuccess(this.id, this.item);
 
   @override
-  String toString() =>
-      "${this.runtimeType.toString()} { id: $id, item: $item }";
+  String toString() => "${runtimeType.toString()} { id: $id, item: $item }";
 }
 
 // BLOC

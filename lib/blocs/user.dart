@@ -18,7 +18,7 @@ class UpdateUser extends UserEvent {
   UpdateUser(this.update);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { update: $update }";
+  String toString() => "${runtimeType.toString()} { update: $update }";
 }
 
 // STATE
@@ -35,7 +35,7 @@ class UserLoadSuccess extends UserBlocState {
   UserLoadSuccess(this.item);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { item: $item }";
+  String toString() => "${runtimeType.toString()} { item: $item }";
 }
 
 // BLOC

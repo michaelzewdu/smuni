@@ -42,7 +42,7 @@ class BudgetEditPage extends StatefulWidget {
           startTime: range.start,
           endTime: range.end,
           frequency: OneTime(),
-          categoryAllocation: {},
+          categoryAllocations: {},
         );
         return BlocProvider(
           create: (context) => BudgetEditPageBloc.modified(
@@ -75,13 +75,14 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
   Widget build(BuildContext context) =>
       BlocConsumer<BudgetEditPageBloc, BudgetEditPageBlocState>(
         listener: (context, state) {
-          if (state is UnmodifiedEditState)
+          if (state is UnmodifiedEditState) {
             setState(() {
               _isOneTime = state.unmodified.frequency is OneTime;
               _amount = state.unmodified.allocatedAmount;
               _categoryAllocation =
-                  HashMap.from(state.unmodified.categoryAllocation);
+                  HashMap.from(state.unmodified.categoryAllocations);
             });
+          }
         },
         builder: (context, state) {
           if (state is UnmodifiedEditState) {
@@ -123,14 +124,15 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     : 0;
                 final remaining = _amount.amount - allocated;
 
-                final form = this._formKey.currentState;
-                if (remaining != 0)
+                final form = _formKey.currentState;
+                if (remaining != 0) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(remaining > 0
                         ? "Unallocated amount remains."
                         : "Allocation over budget."),
                     behavior: SnackBarBehavior.floating,
                   ));
+                }
                 if (form != null && form.validate() && remaining == 0) {
                   form.save();
                   final modified = Budget.from(
@@ -262,10 +264,11 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                             ? () async {
                                 final allocation =
                                     await _allocateCategoryModal();
-                                if (allocation != null)
+                                if (allocation != null) {
                                   setState(() =>
                                       _categoryAllocation[allocation.a] =
                                           allocation.b.amount);
+                                }
                               }
                             : null,
                         child: Row(
@@ -284,8 +287,10 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     CategoryListPageBlocState>(
                   builder: (context, catListState) {
                     if (catListState is CategoriesLoadSuccess) {
-                      Set<String> nodes = new LinkedHashSet();
-                      Set<String> rootNodes = new LinkedHashSet();
+                      // ignore: prefer_collection_literals
+                      Set<String> nodes = LinkedHashSet();
+                      // ignore: prefer_collection_literals
+                      Set<String> rootNodes = LinkedHashSet();
                       for (final id in _categoryAllocation.keys) {
                         final node = catListState.ancestryGraph[id];
                         if (node == null) throw Exception("unexpected null");
@@ -337,13 +342,13 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
         end: state.unmodified.endTime,
       ),
       rangesToShow: [
-        DateRangeFilter("Every Day", DateRange.dayRange(now), FilterLevel.Day),
-        DateRangeFilter("Every Week", weekRange, FilterLevel.Week),
-        DateRangeFilter("Every Two Weeks", twoWeekRange, FilterLevel.Week),
+        DateRangeFilter("Every Day", DateRange.dayRange(now), FilterLevel.day),
+        DateRangeFilter("Every Week", weekRange, FilterLevel.week),
+        DateRangeFilter("Every Two Weeks", twoWeekRange, FilterLevel.week),
         DateRangeFilter(
           "Every Month",
           DateRange.monthRange(now),
-          FilterLevel.Month,
+          FilterLevel.month,
         ),
       ],
       onSaved: (range) {
@@ -384,19 +389,19 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
         end: state.unmodified.endTime,
       ),
       rangesToShow: [
-        DateRangeFilter("Today", DateRange.dayRange(now), FilterLevel.Day),
-        DateRangeFilter("This Week", weekRange, FilterLevel.Week),
-        DateRangeFilter("Next 7 Days", next7Days, FilterLevel.Week),
-        DateRangeFilter("Next 14 Days", next14Days, FilterLevel.Week),
+        DateRangeFilter("Today", DateRange.dayRange(now), FilterLevel.day),
+        DateRangeFilter("This Week", weekRange, FilterLevel.week),
+        DateRangeFilter("Next 7 Days", next7Days, FilterLevel.week),
+        DateRangeFilter("Next 14 Days", next14Days, FilterLevel.week),
         DateRangeFilter(
           "This Month Month",
           DateRange.monthRange(now),
-          FilterLevel.Month,
+          FilterLevel.month,
         ),
         DateRangeFilter(
           "Next 30 Days",
           next30Days,
-          FilterLevel.Month,
+          FilterLevel.month,
         ),
       ],
       onSaved: (range) {
@@ -418,8 +423,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
     final item = catListState.items[id];
     final itemNode = catListState.ancestryGraph[id];
     if (item == null) return Text("Error: Category under id $id not found");
-    if (itemNode == null)
+    if (itemNode == null) {
       return Text("Error: Category under id $id not found in ancestryGraph");
+    }
 
     final children = itemNode.children.where((e) => nodesToShow.contains(e));
 
@@ -539,8 +545,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
               initialValue: categoryAmount,
               onChanged: (v) => setState(() => categoryAmount = v!),
               validator: (v) {
-                if (v == null || v.amount > unused)
+                if (v == null || v.amount > unused) {
                   return "Over budget allocation";
+                }
               },
               autovalidateMode: AutovalidateMode.onUserInteraction,
             ),
@@ -686,9 +693,7 @@ class SimpleDateRangeFormEditor extends FormField<DateRange> {
           builder: (state) => SimpleDateRangeEditor(
             caption: state.errorText != null
                 ? Text(state.errorText!, style: TextStyle(color: Colors.red))
-                : caption != null
-                    ? caption
-                    : null,
+                : caption,
             initialValue: state.value,
             rangesToShow: rangesToShow,
             onChanged: (value) {
@@ -712,9 +717,8 @@ class SimpleDateRangeEditor extends StatefulWidget {
     this.onChanged,
     this.caption,
     // this.initialFrequency = const OneTime(),
-  })  : this.initialValue =
-            initialValue ?? DateRange.monthRange(DateTime.now()),
-        this.rangesToShow = rangesToShow ?? [],
+  })  : initialValue = initialValue ?? DateRange.monthRange(DateTime.now()),
+        rangesToShow = rangesToShow ?? [],
         super(key: key);
 
   @override
@@ -725,7 +729,7 @@ class _SimpleDateRangeEditorState extends State<SimpleDateRangeEditor> {
   // late bool _isOneTime = widget.initialFrequency is OneTime;
   late DateRange _range = widget.initialValue;
   late DateRangeFilter custom =
-      DateRangeFilter("Custom", widget.initialValue, FilterLevel.Custom);
+      DateRangeFilter("Custom", widget.initialValue, FilterLevel.custom);
 
   @override
   Widget build(BuildContext context) {
@@ -749,15 +753,16 @@ class _SimpleDateRangeEditorState extends State<SimpleDateRangeEditor> {
                       DateTime.fromMillisecondsSinceEpoch(8640000000000000),
                   // TODO: localization
                 );
-                if (range != null)
+                if (range != null) {
                   setState(() {
                     custom = DateRangeFilter(
                       "Custom",
                       DateRange.fromFlutter(range),
-                      FilterLevel.Custom,
+                      FilterLevel.custom,
                     );
                     _range = DateRange.fromFlutter(range);
                   });
+                }
               },
               label: Row(
                   children: const [Icon(Icons.arrow_downward), Text("Custom")]),
@@ -766,10 +771,11 @@ class _SimpleDateRangeEditorState extends State<SimpleDateRangeEditor> {
               (e) => ChoiceChip(
                 selected: _range == e.range,
                 onSelected: (selected) {
-                  if (selected)
+                  if (selected) {
                     setState(() {
                       _range = e.range;
                     });
+                  }
                 },
                 label: Text(e.name),
               ),

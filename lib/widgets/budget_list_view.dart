@@ -26,6 +26,6 @@ class BudgetListView extends StatelessWidget {
                   onTap: () => onSelect?.call(item.id));
             },
           )
-        : const Center(child: const Text("No budgets."));
+        : const Center(child: Text("No budgets."));
   }
 }

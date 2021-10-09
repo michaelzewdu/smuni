@@ -21,7 +21,7 @@ class DeleteCategory extends CategoriesListBlocEvent {
   DeleteCategory(this.id);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { id: $id,  }";
+  String toString() => "${runtimeType.toString()} { id: $id,  }";
 }
 
 // STATE
@@ -45,7 +45,7 @@ class CategoriesLoadSuccess extends CategoryListPageBlocState {
 
   @override
   String toString() =>
-      "${this.runtimeType.toString()} { items: $items, ancestryGraph: $ancestryGraph, }";
+      "${runtimeType.toString()} { items: $items, ancestryGraph: $ancestryGraph, }";
 }
 
 // BLOC

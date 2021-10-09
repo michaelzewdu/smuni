@@ -24,9 +24,7 @@ class MoneyFormEditor extends FormField<MonetaryAmount> {
           builder: (state) => MoneyEditor(
             caption: state.errorText != null
                 ? Text(state.errorText!, style: TextStyle(color: Colors.red))
-                : caption != null
-                    ? caption
-                    : null,
+                : caption,
             amount:
                 state.value ?? const MonetaryAmount(currency: "ETB", amount: 0),
             onChanged: (value) {

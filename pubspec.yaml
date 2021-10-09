@@ -30,12 +30,15 @@ dependencies:
   sqflite: ^2.0.0+4
   path: ^1.8.0
   http: ^0.13.3
+  smuni_api_client:
+    path: packages/smuni_api_client
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.3
 
 dev_dependencies:
+  lints: ^1.0.0
   flutter_test:
     sdk: flutter
   sqflite_common_ffi: ^2.0.0+3

@@ -21,7 +21,7 @@ class LoadExpenses extends ExpensesListBlocEvent {
 
   @override
   String toString() =>
-      "${this.runtimeType.toString()} { range: $range, ofBudget: $ofBudget , ofCategory: $ofCategory }";
+      "${runtimeType.toString()} { range: $range, ofBudget: $ofBudget , ofCategory: $ofCategory }";
 }
 
 class DeleteExpense extends ExpensesListBlocEvent {
@@ -29,7 +29,7 @@ class DeleteExpense extends ExpensesListBlocEvent {
   DeleteExpense(this.id);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { id: $id }";
+  String toString() => "${runtimeType.toString()} { id: $id }";
 }
 
 // STATE
@@ -52,7 +52,7 @@ class ExpensesLoading extends ExpenseListPageBlocState {
 
   @override
   String toString() =>
-      "${this.runtimeType.toString()} { range: $range, ofBudget: $ofBudget , ofCategory: $ofCategory }";
+      "${runtimeType.toString()} { range: $range, ofBudget: $ofBudget , ofCategory: $ofCategory }";
 }
 
 class ExpensesLoadSuccess extends ExpenseListPageBlocState {
@@ -76,7 +76,7 @@ class ExpensesLoadSuccess extends ExpenseListPageBlocState {
 
   @override
   String toString() =>
-      "${this.runtimeType.toString()} { range: $range, dateRangeFilters: $dateRangeFilters, budgetFilter: $ofBudget, categoryFilter: $categoryFilter, items: $items }";
+      "${runtimeType.toString()} { range: $range, dateRangeFilters: $dateRangeFilters, budgetFilter: $ofBudget, categoryFilter: $categoryFilter, items: $items }";
 }
 
 // BLOC
@@ -102,20 +102,21 @@ class ExpenseListPageBloc
         ) {
     repo.changedItems.listen((ids) {
       final current = state;
-      if (current is ExpensesLoadSuccess)
+      if (current is ExpensesLoadSuccess) {
         add(LoadExpenses(
           current.range,
           ofBudget: current.ofBudget,
           ofCategory: current.ofCategory,
         ));
-      else if (current is ExpensesLoading)
+      } else if (current is ExpensesLoading) {
         add(LoadExpenses(
           current.range,
           ofBudget: current.ofBudget,
           ofCategory: current.ofCategory,
         ));
-      else
+      } else {
         throw Exception("Unhandled type.");
+      }
     });
     add(LoadExpenses(
       initialRangeToLoad,

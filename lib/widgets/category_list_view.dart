@@ -31,8 +31,9 @@ class CategoryListView extends StatelessWidget {
     final item = state.items[id];
     final itemNode = state.ancestryGraph[id];
     if (item == null) return Text("Error: Category under id $id not found");
-    if (itemNode == null)
+    if (itemNode == null) {
       return Text("Error: Category under id $id not found in ancestryGraph");
+    }
 
     return itemNode.children.isEmpty
         ? _listTile(context, item)
@@ -65,7 +66,7 @@ class CategoryListView extends StatelessWidget {
                 _catDisplay(context, topNodes[index].item),
           )
         : state.items.isEmpty
-            ? const Center(child: const Text("No categories."))
+            ? const Center(child: Text("No categories."))
             : throw Exception("parents are missing");
   }
 }

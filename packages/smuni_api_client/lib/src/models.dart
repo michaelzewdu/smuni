@@ -392,7 +392,6 @@ class Category {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? name,
-    MonetaryAmount? allocatedAmount,
     String? parentId,
     List<String>? tags,
   }) =>
@@ -483,7 +482,7 @@ T checkedConvert<T>(
   var value = json[prop];
   /*if (checkForNull) {
     if (value == null) {
-      throw new Exception("value at prop $prop is null");
+      throw Exception("value at prop $prop is null");
     }
   }*/
   return extract(value);

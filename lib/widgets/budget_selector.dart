@@ -27,9 +27,7 @@ class BudgetFormSelector extends FormField<String> {
             isSelecting: isSelecting,
             caption: state.errorText != null
                 ? Text(state.errorText!, style: TextStyle(color: Colors.red))
-                : caption != null
-                    ? caption
-                    : null,
+                : caption,
             initialValue: state.value,
             onChanged: (value) {
               state.didChange(value);
@@ -97,7 +95,7 @@ class _BudgetSelectorState extends State<BudgetSelector> {
         return Center(child: const Text("Error: selected item not found."));
       }
     } else {
-      return const Center(child: const Text("No budget selected."));
+      return const Center(child: Text("No budget selected."));
     }
   }
 
@@ -140,7 +138,7 @@ class _BudgetSelectorState extends State<BudgetSelector> {
               }
             } else if (itemsState is BudgetsLoading) {
               return const Center(
-                child: const Text("Loading budgets..."),
+                child: Text("Loading budgets..."),
               );
             }
             throw Exception("Unhandeled state");

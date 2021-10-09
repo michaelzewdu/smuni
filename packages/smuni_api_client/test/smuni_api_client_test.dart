@@ -1,5 +1,6 @@
-import 'package:smuni_api_client/smuni_api_client.dart';
 import 'package:test/test.dart';
+
+import 'package:smuni_api_client/smuni_api_client.dart';
 
 @TestOn('vm')
 void main() {

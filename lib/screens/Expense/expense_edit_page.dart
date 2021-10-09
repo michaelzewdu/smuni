@@ -65,7 +65,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
             actions: [
               ElevatedButton(
                 onPressed: () {
-                  final form = this._formKey.currentState;
+                  final form = _formKey.currentState;
                   if (form != null && form.validate()) {
                     form.save();
                     context.read<ExpenseEditPageBloc>()

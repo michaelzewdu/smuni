@@ -11,7 +11,7 @@ void main() {
 
   sqfliteFfiInit();
   sqflite.databaseFactory = databaseFactoryFfi;
-  var user = User(
+  var user = UserDenorm(
     id: "cny45347yncx093n24579xm",
     username: "deathconsciousness",
     createdAt: DateTime.now(),
@@ -30,7 +30,7 @@ void main() {
         endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
         allocatedAmount: MonetaryAmount(currency: "ETB", amount: 700000),
         frequency: Recurring(2592000),
-        categoryAllocation: {
+        categoryAllocations: {
           "13m409yh29m": 100000,
         },
       ),

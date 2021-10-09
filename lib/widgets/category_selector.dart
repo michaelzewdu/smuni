@@ -30,9 +30,7 @@ class CategoryFormSelector extends FormField<String> {
             disabledItems: disabledItems ?? const {},
             caption: state.errorText != null
                 ? Text(state.errorText!, style: TextStyle(color: Colors.red))
-                : caption != null
-                    ? caption
-                    : null,
+                : caption,
             initialValue: state.value,
             onChanged: (value) {
               state.didChange(value);
@@ -98,7 +96,7 @@ class _CategorySelectorState extends State<CategorySelector> {
         return Center(child: const Text("Error: selected item not found."));
       }
     } else {
-      return const Center(child: const Text("No category selected."));
+      return const Center(child: Text("No category selected."));
     }
   }
 
@@ -141,9 +139,7 @@ class _CategorySelectorState extends State<CategorySelector> {
                 return _viewing(itemsState);
               }
             } else if (itemsState is CategoriesLoading) {
-              return const Center(
-                child: const Text("Loading categories..."),
-              );
+              return const Center(child: Text("Loading categories..."));
             }
             throw Exception("Unhandeled state");
           })

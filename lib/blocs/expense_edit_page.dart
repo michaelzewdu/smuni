@@ -16,7 +16,7 @@ class LoadItem extends ExpenseEditPageBlocEvent {
   const LoadItem(this.id);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { id: $id }";
+  String toString() => "${runtimeType.toString()} { id: $id }";
 }
 
 class ModifyItem extends ExpenseEditPageBlocEvent {
@@ -25,7 +25,7 @@ class ModifyItem extends ExpenseEditPageBlocEvent {
   ModifyItem(this.modified);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { modified: $modified }";
+  String toString() => "${runtimeType.toString()} { modified: $modified }";
 }
 
 class DiscardChanges extends ExpenseEditPageBlocEvent {
@@ -47,7 +47,7 @@ class LoadingItem extends ExpenseEditPageBlocState {
   const LoadingItem(this.id);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { id: $id }";
+  String toString() => "${runtimeType.toString()} { id: $id }";
 }
 
 class ItemNotFound extends ExpenseEditPageBlocState {
@@ -55,7 +55,7 @@ class ItemNotFound extends ExpenseEditPageBlocState {
   const ItemNotFound(this.id);
 
   @override
-  String toString() => "${this.runtimeType.toString()} { id: $id }";
+  String toString() => "${runtimeType.toString()} { id: $id }";
 }
 
 class UnmodifiedEditState extends ExpenseEditPageBlocState {
@@ -66,8 +66,7 @@ class UnmodifiedEditState extends ExpenseEditPageBlocState {
   });
 
   @override
-  String toString() =>
-      "${this.runtimeType.toString()} { unmodified: $unmodified }";
+  String toString() => "${runtimeType.toString()} { unmodified: $unmodified }";
 }
 
 class ModifiedEditState extends UnmodifiedEditState {
@@ -77,7 +76,7 @@ class ModifiedEditState extends UnmodifiedEditState {
       : super(unmodified: unmodified);
   @override
   String toString() =>
-      "${this.runtimeType.toString()} { unmodified: $unmodified, modified: $modified }";
+      "${runtimeType.toString()} { unmodified: $unmodified, modified: $modified }";
 }
 
 // BLOC
@@ -161,6 +160,6 @@ class ExpenseEditPageBloc
     } else if (event is DiscardChanges) {
       return _mapDiscardChangesEventToState(event);
     }
-    throw new Exception("Unhandeled event.");
+    throw Exception("Unhandeled event.");
   }
 }

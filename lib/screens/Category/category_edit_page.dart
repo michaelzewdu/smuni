@@ -44,8 +44,6 @@ class CategoryEditPage extends StatefulWidget {
 
 class _CategoryEditPageState extends State<CategoryEditPage> {
   final _formKey = GlobalKey<FormState>();
-  int _amountWholes = 0;
-  int _amountCents = 0;
   String _name = "";
   bool _isSubcategory = false;
   String? _parentId;
@@ -58,7 +56,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
             actions: [
               ElevatedButton(
                 onPressed: () {
-                  final form = this._formKey.currentState;
+                  final form = _formKey.currentState;
                   if (form != null && form.validate()) {
                     form.save();
                     context.read<CategoryEditPageBloc>()
@@ -67,9 +65,6 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                           Category.from(
                             state.unmodified,
                             name: _name,
-                            allocatedAmount: MonetaryAmount(
-                                currency: "ETB",
-                                amount: (_amountWholes * 100) + _amountCents),
                             parentId: _parentId,
                           ),
                         ),

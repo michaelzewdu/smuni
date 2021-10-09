@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:flutter/material.dart' as flutter;
 
 class Pair<A, B> {
@@ -94,15 +92,15 @@ class DateRange {
   Duration get duration => Duration(milliseconds: endTime - startTime);
 
   bool contains(DateRange other) =>
-      this.startTime <= other.startTime && this.endTime >= other.endTime;
+      startTime <= other.startTime && endTime >= other.endTime;
 
   bool containsTimestamp(DateTime other) {
     var msSinceEpoch = other.millisecondsSinceEpoch;
-    return this.startTime <= msSinceEpoch && this.endTime >= msSinceEpoch;
+    return startTime <= msSinceEpoch && endTime >= msSinceEpoch;
   }
 
   bool overlaps(DateRange other) =>
-      this.startTime <= other.endTime && this.endTime >= other.startTime;
+      startTime <= other.endTime && endTime >= other.startTime;
 
   flutter.DateTimeRange toFlutter() =>
       flutter.DateTimeRange(start: start, end: end);
@@ -120,7 +118,7 @@ class DateRange {
   int get hashCode => startTime ^ endTime;
 }
 
-enum FilterLevel { Day, Week, Month, Year, All, Custom }
+enum FilterLevel { day, week, month, year, all, custom }
 
 class DateRangeFilter {
   final String name;
@@ -151,7 +149,7 @@ const List<String> monthNames = [
 
 Map<DateRange, DateRangeFilter> generateDateRangesFilters(
     Iterable<DateTime> timestamps) {
-  Map<DateRange, DateRangeFilter> filters = new HashMap();
+  Map<DateRange, DateRangeFilter> filters = {};
   for (final timestamp in timestamps) {
     final dayRange = DateRange.dayRange(timestamp);
     if (filters.containsKey(dayRange)) {
@@ -160,28 +158,28 @@ Map<DateRange, DateRangeFilter> generateDateRangesFilters(
     filters[dayRange] = DateRangeFilter(
       "${monthNames[timestamp.month]} ${timestamp.day}",
       dayRange,
-      FilterLevel.Day,
+      FilterLevel.day,
     );
 
     final weekRange = DateRange.weekRange(timestamp);
     filters[weekRange] = DateRangeFilter(
       "Week ${(timestamp.day / 7) + 1}",
       weekRange,
-      FilterLevel.Week,
+      FilterLevel.week,
     );
 
     final monthRange = DateRange.monthRange(timestamp);
     filters[monthRange] = DateRangeFilter(
       monthNames[timestamp.month],
       monthRange,
-      FilterLevel.Month,
+      FilterLevel.month,
     );
 
     final yearRange = DateRange.yearRange(timestamp);
     filters[yearRange] = DateRangeFilter(
       timestamp.year.toString(),
       yearRange,
-      FilterLevel.Year,
+      FilterLevel.year,
     );
   }
   return filters;
