@@ -20,17 +20,17 @@
 - [ ] Login
 - [ ] Home
 - [ ] Settings
-- [x] Budgets List
-- [x] Budget Details
-- [x] Budget Edit
-- [x] Budget Add
-- [x] Expenses List
-- [x] Expense Details
-- [x] Expense Edit 
-- [x] Expense Add
-- [x] Categories list
-- [x] Category details and subcategory
-- [x] Category Add
+- [ ] Budgets List
+- [ ] Budget Details
+- [ ] Budget Edit
+- [ ] Budget Add
+- [ ] Expenses List
+- [ ] Expense Details
+- [ ] Expense Edit 
+- [ ] Expense Add
+- [ ] Categories list
+- [ ] Category details and subcategory
+- [ ] Category Add
 - [ ] Dept payoff plans list
 - [ ] Dept payoff plans details
 - [ ] Dept payoff plans add 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-
 import 'package:smuni/blocs/budget_list_page.dart';
 
 class BudgetListView extends StatelessWidget {
