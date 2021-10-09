@@ -7,12 +7,16 @@ import './models.dart';
 class EndpointError {
   final int code;
   final String type;
+  final Map<String, dynamic> json;
 
-  const EndpointError(this.code, this.type);
+  const EndpointError(this.code, this.type, this.json);
+
   factory EndpointError.fromJson(Map<String, dynamic> json) => EndpointError(
         checkedConvert(json, "code", (v) => v as int),
         checkedConvert(json, "type", (v) => v as String),
+        json,
       );
+
   factory EndpointError.fromResponse(http.Response response, JsonCodec codec) {
     late Map<String, dynamic> json;
     try {
@@ -26,7 +30,7 @@ class EndpointError {
   }
   @override
   String toString() {
-    return "EndpointError( code: $code, type: $type )";
+    return "EndpointError( code: $code, type: $type, json: $json )";
   }
 }
 
@@ -87,16 +91,22 @@ class SmuniApiClient {
   ) =>
       _signIn("phoneNumber", phoneNumber, password);
 
-  Future<User> getUser(
+  Future<SignInRepsonse> signInFirebaseId(
+    String firebaseId,
+    String password,
+  ) =>
+      _signIn("firebaseId", firebaseId, password);
+
+  Future<UserDenorm> getUser(
     String username,
     String accessToken,
   ) async {
     final response =
         await makeApiCall("get", "/users/$username", authToken: accessToken);
-    return User.fromJson(_json.decode(response.body));
+    return UserDenorm.fromJson(_json.decode(response.body));
   }
 
-  Future<User> createUser({
+  Future<UserDenorm> createUser({
     required String username,
     required String firebaseId,
     required String password,
@@ -119,10 +129,10 @@ class SmuniApiClient {
         "pictureURL": pictureURL,
       },
     );
-    return User.fromJson(_json.decode(response.body));
+    return UserDenorm.fromJson(_json.decode(response.body));
   }
 
-  Future<User> updateUser(
+  Future<UserDenorm> updateUser(
     String username,
     String accessToken, {
     String? newUsername,
@@ -131,26 +141,56 @@ class SmuniApiClient {
     String? password,
     String? pictureURL,
   }) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "patch",
+      "/users/$username",
+      authToken: accessToken,
+      jsonBody: {
+        "username": newUsername,
+        "email": email,
+        "phoneNumber": phoneNumber,
+        "password": password,
+        "pictureURL": pictureURL,
+      },
+    );
+    return UserDenorm.fromJson(_json.decode(response.body));
   }
 
   Future<void> deleteUser(
     String username,
     String accessToken,
   ) async {
-    throw UnimplementedError();
+    await makeApiCall(
+      "delete",
+      "/users/$username",
+      authToken: accessToken,
+    );
   }
 
   Future<Budget> createBudget(
     String username,
     String accessToken, {
     required String name,
-    required DateTime starTime,
+    required DateTime startTime,
     required DateTime endTime,
     required Frequency frequency,
     required MonetaryAmount allocatedAmount,
+    required Map<String, int> categoryAllocations,
   }) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "post",
+      "/users/$username/budgets",
+      authToken: accessToken,
+      jsonBody: {
+        "name": name,
+        "startTime": startTime.millisecondsSinceEpoch,
+        "endTime": endTime.millisecondsSinceEpoch,
+        "frequency": frequency.toJSON(),
+        "allocatedAmount": allocatedAmount.toJSON(),
+        "categoryAllocations": categoryAllocations,
+      },
+    );
+    return Budget.fromJson(_json.decode(response.body));
   }
 
   Future<Budget> getBudget(
@@ -158,7 +198,12 @@ class SmuniApiClient {
     String username,
     String accessToken,
   ) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "get",
+      "/users/$username/budgets/$id",
+      authToken: accessToken,
+    );
+    return Budget.fromJson(_json.decode(response.body));
   }
 
   Future<Budget> updateBudget(
@@ -166,12 +211,26 @@ class SmuniApiClient {
     String username,
     String accessToken, {
     String? name,
-    DateTime? starTime,
+    DateTime? startTime,
     DateTime? endTime,
     Frequency? frequency,
     MonetaryAmount? allocatedAmount,
+    Map<String, int>? categoryAllocations,
   }) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "patch",
+      "/users/$username/budgets/$id",
+      authToken: accessToken,
+      jsonBody: {
+        "name": name,
+        "startTime": startTime?.millisecondsSinceEpoch,
+        "endTime": endTime?.millisecondsSinceEpoch,
+        "frequency": frequency?.toJSON(),
+        "allocatedAmount": allocatedAmount?.toJSON(),
+        "categoryAllocations": categoryAllocations,
+      },
+    );
+    return Budget.fromJson(_json.decode(response.body));
   }
 
   Future<void> deleteBudget(
@@ -179,18 +238,31 @@ class SmuniApiClient {
     String username,
     String accessToken,
   ) async {
-    throw UnimplementedError();
+    await makeApiCall(
+      "delete",
+      "/users/$username/budgets/$id",
+      authToken: accessToken,
+    );
   }
 
   Future<Category> createCategory(
     String username,
     String accessToken, {
     required String name,
-    required MonetaryAmount allocatedAmount,
     required List<String>? tags,
-    String? parentCategory,
+    String? parentId,
   }) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "post",
+      "/users/$username/categories",
+      authToken: accessToken,
+      jsonBody: {
+        "name": name,
+        "tags": tags,
+        "parentCategory": parentId,
+      },
+    );
+    return Category.fromJson(_json.decode(response.body));
   }
 
   Future<Category> getCategory(
@@ -198,7 +270,12 @@ class SmuniApiClient {
     String username,
     String accessToken,
   ) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "get",
+      "/users/$username/categories/$id",
+      authToken: accessToken,
+    );
+    return Category.fromJson(_json.decode(response.body));
   }
 
   Future<Category> updateCategory(
@@ -206,11 +283,20 @@ class SmuniApiClient {
     String username,
     String accessToken, {
     String? name,
-    MonetaryAmount? allocatedAmount,
     List<String>? tags,
-    String? parentCategory,
+    String? parentId,
   }) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "patch",
+      "/users/$username/categories/$id",
+      authToken: accessToken,
+      jsonBody: {
+        "name": name,
+        "tags": tags,
+        "parentCategory": parentId,
+      },
+    );
+    return Category.fromJson(_json.decode(response.body));
   }
 
   Future<void> deleteCategory(
@@ -218,7 +304,11 @@ class SmuniApiClient {
     String username,
     String accessToken,
   ) async {
-    throw UnimplementedError();
+    await makeApiCall(
+      "delete",
+      "/users/$username/categories/$id",
+      authToken: accessToken,
+    );
   }
 
   Future<Expense> createExpense(
@@ -229,7 +319,18 @@ class SmuniApiClient {
     required String categoryId,
     required MonetaryAmount amount,
   }) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "post",
+      "/users/$username/expenses",
+      authToken: accessToken,
+      jsonBody: {
+        "name": name,
+        "amount": amount.toJSON(),
+        "budgetId": budgetId,
+        "categoryId": categoryId,
+      },
+    );
+    return Expense.fromJson(_json.decode(response.body));
   }
 
   Future<Expense> getExpense(
@@ -237,7 +338,12 @@ class SmuniApiClient {
     String username,
     String accessToken,
   ) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "get",
+      "/users/$username/expenses/$id",
+      authToken: accessToken,
+    );
+    return Expense.fromJson(_json.decode(response.body));
   }
 
   Future<Expense> updateExpense(
@@ -247,7 +353,16 @@ class SmuniApiClient {
     String? name,
     MonetaryAmount? amount,
   }) async {
-    throw UnimplementedError();
+    final response = await makeApiCall(
+      "patch",
+      "/users/$username/expenses/$id",
+      authToken: accessToken,
+      jsonBody: {
+        "name": name,
+        "amount": amount?.toJSON(),
+      },
+    );
+    return Expense.fromJson(_json.decode(response.body));
   }
 
   Future<void> deleteExpense(
@@ -255,7 +370,11 @@ class SmuniApiClient {
     String username,
     String accessToken,
   ) async {
-    throw UnimplementedError();
+    await makeApiCall(
+      "delete",
+      "/users/$username/expenses/$id",
+      authToken: accessToken,
+    );
   }
 
   Future<http.Response> makeApiCall(
@@ -277,7 +396,7 @@ class SmuniApiClient {
     }
     final sResponse = await client.send(request);
     final response = await http.Response.fromStream(sResponse);
-    print(response.body);
+    // print(response.body);
     if (sResponse.statusCode >= 200 && sResponse.statusCode < 300) {
       /*  if (fromJson != null) {
         final response = await http.Response.fromStream(sResponse);
@@ -304,7 +423,7 @@ T dbg<T>(T item) {
 class SignInRepsonse {
   final String accessToken;
   final String refreshToken;
-  final User user;
+  final UserDenorm user;
 
   SignInRepsonse({
     required this.accessToken,
@@ -315,7 +434,7 @@ class SignInRepsonse {
   factory SignInRepsonse.fromJson(Map<String, dynamic> json) => SignInRepsonse(
         accessToken: checkedConvert(json, "accessToken", (v) => v as String),
         refreshToken: checkedConvert(json, "refreshToken", (v) => v as String),
-        user: checkedConvert(
-            json, "user", (v) => User.fromJson(v as Map<String, dynamic>)),
+        user: checkedConvert(json, "user",
+            (v) => UserDenorm.fromJson(v as Map<String, dynamic>)),
       );
 }

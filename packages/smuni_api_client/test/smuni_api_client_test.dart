@@ -3,153 +3,33 @@ import 'package:test/test.dart';
 
 @TestOn('vm')
 void main() {
-  final testUser = (() {
-    final now = DateTime.now();
-    return User(
-      id: "614193c7f2ea51b47f5896be",
-      username: "superkind",
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      email: "don@key.ote",
-      firebaseId: "ABCDEF_123456_ABCDEF_123456_",
-      phoneNumber: "+251900112233",
-      pictureURL: "https://imagine.co/9q6roh3cifnp",
-      budgets: [
-        Budget(
-          id: "614193c7f2ea51b47f5896ba",
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          name: "Monthly budget",
-          startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
-          endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
-          allocatedAmount: MonetaryAmount(currency: "ETB", amount: 7000 * 100),
-          frequency: Recurring(2592000),
-          categories: [
-            Category(
-              id: "fpoq3cum4cpu43241u34",
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              name: "Mental health",
-              budgetId: "614193c7f2ea51b47f5896ba",
-              parentId: null,
-              allocatedAmount:
-                  MonetaryAmount(currency: "ETB", amount: 1000 * 100),
-              tags: [],
-            ),
-            Category(
-              id: "mucpxo2ur3p98u32proxi34",
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              name: "Atmosphere",
-              budgetId: "614193c7f2ea51b47f5896ba",
-              parentId: "fpoq3cum4cpu43241u34",
-              allocatedAmount:
-                  MonetaryAmount(currency: "ETB", amount: 300 * 100),
-              tags: [],
-            ),
-            Category(
-              id: "614193c7f2ea51b47f5896b8",
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              name: "Medicine",
-              budgetId: "614193c7f2ea51b47f5896ba",
-              parentId: null,
-              allocatedAmount:
-                  MonetaryAmount(currency: "ETB", amount: 1000 * 100),
-              tags: ["pharma"],
-            ),
-            Category(
-              id: "614193c7f2ea51b47f5896b9",
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              name: "RejuvPill",
-              budgetId: "614193c7f2ea51b47f5896ba",
-              parentId: "614193c7f2ea51b47f5896b8",
-              allocatedAmount:
-                  MonetaryAmount(currency: "ETB", amount: 500 * 100),
-              tags: [],
-            ),
-          ],
-        ),
-        Budget(
-          id: "614193c7f2ea51b47f5896bb",
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          name: "Special budget",
-          startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
-          endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
-          allocatedAmount: MonetaryAmount(currency: "ETB", amount: 1000 * 100),
-          frequency: OneTime(),
-          categories: [],
-        ),
-      ],
-      expenses: [
-        Expense(
-          id: "614193c7f2ea51b47f5896bc",
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          name: "Pill purchase",
-          categoryId: "614193c7f2ea51b47f5896b9",
-          budgetId: "614193c7f2ea51b47f5896ba",
-          amount: MonetaryAmount(currency: "ETB", amount: 400 * 100),
-        ),
-        Expense(
-          id: "614193c7f2ea51b47f5896bd",
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          name: "Xanax purchase",
-          categoryId: "614193c7f2ea51b47f5896b8",
-          budgetId: "614193c7f2ea51b47f5896ba",
-          amount: MonetaryAmount(currency: "ETB", amount: 200 * 100),
-        ),
-        Expense(
-          id: "um3p24urpoi23u4crp23iuj4xp",
-          createdAt: now.add(Duration(days: -1)),
-          updatedAt: now.add(Duration(days: -1)),
-          name: "Flower Blood incense",
-          categoryId: "mucpxo2ur3p98u32proxi34",
-          budgetId: "614193c7f2ea51b47f5896ba",
-          amount: MonetaryAmount(currency: "ETB", amount: 50 * 100),
-        ),
-        Expense(
-          id: "j2cpiojr2p3io4jrc92p34jr234r",
-          createdAt: now.add(Duration(days: -40)),
-          updatedAt: now.add(Duration(days: -40)),
-          name: "Switchblade puchase",
-          categoryId: "fpoq3cum4cpu43241u34",
-          budgetId: "614193c7f2ea51b47f5896ba",
-          amount: MonetaryAmount(currency: "ETB", amount: 100 * 100),
-        ),
-        Expense(
-          id: "rcjp2i3ou4cr23oi4jrc324c23w",
-          createdAt: now.add(Duration(days: -400)),
-          updatedAt: now.add(Duration(days: -400)),
-          name: "Private eye hire",
-          categoryId: "fpoq3cum4cpu43241u34",
-          budgetId: "614193c7f2ea51b47f5896ba",
-          amount: MonetaryAmount(currency: "ETB", amount: 300 * 100),
-        ),
-      ],
-    );
-  })();
-
   final client = SmuniApiClient("http://localhost:3000");
   group("post /auth_token", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
     test("supports email signIn", () async {
-      var response = await client.signInEmail(testUser.email, "password");
+      var response = await client.signInEmail(testUser.email!, "password");
       expect(response.accessToken, isNotEmpty);
       expect(response.refreshToken, isNotEmpty);
       expect(response.user.id, equals(testUser.id));
     });
     test("supports phoneNumber signIn", () async {
-      var response = await client.signInPhone(testUser.phoneNumber, "password");
+      var response =
+          await client.signInPhone(testUser.phoneNumber!, "password");
       expect(response.accessToken, isNotEmpty);
       expect(response.refreshToken, isNotEmpty);
       expect(response.user.id, equals(testUser.id));
     });
     test("throws when password wrong", () {
       expect(
-        () => client.signInPhone(testUser.phoneNumber, "invalid"),
+        () => client.signInPhone(testUser.phoneNumber!, "invalid"),
         throwsEndpointError(
           400,
           "CredentialsRejected",
@@ -176,12 +56,18 @@ void main() {
     });
   });
 
+// USER
+
   group("get /users/:username", () {
     late String token;
+    late UserDenorm testUser;
     setUp(() async {
-      token =
-          (await client.signInEmail(testUser.email, "password")).accessToken;
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
     });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
     test("succeeds", () async {
       var response = await client.getUser(testUser.username, token);
       expect(response.id, isNotEmpty);
@@ -200,28 +86,654 @@ void main() {
 
   group("post /users", () {
     final username = "crash_test_dummy";
-    final firebaseId = "1234567ABCDEFGHHGFEDCBA7654321";
+    final firebaseId = "1234567ABCDEFGHHGFEDCBA76543";
     final password = "password";
     final email = "exist@tsixe.ed";
     final phoneNumber = "+251912344321";
-    test("succeeds", () async {
-      var response = await client.createUser(
-          username: username,
-          password: password,
-          email: email,
-          phoneNumber: phoneNumber,
-          firebaseId: firebaseId);
-      expect(response.id, isNotEmpty);
-      expect(response.username, equals(username));
-      expect(response.email, equals(email));
-      expect(response.phoneNumber, equals(phoneNumber));
-      expect(response.firebaseId, equals(firebaseId));
+
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      try {
+        final token = (await client.signInEmail(email, password)).accessToken;
+        await client.deleteUser(username, token);
+        // ignore: empty_catches
+      } catch (e) {}
+
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async {
+      try {
+        final token = (await client.signInEmail(email, password)).accessToken;
+        await client.deleteUser(username, token);
+        // ignore: empty_catches
+      } catch (e) {}
+
+      await client.deleteUser(testUser.username, token);
     });
     test("throws if email and phoneNumber missing", () {
       expect(
         () => client.createUser(
             username: username, password: password, firebaseId: firebaseId),
         throwsException,
+      );
+    });
+    test("throws if username occupied", () {
+      expect(
+        () => client.createUser(
+          username: testUser.username,
+          password: password,
+          firebaseId: firebaseId,
+          email: email,
+        ),
+        throwsEndpointError(
+          400,
+          "UsernameOccupied",
+        ),
+      );
+    });
+    test("throws if email occupied", () {
+      expect(
+        () => client.createUser(
+          username: username,
+          password: password,
+          firebaseId: firebaseId,
+          email: testUser.email!,
+        ),
+        throwsEndpointError(
+          400,
+          "EmailOccupied",
+        ),
+      );
+    });
+    test("throws if phoneNumber occupied", () {
+      expect(
+        () => client.createUser(
+          username: username,
+          password: password,
+          firebaseId: firebaseId,
+          phoneNumber: testUser.phoneNumber!,
+        ),
+        throwsEndpointError(
+          400,
+          "PhoneNumberOccupied",
+        ),
+      );
+    });
+
+    // run the succeds test last to avoid occupied errors
+    test("succeeds", () async {
+      var response = await client.createUser(
+        username: username,
+        password: password,
+        email: email,
+        phoneNumber: phoneNumber,
+        firebaseId: firebaseId,
+      );
+      expect(response.id, isNotEmpty);
+      expect(response.username, equals(username));
+      expect(response.email, equals(email));
+      expect(response.phoneNumber, equals(phoneNumber));
+      expect(response.firebaseId, equals(firebaseId));
+    });
+  });
+
+  group("patch /users/:username", () {
+    final username = "crash_test_dummy";
+    final pictureURL = "https://138924jhe.asdf/ui243o1";
+    final password = "password";
+    final email = "exist@tsixe.ed";
+    final phoneNumber = "+251912344321";
+
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async {
+      final resp =
+          (await client.signInFirebaseId(testUser.firebaseId, password));
+      await client.deleteUser(resp.user.username, resp.accessToken);
+    });
+
+    test("succeeds", () async {
+      var response = await client.updateUser(
+        testUser.username,
+        token,
+        newUsername: username,
+        email: email,
+        password: password,
+        phoneNumber: phoneNumber,
+        pictureURL: pictureURL,
+      );
+      expect(response.username, equals(username));
+      expect(response.email, equals(email));
+      expect(response.phoneNumber, equals(phoneNumber));
+      expect(response.pictureURL, equals(pictureURL));
+    });
+    test("throws when not found", () {
+      expect(
+        () => client.updateUser("randomrandom", token, email: email),
+        throwsEndpointError(
+          403,
+          "AccessDenied",
+        ),
+      );
+    });
+  });
+
+  group("delete /users/:username", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    test("succeeds", () async {
+      await client.deleteUser(testUser.username, token);
+    });
+  });
+
+// BUDGET
+
+  group("get /users/:username/budgets/:budgetId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    test("succeeds", () async {
+      var response = await client.getBudget(
+        testUser.budgets[0].id,
+        testUser.username,
+        token,
+      );
+      expect(response.id, isNotEmpty);
+      expect(response.name, equals(testUser.budgets[0].name));
+    });
+    test("throws when not found", () {
+      expect(
+        () => client.getBudget(
+          "614193c7f2ea51b47f5896be",
+          testUser.username,
+          token,
+        ),
+        throwsEndpointError(
+          404,
+          "BudgetNotFound",
+        ),
+      );
+    });
+  });
+
+  group("post /users/:username/budgets", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    final name = "Diary budget";
+    final allocatedAmount = MonetaryAmount(currency: "ETB", amount: 1000 * 100);
+    final frequency = OneTime();
+    final startTime = DateTime.now();
+    final endTime = startTime.add(Duration(days: 7));
+    test("succeeds", () async {
+      final categoryAllocations = {
+        testUser.categories[0].id: 500 * 100,
+        testUser.categories[1].id: 500 * 100,
+      };
+
+      var response = await client.createBudget(
+        testUser.username,
+        token,
+        name: name,
+        allocatedAmount: allocatedAmount,
+        frequency: frequency,
+        startTime: startTime,
+        endTime: endTime,
+        categoryAllocations: categoryAllocations,
+      );
+      expect(response.id, isNotEmpty);
+      expect(response.name, equals(name));
+      expect(response.allocatedAmount, equals(allocatedAmount));
+      expect(response.frequency, equals(frequency));
+      expect(response.startTime.millisecondsSinceEpoch,
+          equals(startTime.millisecondsSinceEpoch));
+      expect(response.endTime.millisecondsSinceEpoch,
+          equals(endTime.millisecondsSinceEpoch));
+    });
+    test("throws if category not found", () {
+      expect(
+        () => client.createBudget(
+          testUser.username,
+          token,
+          name: name,
+          allocatedAmount: allocatedAmount,
+          frequency: frequency,
+          startTime: startTime,
+          endTime: endTime,
+          categoryAllocations: {"614193c7f2ea51b47f5896be": 1000 * 100},
+        ),
+        throwsEndpointError(
+          404,
+          "CategoryNotFound",
+        ),
+      );
+    });
+  });
+
+  group("patch /users/:username/budgets/:budgetId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    final name = "Dairy budget";
+    final allocatedAmount = MonetaryAmount(currency: "ETB", amount: 1000 * 100);
+    final frequency = OneTime();
+    final startTime = DateTime.now();
+    final endTime = startTime.add(Duration(days: 7));
+
+    test("succeeds", () async {
+      final categoryAllocations = {
+        testUser.categories[0].id: 500 * 100,
+        testUser.categories[1].id: 500 * 100,
+      };
+      var response = await client.updateBudget(
+        testUser.budgets[0].id,
+        testUser.username,
+        token,
+        name: name,
+        allocatedAmount: allocatedAmount,
+        frequency: frequency,
+        startTime: startTime,
+        endTime: endTime,
+        categoryAllocations: categoryAllocations,
+      );
+      expect(response.name, equals(name));
+      expect(response.allocatedAmount, equals(allocatedAmount));
+      expect(response.frequency, equals(frequency));
+      expect(response.startTime.millisecondsSinceEpoch,
+          equals(startTime.millisecondsSinceEpoch));
+      expect(response.endTime.millisecondsSinceEpoch,
+          equals(endTime.millisecondsSinceEpoch));
+    });
+    test("throws when not found", () {
+      expect(
+        () => client.updateBudget(
+            "614193c7f2ea51b47f5896be", testUser.username, token,
+            name: name),
+        throwsEndpointError(
+          404,
+          "BudgetNotFound",
+        ),
+      );
+    });
+    test("throws if category not found", () {
+      expect(
+        () => client.updateBudget(
+          testUser.budgets[0].id,
+          testUser.username,
+          token,
+          categoryAllocations: {"614193c7f2ea51b47f5896be": 1000 * 100},
+        ),
+        throwsEndpointError(
+          404,
+          "CategoryNotFound",
+        ),
+      );
+    });
+  });
+
+  group("delete /users/:username/budgets/:budgetId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    test("succeeds", () async {
+      await client.deleteBudget(
+        testUser.budgets[0].id,
+        testUser.username,
+        token,
+      );
+    });
+  });
+
+// CATEGORY
+
+  group("get /users/:username/categories/:categoryId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    test("succeeds", () async {
+      var response = await client.getCategory(
+        testUser.categories[0].id,
+        testUser.username,
+        token,
+      );
+      expect(response.id, isNotEmpty);
+      expect(response.name, equals(testUser.categories[0].name));
+    });
+    test("throws when not found", () {
+      expect(
+        () => client.getCategory(
+          "614193c7f2ea51b47f5896be",
+          testUser.username,
+          token,
+        ),
+        throwsEndpointError(
+          404,
+          "CategoryNotFound",
+        ),
+      );
+    });
+  });
+
+  group("post /users/:username/categories", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    final name = "Simping";
+    final tags = ["vice"];
+    test("succeeds", () async {
+      final parentId = testUser.categories[0].id;
+
+      var response = await client.createCategory(
+        testUser.username,
+        token,
+        name: name,
+        tags: tags,
+        parentId: parentId,
+      );
+      expect(response.id, isNotEmpty);
+      expect(response.name, equals(name));
+      expect(response.tags, equals(tags));
+      expect(response.parentId, equals(parentId));
+    });
+    test("throws if category not found", () {
+      expect(
+        () => client.createCategory(
+          testUser.username,
+          token,
+          name: name,
+          tags: tags,
+          parentId: "614193c7f2ea51b47f5896be",
+        ),
+        throwsEndpointError(
+          404,
+          "CategoryNotFound",
+        ),
+      );
+    });
+  });
+
+  group("patch /users/:username/categories/:categoryId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    final name = "Simping";
+    final tags = ["vice"];
+
+    test("succeeds", () async {
+      final parentId = testUser.categories[0].id;
+
+      var response = await client.updateCategory(
+        testUser.categories[0].id,
+        testUser.username,
+        token,
+        name: name,
+        tags: tags,
+        parentId: parentId,
+      );
+      expect(response.name, equals(name));
+      expect(response.tags, equals(tags));
+      expect(response.parentId, equals(parentId));
+    });
+    test("throws when not found", () {
+      expect(
+        () => client.updateCategory(
+          "614193c7f2ea51b47f5896be",
+          testUser.username,
+          token,
+          name: name,
+        ),
+        throwsEndpointError(
+          404,
+          "CategoryNotFound",
+        ),
+      );
+    });
+    test("throws if category not found", () {
+      expect(
+        () => client.updateCategory(
+          testUser.categories[0].id,
+          testUser.username,
+          token,
+          parentId: "614193c7f2ea51b47f5896be",
+        ),
+        throwsEndpointError(
+          404,
+          "CategoryNotFound",
+        ),
+      );
+    });
+  });
+
+  group("delete /users/:username/categories/:categoryId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    test("succeeds", () async {
+      await client.deleteBudget(
+        testUser.categories[0].id,
+        testUser.username,
+        token,
+      );
+    });
+  });
+
+// EXPENSE
+
+  group("get /users/:username/expenses/:expenseId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    test("succeeds", () async {
+      var response = await client.getExpense(
+        testUser.expenses[0].id,
+        testUser.username,
+        token,
+      );
+      expect(response.id, isNotEmpty);
+      expect(response.name, equals(testUser.expenses[0].name));
+    });
+    test("throws when not found", () {
+      expect(
+        () => client.getExpense(
+          "614193c7f2ea51b47f5896be",
+          testUser.username,
+          token,
+        ),
+        throwsEndpointError(
+          404,
+          "ExpenseNotFound",
+        ),
+      );
+    });
+  });
+
+  group("post /users/:username/expenses", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    final name = "Business Hymns CD 1";
+    final amount = MonetaryAmount(currency: "ETB", amount: 100 * 100);
+
+    test("succeeds", () async {
+      final budgetId = testUser.budgets[0].id;
+      final categoryId = testUser.categories[0].id;
+
+      var response = await client.createExpense(
+        testUser.username,
+        token,
+        name: name,
+        amount: amount,
+        budgetId: budgetId,
+        categoryId: categoryId,
+      );
+      expect(response.id, isNotEmpty);
+      expect(response.name, equals(name));
+      expect(response.amount, equals(amount));
+      expect(response.budgetId, equals(budgetId));
+      expect(response.categoryId, equals(categoryId));
+    });
+    test("throws if budget not found", () {
+      final categoryId = testUser.categories[0].id;
+      expect(
+        () => client.createExpense(
+          testUser.username,
+          token,
+          name: name,
+          amount: amount,
+          budgetId: "614193c7f2ea51b47f5896be",
+          categoryId: categoryId,
+        ),
+        throwsEndpointError(
+          404,
+          "BudgetNotFound",
+        ),
+      );
+    });
+    test("throws if category not found", () {
+      final budgetId = testUser.budgets[0].id;
+      expect(
+        () => client.createExpense(
+          testUser.username,
+          token,
+          name: name,
+          amount: amount,
+          budgetId: budgetId,
+          categoryId: "614193c7f2ea51b47f5896be",
+        ),
+        throwsEndpointError(
+          404,
+          "CategoryNotFound",
+        ),
+      );
+    });
+  });
+
+  group("patch /users/:username/expenses/:expenseId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    final name = "Business Hymns CD 1";
+    final amount = MonetaryAmount(currency: "ETB", amount: 100 * 100);
+
+    test("succeeds", () async {
+      var response = await client.updateExpense(
+          testUser.expenses[0].id, testUser.username, token,
+          name: name, amount: amount);
+      expect(response.name, equals(name));
+      expect(response.amount, equals(amount));
+    });
+    test("throws when not found", () {
+      expect(
+        () => client.updateExpense(
+          "614193c7f2ea51b47f5896be",
+          testUser.username,
+          token,
+          name: name,
+        ),
+        throwsEndpointError(
+          404,
+          "ExpenseNotFound",
+        ),
+      );
+    });
+  });
+
+  group("delete /users/:username/expenses/:expenseId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    test("succeeds", () async {
+      await client.deleteExpense(
+        testUser.expenses[0].id,
+        testUser.username,
+        token,
       );
     });
   });
@@ -238,3 +750,87 @@ Matcher throwsEndpointError(
         predicate<EndpointError>((err) => err.type == type, "matches type"),
       ),
     );
+
+Future<SignInRepsonse> setupTestUser(SmuniApiClient client) async {
+  final password = "password";
+  final username = "client_test_dummy";
+  final email = "hello@under.world";
+  try {
+    final token = (await client.signInEmail(email, password)).accessToken;
+    await client.deleteUser(username, token);
+    // ignore: empty_catches
+  } catch (e) {}
+
+  final user = await client.createUser(
+    username: username,
+    password: password,
+    email: email,
+    phoneNumber: "+251900001212",
+    firebaseId: "1234567ABCDEFGHHGFEDCBA00000",
+  );
+  final token = (await client.signInEmail(email, password)).accessToken;
+  late Category category01;
+  late Category category02;
+  {
+    category01 = await client.createCategory(
+      user.username,
+      token,
+      name: "Medicine",
+      tags: ["pharma"],
+    );
+    category02 = await client.createCategory(
+      user.username,
+      token,
+      name: "RejuvPill",
+      tags: ["pharma", "health"],
+    );
+  }
+  late Budget budget01;
+  {
+    budget01 = await client.createBudget(
+      user.username,
+      token,
+      name: "Monthly budget",
+      allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
+      frequency: Recurring(2592000),
+      startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
+      endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
+      categoryAllocations: {
+        category01.id: 1000 * 100,
+        category02.id: 1000 * 100,
+      },
+    );
+    await client.createBudget(
+      user.username,
+      token,
+      name: "Special budget",
+      startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
+      endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
+      allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
+      frequency: OneTime(),
+      categoryAllocations: {
+        category01.id: 1000 * 100,
+        category02.id: 1000 * 100,
+      },
+    );
+  }
+  {
+    await client.createExpense(
+      user.username,
+      token,
+      name: "Pill purchase",
+      categoryId: category02.id,
+      budgetId: budget01.id,
+      amount: MonetaryAmount(currency: "ETB", amount: 400 * 100),
+    );
+    await client.createExpense(
+      user.username,
+      token,
+      name: "Xanax purchase",
+      categoryId: category01.id,
+      budgetId: budget01.id,
+      amount: MonetaryAmount(currency: "ETB", amount: 200 * 100),
+    );
+  }
+  return await client.signInEmail(email, password);
+}
