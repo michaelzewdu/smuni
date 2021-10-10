@@ -88,7 +88,7 @@ class _BudgetSelectorState extends State<BudgetSelector> {
             ),
             Text("startTime: ${item.startTime}"),
             Text("endTime: ${item.endTime}"),
-            Text("frequency: ${item.frequency.toJSON()}"),
+            Text("frequency: ${item.frequency.toJson()}"),
           ],
         );
       } else {

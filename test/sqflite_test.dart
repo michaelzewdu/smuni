@@ -9,9 +9,7 @@ import 'package:smuni/models/models.dart';
 void main() {
   // Init ffi loader if needed.
 
-  sqfliteFfiInit();
-  sqflite.databaseFactory = databaseFactoryFfi;
-  var user = UserDenorm(
+  final user = UserDenorm(
     id: "cny45347yncx093n24579xm",
     username: "deathconsciousness",
     createdAt: DateTime.now(),
@@ -57,39 +55,98 @@ void main() {
       ),
     ],
   );
+
+  setUpAll(() {
+    sqfliteFfiInit();
+    sqflite.databaseFactory = databaseFactoryFfi;
+  });
+  late Database db;
+  setUp(() async {
+    db = await sqflite.openDatabase(
+      inMemoryDatabasePath,
+      version: 1,
+      onCreate: (db, version) => db.transaction((txn) => migrateV1(txn)),
+    );
+  });
+  tearDown(() => db.close());
+
   test("user", () async {
-    var db = await sqflite.openDatabase(inMemoryDatabasePath);
-    var repo = SqliteUserRepository(db);
-    await repo.migrate();
-    await repo.setItem(user.id, user);
-    var out = await repo.getItem(user.id);
-    print(out?.toJSON());
+    final repo = SqliteUserRepository(db);
+    final item = User.from(user);
+    await repo.setItem(item.id, item);
+    final out = (await repo.getItem(user.id))!;
+    expect(item.id, equals(out.id));
+    expect(item.createdAt.millisecondsSinceEpoch,
+        equals(out.createdAt.millisecondsSinceEpoch));
+    expect(item.updatedAt.millisecondsSinceEpoch,
+        equals(out.updatedAt.millisecondsSinceEpoch));
+    expect(item.version, equals(out.version));
+    expect(item.username, equals(out.username));
+    expect(item.email, equals(out.email));
+    expect(item.phoneNumber, equals(out.phoneNumber));
+    expect(item.firebaseId, equals(out.firebaseId));
+    expect(item.pictureURL, equals(out.pictureURL));
+    expect(item.mainBudget, equals(out.mainBudget));
   });
   test("budget", () async {
-    var db = await sqflite.openDatabase(inMemoryDatabasePath);
-    var repo = SqliteBudgetRepository(db);
-    await repo.migrate();
-    var item = user.budgets[0];
-    await repo.setItem(user.id, item);
-    var out = await repo.getItem(item.id);
-    print(out?.toJSON());
+    final repo = SqliteBudgetRepository(db);
+    final item = user.budgets[0];
+    await repo.setItem(item.id, item);
+    final out = (await repo.getItem(item.id))!;
+    expect(item.id, equals(out.id));
+    expect(item.createdAt.millisecondsSinceEpoch,
+        equals(out.createdAt.millisecondsSinceEpoch));
+    expect(item.updatedAt.millisecondsSinceEpoch,
+        equals(out.updatedAt.millisecondsSinceEpoch));
+    expect(item.version, equals(out.version));
+    expect(item.name, equals(out.name));
+    expect(item.frequency, equals(out.frequency));
+    expect(item.allocatedAmount, equals(out.allocatedAmount));
+    expect(item.categoryAllocations, equals(out.categoryAllocations));
+    expect(item.startTime.millisecondsSinceEpoch,
+        equals(out.startTime.millisecondsSinceEpoch));
+    expect(item.endTime.millisecondsSinceEpoch,
+        equals(out.endTime.millisecondsSinceEpoch));
   });
   test("category", () async {
-    var db = await sqflite.openDatabase(inMemoryDatabasePath);
-    var repo = SqliteCategoryRepository(db);
-    await repo.migrate();
-    var item = user.categories[0];
-    await repo.setItem(user.id, item);
-    var out = await repo.getItem(item.id);
-    print(out?.toJSON());
+    final db = await sqflite.openDatabase(
+      inMemoryDatabasePath,
+      version: 1,
+      onCreate: (db, version) => db.transaction((txn) => migrateV1(txn)),
+    );
+    final repo = SqliteCategoryRepository(db);
+    final item = user.categories[0];
+    await repo.setItem(item.id, item);
+    final out = (await repo.getItem(item.id))!;
+    expect(item.id, equals(out.id));
+    expect(item.createdAt.millisecondsSinceEpoch,
+        equals(out.createdAt.millisecondsSinceEpoch));
+    expect(item.updatedAt.millisecondsSinceEpoch,
+        equals(out.updatedAt.millisecondsSinceEpoch));
+    expect(item.version, equals(out.version));
+    expect(item.name, equals(out.name));
+    expect(item.tags, equals(out.tags));
+    expect(item.parentId, equals(out.parentId));
   });
   test("expense", () async {
-    var db = await sqflite.openDatabase(inMemoryDatabasePath);
-    var repo = SqliteExpenseRepository(db);
-    await repo.migrate();
-    var item = user.expenses[0];
-    await repo.setItem(user.id, item);
-    var out = await repo.getItem(item.id);
-    print(out?.toJSON());
+    final db = await sqflite.openDatabase(
+      inMemoryDatabasePath,
+      version: 1,
+      onCreate: (db, version) => db.transaction((txn) => migrateV1(txn)),
+    );
+    final repo = SqliteExpenseRepository(db);
+    final item = user.expenses[0];
+    await repo.setItem(item.id, item);
+    final out = (await repo.getItem(item.id))!;
+    expect(item.id, equals(out.id));
+    expect(item.createdAt.millisecondsSinceEpoch,
+        equals(out.createdAt.millisecondsSinceEpoch));
+    expect(item.updatedAt.millisecondsSinceEpoch,
+        equals(out.updatedAt.millisecondsSinceEpoch));
+    expect(item.version, equals(out.version));
+    expect(item.name, equals(out.name));
+    expect(item.amount, equals(out.amount));
+    expect(item.budgetId, equals(out.budgetId));
+    expect(item.categoryId, equals(out.categoryId));
   });
 }

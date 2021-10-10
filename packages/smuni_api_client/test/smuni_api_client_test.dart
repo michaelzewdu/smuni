@@ -210,6 +210,7 @@ void main() {
         password: password,
         phoneNumber: phoneNumber,
         pictureURL: pictureURL,
+        lastSeenVersion: testUser.version,
       );
       expect(response.username, equals(username));
       expect(response.email, equals(email));
@@ -218,7 +219,12 @@ void main() {
     });
     test("throws when not found", () {
       expect(
-        () => client.updateUser("randomrandom", token, email: email),
+        () => client.updateUser(
+          "randomrandom",
+          token,
+          email: email,
+          lastSeenVersion: 0,
+        ),
         throwsEndpointError(
           403,
           "AccessDenied",
@@ -363,6 +369,7 @@ void main() {
         testUser.budgets[0].id,
         testUser.username,
         token,
+        lastSeenVersion: testUser.budgets[0].version,
         name: name,
         allocatedAmount: allocatedAmount,
         frequency: frequency,
@@ -382,7 +389,7 @@ void main() {
       expect(
         () => client.updateBudget(
             "614193c7f2ea51b47f5896be", testUser.username, token,
-            name: name),
+            lastSeenVersion: 0, name: name),
         throwsEndpointError(
           404,
           "BudgetNotFound",
@@ -396,6 +403,7 @@ void main() {
           testUser.username,
           token,
           categoryAllocations: {"614193c7f2ea51b47f5896be": 1000 * 100},
+          lastSeenVersion: testUser.budgets[0].version,
         ),
         throwsEndpointError(
           404,
@@ -524,6 +532,7 @@ void main() {
         testUser.categories[0].id,
         testUser.username,
         token,
+        lastSeenVersion: testUser.categories[0].version,
         name: name,
         tags: tags,
         parentId: parentId,
@@ -535,11 +544,8 @@ void main() {
     test("throws when not found", () {
       expect(
         () => client.updateCategory(
-          "614193c7f2ea51b47f5896be",
-          testUser.username,
-          token,
-          name: name,
-        ),
+            "614193c7f2ea51b47f5896be", testUser.username, token,
+            name: name, lastSeenVersion: 0),
         throwsEndpointError(
           404,
           "CategoryNotFound",
@@ -552,6 +558,7 @@ void main() {
           testUser.categories[0].id,
           testUser.username,
           token,
+          lastSeenVersion: testUser.categories[0].version,
           parentId: "614193c7f2ea51b47f5896be",
         ),
         throwsEndpointError(
@@ -699,8 +706,13 @@ void main() {
 
     test("succeeds", () async {
       var response = await client.updateExpense(
-          testUser.expenses[0].id, testUser.username, token,
-          name: name, amount: amount);
+        testUser.expenses[0].id,
+        testUser.username,
+        token,
+        lastSeenVersion: testUser.expenses[0].version,
+        name: name,
+        amount: amount,
+      );
       expect(response.name, equals(name));
       expect(response.amount, equals(amount));
     });
@@ -711,6 +723,7 @@ void main() {
           testUser.username,
           token,
           name: name,
+          lastSeenVersion: 0,
         ),
         throwsEndpointError(
           404,

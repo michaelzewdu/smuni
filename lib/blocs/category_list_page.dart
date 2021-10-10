@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
 
@@ -67,17 +66,10 @@ class CategoryListPageBloc
     CategoriesListBlocEvent event,
   ) async* {
     if (event is LoadCategories) {
-      final items = await repo.getItems();
-      final ancestryGraph = await repo.ancestryGraph;
-
-      // TODO:  load from fs
       yield CategoriesLoadSuccess(
-          HashMap.fromIterable(
-            items,
-            key: (i) => i.id,
-            value: (i) => i,
-          ),
-          ancestryGraph);
+        await repo.getItems(),
+        await repo.ancestryGraph,
+      );
       return;
     } else if (event is DeleteCategory) {
       final current = state;

@@ -4,6 +4,7 @@ class User {
   final String id;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int version;
   final String firebaseId;
   final String username;
   final String? email;
@@ -15,6 +16,7 @@ class User {
     required this.id,
     required this.createdAt,
     required this.updatedAt,
+    this.version = 0,
     required this.firebaseId,
     required this.username,
     this.email,
@@ -23,10 +25,11 @@ class User {
     this.mainBudget,
   });
 
-  Map<String, dynamic> toJSON() => {
+  Map<String, dynamic> toJson() => {
         "_id": id,
         "createdAt": createdAt.toIso8601String(),
         "updatedAt": updatedAt.toIso8601String(),
+        "version": version,
         "firebaseId": firebaseId,
         "username": username,
         "email": email,
@@ -39,6 +42,7 @@ class User {
         id: checkedConvert(json, "_id", (v) => v as String),
         createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
         updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
+        version: checkedConvert(json, "version", (v) => v as int),
         firebaseId: checkedConvert(json, "firebaseId", (v) => v as String),
         username: checkedConvert(json, "username", (v) => v as String),
         email: checkedConvert(json, "email", (v) => v as String?),
@@ -52,6 +56,7 @@ class User {
     String? id,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? version,
     String? firebaseId,
     String? username,
     String? email,
@@ -63,6 +68,7 @@ class User {
         id: id ?? other.id,
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
+        version: version ?? other.version,
         firebaseId: firebaseId ?? other.firebaseId,
         username: username ?? other.username,
         email: email ?? other.email,
@@ -81,6 +87,7 @@ class UserDenorm extends User {
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
+    int version = 0,
     required String firebaseId,
     required String username,
     String? email,
@@ -94,6 +101,7 @@ class UserDenorm extends User {
           id: id,
           createdAt: createdAt,
           updatedAt: updatedAt,
+          version: version,
           firebaseId: firebaseId,
           username: username,
           email: email,
@@ -103,11 +111,11 @@ class UserDenorm extends User {
         );
 
   @override
-  Map<String, dynamic> toJSON() => {
-        ...super.toJSON(),
-        "budgets": budgets.map((e) => e.toJSON()),
-        "categories": categories.map((c) => c.toJSON()),
-        "expenses": expenses.map((e) => e.toJSON()),
+  Map<String, dynamic> toJson() => {
+        ...super.toJson(),
+        "budgets": budgets.map((e) => e.toJson()),
+        "categories": categories.map((c) => c.toJson()),
+        "expenses": expenses.map((e) => e.toJson()),
       };
 
   factory UserDenorm.fromJson(Map<String, dynamic> json) {
@@ -116,6 +124,7 @@ class UserDenorm extends User {
       id: user.id,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      version: user.version,
       firebaseId: user.firebaseId,
       username: user.username,
       email: user.email,
@@ -154,6 +163,7 @@ class UserDenorm extends User {
     String? id,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? version,
     String? firebaseId,
     String? username,
     String? email,
@@ -168,6 +178,7 @@ class UserDenorm extends User {
         id: id ?? other.id,
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
+        version: version ?? other.version,
         firebaseId: firebaseId ?? other.firebaseId,
         username: username ?? other.username,
         email: email ?? other.email,
@@ -186,10 +197,10 @@ abstract class Frequency {
   final FrequencyKind kind;
 
   const Frequency(this.kind);
-  Map<String, dynamic> toJSON();
+  Map<String, dynamic> toJson();
 
   factory Frequency.fromJson(Map<String, dynamic> json) {
-    var kind = checkedConvert(
+    final kind = checkedConvert(
         json, "kind", (v) => enumFromString(FrequencyKind.values, v));
     switch (kind) {
       case FrequencyKind.oneTime:
@@ -206,7 +217,7 @@ abstract class Frequency {
 class OneTime extends Frequency {
   const OneTime() : super(FrequencyKind.oneTime);
   @override
-  Map<String, dynamic> toJSON() => {
+  Map<String, dynamic> toJson() => {
         "kind": kind.toString().split(".")[1],
       };
 
@@ -219,10 +230,10 @@ class OneTime extends Frequency {
 
 class Recurring extends Frequency {
   final int recurringIntervalSecs;
-  Recurring(this.recurringIntervalSecs) : super(FrequencyKind.oneTime);
+  Recurring(this.recurringIntervalSecs) : super(FrequencyKind.recurring);
 
   @override
-  Map<String, dynamic> toJSON() => {
+  Map<String, dynamic> toJson() => {
         "kind": kind.toString().split(".")[1],
         "recurringIntervalSecs": recurringIntervalSecs
       };
@@ -245,7 +256,7 @@ class MonetaryAmount {
 
   const MonetaryAmount({required this.currency, required this.amount});
 
-  Map<String, dynamic> toJSON() => {"currency": currency, "amount": amount};
+  Map<String, dynamic> toJson() => {"currency": currency, "amount": amount};
   factory MonetaryAmount.fromJson(Map<String, dynamic> json) => MonetaryAmount(
         currency: checkedConvert(json, "currency", (v) => v as String),
         amount: checkedConvert(json, "amount", (v) => v as int),
@@ -267,6 +278,7 @@ class Budget {
   final String id;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int version;
   final String name;
   final DateTime startTime;
   final DateTime endTime;
@@ -277,6 +289,7 @@ class Budget {
     required this.id,
     required this.createdAt,
     required this.updatedAt,
+    this.version = 0,
     required this.name,
     required this.startTime,
     required this.endTime,
@@ -285,22 +298,24 @@ class Budget {
     required this.categoryAllocations,
   });
 
-  Map<String, dynamic> toJSON() => {
+  Map<String, dynamic> toJson() => {
         "_id": id,
         "createdAt": createdAt.toIso8601String(),
         "updatedAt": updatedAt.toIso8601String(),
+        "version": version,
         "name": name,
         "startTime": startTime.toUtc().toString(),
         "endTime": endTime.toUtc().toString(),
-        "allocatedAmount": allocatedAmount.toJSON(),
-        "frequency": frequency.toJSON(),
-        "categoryAllocations": HashMap.from(categoryAllocations),
+        "allocatedAmount": allocatedAmount.toJson(),
+        "frequency": frequency.toJson(),
+        "categoryAllocations": {...categoryAllocations},
       };
 
   factory Budget.fromJson(Map<String, dynamic> json) => Budget(
         id: checkedConvert(json, "_id", (v) => v as String),
         createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
         updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
+        version: checkedConvert(json, "version", (v) => v as int),
         name: checkedConvert(json, "name", (v) => v as String),
         startTime: checkedConvert(json, "startTime", (v) => DateTime.parse(v)),
         endTime: checkedConvert(json, "endTime", (v) => DateTime.parse(v)),
@@ -310,11 +325,13 @@ class Budget {
             json, "allocatedAmount", (v) => MonetaryAmount.fromJson(v)),
         categoryAllocations: checkedConvert(
           json,
-          "categoryAllocation",
+          "categoryAllocations",
           (v) => v == null
               ? {}
               : checkedConvertMap(
-                  v as Map<String, dynamic>, (_, v) => v as int),
+                  v as Map<String, dynamic>,
+                  (_, v) => v as int,
+                ),
         ),
       );
   factory Budget.from(
@@ -322,6 +339,7 @@ class Budget {
     String? id,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? version,
     String? name,
     DateTime? startTime,
     DateTime? endTime,
@@ -333,6 +351,7 @@ class Budget {
         id: id ?? other.id,
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
+        version: version ?? other.version,
         name: name ?? other.name,
         startTime: startTime ?? other.startTime,
         endTime: endTime ?? other.endTime,
@@ -346,6 +365,7 @@ class Category {
   final String id;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int version;
   final String name;
   final String? parentId;
   final List<String> tags;
@@ -353,15 +373,17 @@ class Category {
     required this.id,
     required this.createdAt,
     required this.updatedAt,
+    this.version = 0,
     required this.name,
     this.parentId,
     required this.tags,
   });
 
-  Map<String, dynamic> toJSON() => {
+  Map<String, dynamic> toJson() => {
         "_id": id,
         "createdAt": createdAt.toIso8601String(),
         "updatedAt": updatedAt.toIso8601String(),
+        "version": version,
         "name": name,
         "parentId": parentId,
         "tags": tags,
@@ -371,6 +393,7 @@ class Category {
         id: checkedConvert(json, "_id", (v) => v as String),
         createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
         updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
+        version: checkedConvert(json, "version", (v) => v as int),
         parentId: checkedConvert(
             json,
             "parentCategory",
@@ -391,6 +414,7 @@ class Category {
     String? id,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? version,
     String? name,
     String? parentId,
     List<String>? tags,
@@ -399,6 +423,7 @@ class Category {
         id: id ?? other.id,
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
+        version: version ?? other.version,
         name: name ?? other.name,
         parentId: parentId ?? other.parentId,
         tags: tags ?? other.tags,
@@ -409,6 +434,7 @@ class Expense {
   final String id;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int version;
   final String name;
   final MonetaryAmount amount;
   final String categoryId;
@@ -417,26 +443,29 @@ class Expense {
     required this.id,
     required this.createdAt,
     required this.updatedAt,
+    this.version = 0,
     required this.name,
     required this.categoryId,
     required this.budgetId,
     required this.amount,
   });
 
-  Map<String, dynamic> toJSON() => {
+  Map<String, dynamic> toJson() => {
         "_id": id,
         "createdAt": createdAt.toIso8601String(),
         "updatedAt": updatedAt.toIso8601String(),
+        "version": version,
         "name": name,
         "categoryId": categoryId,
         "budgetId": budgetId,
-        "amount": amount.toJSON(),
+        "amount": amount.toJson(),
       };
 
   factory Expense.fromJson(Map<String, dynamic> json) => Expense(
         id: checkedConvert(json, "_id", (v) => v as String),
         createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
         updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
+        version: checkedConvert(json, "version", (v) => v as int),
         name: checkedConvert(json, "name", (v) => v as String),
         categoryId: checkedConvert(json, "categoryId", (v) => v as String),
         budgetId: checkedConvert(json, "budgetId", (v) => v as String),
@@ -449,6 +478,7 @@ class Expense {
     String? id,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? version,
     String? name,
     String? categoryId,
     String? budgetId,
@@ -458,6 +488,7 @@ class Expense {
         id: id ?? other.id,
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
+        version: version ?? other.version,
         name: name ?? other.name,
         categoryId: categoryId ?? other.categoryId,
         budgetId: budgetId ?? other.budgetId,
@@ -505,4 +536,6 @@ Map<String, T> checkedConvertMap<T>(
   T Function(String, dynamic) extract,
   // {bool checkForNull = true}
 ) =>
-    HashMap.fromIterable(json.entries.map((e) => extract(e.key, e.value)));
+    HashMap.fromEntries(
+      json.entries.map((e) => MapEntry(e.key, extract(e.key, e.value))),
+    );

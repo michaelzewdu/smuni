@@ -135,6 +135,7 @@ class SmuniApiClient {
   Future<UserDenorm> updateUser(
     String username,
     String accessToken, {
+    required int lastSeenVersion,
     String? newUsername,
     String? email,
     String? phoneNumber,
@@ -151,6 +152,7 @@ class SmuniApiClient {
         "phoneNumber": phoneNumber,
         "password": password,
         "pictureURL": pictureURL,
+        "lastSeenVersion": lastSeenVersion,
       },
     );
     return UserDenorm.fromJson(_json.decode(response.body));
@@ -185,8 +187,8 @@ class SmuniApiClient {
         "name": name,
         "startTime": startTime.millisecondsSinceEpoch,
         "endTime": endTime.millisecondsSinceEpoch,
-        "frequency": frequency.toJSON(),
-        "allocatedAmount": allocatedAmount.toJSON(),
+        "frequency": frequency.toJson(),
+        "allocatedAmount": allocatedAmount.toJson(),
         "categoryAllocations": categoryAllocations,
       },
     );
@@ -210,6 +212,7 @@ class SmuniApiClient {
     String id,
     String username,
     String accessToken, {
+    required int lastSeenVersion,
     String? name,
     DateTime? startTime,
     DateTime? endTime,
@@ -225,9 +228,10 @@ class SmuniApiClient {
         "name": name,
         "startTime": startTime?.millisecondsSinceEpoch,
         "endTime": endTime?.millisecondsSinceEpoch,
-        "frequency": frequency?.toJSON(),
-        "allocatedAmount": allocatedAmount?.toJSON(),
+        "frequency": frequency?.toJson(),
+        "allocatedAmount": allocatedAmount?.toJson(),
         "categoryAllocations": categoryAllocations,
+        "lastSeenVersion": lastSeenVersion,
       },
     );
     return Budget.fromJson(_json.decode(response.body));
@@ -282,6 +286,7 @@ class SmuniApiClient {
     String id,
     String username,
     String accessToken, {
+    required int lastSeenVersion,
     String? name,
     List<String>? tags,
     String? parentId,
@@ -294,6 +299,7 @@ class SmuniApiClient {
         "name": name,
         "tags": tags,
         "parentCategory": parentId,
+        "lastSeenVersion": lastSeenVersion,
       },
     );
     return Category.fromJson(_json.decode(response.body));
@@ -325,7 +331,7 @@ class SmuniApiClient {
       authToken: accessToken,
       jsonBody: {
         "name": name,
-        "amount": amount.toJSON(),
+        "amount": amount.toJson(),
         "budgetId": budgetId,
         "categoryId": categoryId,
       },
@@ -350,6 +356,7 @@ class SmuniApiClient {
     String id,
     String username,
     String accessToken, {
+    required int lastSeenVersion,
     String? name,
     MonetaryAmount? amount,
   }) async {
@@ -359,7 +366,8 @@ class SmuniApiClient {
       authToken: accessToken,
       jsonBody: {
         "name": name,
-        "amount": amount?.toJSON(),
+        "amount": amount?.toJson(),
+        "lastSeenVersion": lastSeenVersion,
       },
     );
     return Expense.fromJson(_json.decode(response.body));

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
 import 'package:smuni/models/models.dart';
@@ -63,16 +62,7 @@ class BudgetListPageBloc
     BudgetsListBlocEvent event,
   ) async* {
     if (event is LoadBudgets) {
-      final items = await repo.getItems();
-
-      // TODO:  load from fs
-      yield BudgetsLoadSuccess(
-        HashMap.fromIterable(
-          items,
-          key: (i) => i.id,
-          value: (i) => i,
-        ),
-      );
+      yield BudgetsLoadSuccess(await repo.getItems());
       return;
     } else if (event is DeleteBudget) {
       final current = state;
