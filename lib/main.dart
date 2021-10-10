@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:smuni/screens/home_screen.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 import 'bloc_observer.dart';
 import 'blocs/blocs.dart';
@@ -17,6 +18,10 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  MyApp({
+    Key? key,
+  }) : super(key: key);
+
   final UserDenorm defaultUser = (() {
     final now = DateTime.now();
     return UserDenorm(
@@ -196,64 +201,103 @@ class MyApp extends StatelessWidget {
       ],
     );
   })();
+
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) => MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider(
-              create: (context) =>
-                  UserRepository()..setItem(defaultUser.id, defaultUser)),
-          RepositoryProvider(create: (context) {
-            var repo = BudgetRepository();
-            for (var item in defaultUser.budgets) {
-              repo.setItem(item.id, item);
-            }
-            return repo;
-          }),
-          RepositoryProvider(create: (context) {
-            var repo = CategoryRepository();
-            for (var item in defaultUser.categories) {
-              repo.setItem(item.id, item);
-            }
-            return repo;
-          }),
-          RepositoryProvider(create: (context) {
-            var repo = ExpenseRepository();
-            for (var item in defaultUser.expenses) {
-              repo.setItem(item.id, item);
-            }
-            return repo;
-          }),
-        ],
-        child: MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (context) => UserBloc(defaultUser)),
-          ],
-          child: MaterialApp(
-              title: 'Smuni',
-              localizationsDelegates: [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate
+  Widget build(BuildContext context) => FutureBuilder(
+        future: () async {
+          var databasesPath = await sqflite.getDatabasesPath();
+          final path = databasesPath + "main.db";
+          return await sqflite.openDatabase(
+            // sqflite.inMemoryDatabasePath,
+            path,
+            version: 1,
+            onCreate: (db, version) => db.transaction((txn) async {
+              await migrateV1(txn);
+              await SqliteUserCache(db)
+                  .setItem(defaultUser.id, User.from(defaultUser));
+              {
+                final cache = SqliteBudgetCache(db);
+                for (var item in defaultUser.budgets) {
+                  await cache.setItem(item.id, item);
+                }
+              }
+              {
+                final cache = SqliteCategoryCache(db);
+                for (var item in defaultUser.categories) {
+                  await cache.setItem(item.id, item);
+                }
+              }
+              {
+                final cache = SqliteExpenseCache(db);
+                for (var item in defaultUser.expenses) {
+                  await cache.setItem(item.id, item);
+                }
+              }
+            }),
+          );
+        }(),
+        builder: (context, AsyncSnapshot<sqflite.Database> snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          if (snapshot.hasError) {
+            throw snapshot.error!;
+          }
+          final db = snapshot.data!;
+          return MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider(
+                  create: (context) => UserRepository(SqliteUserCache(db))),
+              RepositoryProvider(create: (context) {
+                var repo = BudgetRepository(SqliteBudgetCache(db));
+                return repo;
+              }),
+              RepositoryProvider(create: (context) {
+                var repo = CategoryRepository(SqliteCategoryCache(db));
+                return repo;
+              }),
+              RepositoryProvider(create: (context) {
+                var repo = ExpenseRepository(SqliteExpenseCache(db));
+                return repo;
+              }),
+            ],
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (context) =>
+                      UserBloc(context.read<UserRepository>(), defaultUser.id),
+                ),
               ],
-              supportedLocales: [
-                Locale('en', ''), //English
-                Locale('am', ''), //አማርኛ
-                Locale('ti', ''), //ትግርኛ
-                Locale('aa', ''), //አፋር
-                Locale('so', ''), //ሶማሊ
-                Locale('sgw', ''), //ሰባት ቤት ጉራጌ
-                Locale('sid', ''), //ሲዳሞ
-                Locale('wal', ''), //ወላይታ
-              ],
-              theme: ThemeData(
-                primarySwatch: primarySmuniSwatch,
-                buttonTheme:
-                    ButtonThemeData(textTheme: ButtonTextTheme.primary),
-              ),
-              onGenerateRoute: Routes.myOnGenerateRoute,
-              // initialRoute: CategoryListPage.routeName,
-              home: SmuniHomeScreen()),
-        ),
+              child: MaterialApp(
+                  title: 'Smuni',
+                  localizationsDelegates: [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate
+                  ],
+                  supportedLocales: [
+                    Locale('en', ''), //English
+                    Locale('am', ''), //አማርኛ
+                    Locale('ti', ''), //ትግርኛ
+                    Locale('aa', ''), //አፋር
+                    Locale('so', ''), //ሶማሊ
+                    Locale('sgw', ''), //ሰባት ቤት ጉራጌ
+                    Locale('sid', ''), //ሲዳሞ
+                    Locale('wal', ''), //ወላይታ
+                  ],
+                  theme: ThemeData(
+                    primarySwatch: primarySmuniSwatch,
+                    buttonTheme:
+                        ButtonThemeData(textTheme: ButtonTextTheme.primary),
+                  ),
+                  onGenerateRoute: Routes.myOnGenerateRoute,
+                  // initialRoute: CategoryListPage.routeName,
+                  home: SmuniHomeScreen()),
+            ),
+          );
+        },
       );
 }

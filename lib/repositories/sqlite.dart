@@ -7,7 +7,6 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:smuni/models/models.dart';
-import 'package:smuni/utilities.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 import 'repositories.dart';
@@ -68,8 +67,7 @@ create table expenses (
 ''');
 }
 
-abstract class SqliteRepository<Identfier, Item>
-    extends Repository<Identfier, Item> {
+abstract class SqliteCache<Identifier, Item> extends Cache<Identifier, Item> {
   final sqflite.Database db;
   final String tableName;
   final String primaryColumnName;
@@ -77,7 +75,7 @@ abstract class SqliteRepository<Identfier, Item>
   final Map<String, dynamic> Function(Item) toMap;
   final Item Function(Map<String, dynamic>) fromMap;
 
-  SqliteRepository(
+  SqliteCache(
     this.db, {
     required this.tableName,
     required this.primaryColumnName,
@@ -88,7 +86,7 @@ abstract class SqliteRepository<Identfier, Item>
 
   @override
   Future<Item?> getItem(
-    Identfier id,
+    Identifier id,
   ) async {
     List<Map<String, Object?>> maps = await db.query(tableName,
         columns: columns, where: '$primaryColumnName = ?', whereArgs: [id]);
@@ -99,24 +97,24 @@ abstract class SqliteRepository<Identfier, Item>
   }
 
   @override
-  Future<Map<Identfier, Item>> getItems() async {
+  Future<Map<Identifier, Item>> getItems() async {
     List<Map<String, Object?>> maps = await db.query(
       tableName,
       columns: columns,
     );
-    return HashMap.fromIterable(
-      maps.map((e) => MapEntry(e[primaryColumnName], fromMap(e))),
+    return HashMap.fromEntries(
+      maps.map((e) => MapEntry(e[primaryColumnName] as Identifier, fromMap(e))),
     );
   }
 
   @override
-  Future<void> removeItem(Identfier id) async {
+  Future<void> removeItem(Identifier id) async {
     await db
         .delete(tableName, where: '$primaryColumnName = ?', whereArgs: [id]);
   }
 
   @override
-  Future<void> setItem(Identfier id, Item item) async {
+  Future<void> setItem(Identifier id, Item item) async {
     final map = toMap(item);
     await db.insert(
       tableName,
@@ -126,15 +124,15 @@ abstract class SqliteRepository<Identfier, Item>
     _changedItemsController.add([id]);
   }
 
-  final StreamController<List<Identfier>> _changedItemsController =
+  final StreamController<List<Identifier>> _changedItemsController =
       StreamController.broadcast();
 
   @override
-  Stream<List<Identfier>> get changedItems => _changedItemsController.stream;
+  Stream<List<Identifier>> get changedItems => _changedItemsController.stream;
 }
 
-class SqliteUserRepository extends SqliteRepository<String, User> {
-  SqliteUserRepository(sqflite.Database db)
+class SqliteUserCache extends SqliteCache<String, User> {
+  SqliteUserCache(sqflite.Database db)
       : super(
           db,
           tableName: "users",
@@ -168,8 +166,8 @@ class SqliteUserRepository extends SqliteRepository<String, User> {
         );
 }
 
-class SqliteBudgetRepository extends SqliteRepository<String, Budget> {
-  SqliteBudgetRepository(sqflite.Database db)
+class SqliteBudgetCache extends SqliteCache<String, Budget> {
+  SqliteBudgetCache(sqflite.Database db)
       : super(
           db,
           tableName: "budgets",
@@ -233,8 +231,8 @@ class SqliteBudgetRepository extends SqliteRepository<String, Budget> {
         );
 }
 
-class SqliteCategoryRepository extends SqliteRepository<String, Category> {
-  SqliteCategoryRepository(sqflite.Database db)
+class SqliteCategoryCache extends SqliteCache<String, Category> {
+  SqliteCategoryCache(sqflite.Database db)
       : super(
           db,
           tableName: "categories",
@@ -274,77 +272,10 @@ class SqliteCategoryRepository extends SqliteRepository<String, Category> {
                     },
           ),
         );
-
-  Future<Map<String, TreeNode<String>>>? _ancestryGraph;
-  Future<Map<String, TreeNode<String>>> get ancestryGraph {
-    _ancestryGraph ??= _calcAncestryTree();
-    return _ancestryGraph!;
-  }
-
-  @override
-  Future<void> setItem(String id, Category item) async {
-    await super.setItem(id, item);
-    _ancestryGraph = null;
-  }
-
-  // FIXME: fix this func
-  Future<Map<String, TreeNode<String>>> _calcAncestryTree() async {
-    Map<String, TreeNode<String>> nodes = HashMap();
-    final items = await getItems();
-
-    TreeNode<String> getTreeNode(Category category) {
-      var node = nodes[category.id];
-      if (node == null) {
-        TreeNode<String>? parentNode;
-        if (category.parentId != null) {
-          final parent = items[category.parentId];
-          if (parent == null) {
-            throw Exception("parent not found at id: $category.parentId");
-          }
-          parentNode = getTreeNode(parent);
-          parentNode.children.add(category.id);
-        }
-        node = TreeNode(category.id, children: [], parent: parentNode);
-        nodes[category.id] = node;
-      }
-      return node;
-    }
-
-    for (final category in items.values) {
-      if (!nodes.containsKey(category.id)) {
-        getTreeNode(category);
-      }
-    }
-    return nodes;
-  }
-
-  /// The returned list includes the given id.
-  /// Returns null if no category found under id.
-  Future<List<String>?> getCategoryDescendantsTree(String forId) async {
-    final graph = await ancestryGraph;
-    final rootNode = graph[forId];
-    if (rootNode == null) return null;
-
-    List<String> descendants = [forId];
-    void appendChildren(TreeNode<String> node) {
-      descendants.addAll(node.children);
-      for (final child in node.children) {
-        final childNode = graph[child];
-        if (childNode == null) {
-          throw Exception("childNode not found in ancestryGraph at id: $child");
-        }
-        appendChildren(childNode);
-      }
-    }
-
-    appendChildren(rootNode);
-
-    return descendants;
-  }
 }
 
-class SqliteExpenseRepository extends SqliteRepository<String, Expense> {
-  SqliteExpenseRepository(sqflite.Database db)
+class SqliteExpenseCache extends SqliteCache<String, Expense> {
+  SqliteExpenseCache(sqflite.Database db)
       : super(
           db,
           tableName: "expenses",
@@ -386,43 +317,4 @@ class SqliteExpenseRepository extends SqliteRepository<String, Expense> {
               },
           ),
         );
-
-  Future<Map<DateRange, DateRangeFilter>> getDateRangeFilters(
-      {Set<String>? ofBudgets, Set<String>? ofCategories}) async {
-    final items = await getItems();
-    return generateDateRangesFilters(
-      items.values
-          .where(ofBudgets != null && ofCategories != null
-              ? (e) =>
-                  ofBudgets.contains(e.budgetId) &&
-                  ofCategories.contains(e.categoryId)
-              : ofBudgets != null
-                  ? (e) => ofBudgets.contains(e.budgetId)
-                  : ofCategories != null
-                      ? (e) => ofCategories.contains(e.categoryId)
-                      : (e) => true)
-          .map((e) => e.createdAt),
-    );
-  }
-
-  Future<Iterable<Expense>> getItemsInRange(DateRange range,
-      {Set<String>? ofBudgets, Set<String>? ofCategories}) async {
-    final items = await getItems();
-    return items.values.where(
-      ofBudgets != null && ofCategories != null
-          ? (e) =>
-              range.containsTimestamp(e.createdAt) &&
-              ofBudgets.contains(e.budgetId) &&
-              ofCategories.contains(e.categoryId)
-          : ofBudgets != null
-              ? (e) =>
-                  range.containsTimestamp(e.createdAt) &&
-                  ofBudgets.contains(e.budgetId)
-              : ofCategories != null
-                  ? (e) =>
-                      range.containsTimestamp(e.createdAt) &&
-                      ofCategories.contains(e.categoryId)
-                  : (e) => range.containsTimestamp(e.createdAt),
-    );
-  }
 }

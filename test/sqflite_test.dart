@@ -71,7 +71,7 @@ void main() {
   tearDown(() => db.close());
 
   test("user", () async {
-    final repo = SqliteUserRepository(db);
+    final repo = SqliteUserCache(db);
     final item = User.from(user);
     await repo.setItem(item.id, item);
     final out = (await repo.getItem(user.id))!;
@@ -89,7 +89,7 @@ void main() {
     expect(item.mainBudget, equals(out.mainBudget));
   });
   test("budget", () async {
-    final repo = SqliteBudgetRepository(db);
+    final repo = SqliteBudgetCache(db);
     final item = user.budgets[0];
     await repo.setItem(item.id, item);
     final out = (await repo.getItem(item.id))!;
@@ -114,7 +114,7 @@ void main() {
       version: 1,
       onCreate: (db, version) => db.transaction((txn) => migrateV1(txn)),
     );
-    final repo = SqliteCategoryRepository(db);
+    final repo = SqliteCategoryCache(db);
     final item = user.categories[0];
     await repo.setItem(item.id, item);
     final out = (await repo.getItem(item.id))!;
@@ -134,7 +134,7 @@ void main() {
       version: 1,
       onCreate: (db, version) => db.transaction((txn) => migrateV1(txn)),
     );
-    final repo = SqliteExpenseRepository(db);
+    final repo = SqliteExpenseCache(db);
     final item = user.expenses[0];
     await repo.setItem(item.id, item);
     final out = (await repo.getItem(item.id))!;
