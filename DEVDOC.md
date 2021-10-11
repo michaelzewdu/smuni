@@ -5,6 +5,11 @@
 ## To-do
 
 - [ ] Search feature for the list pages
+- [ ] Optional add category button on CategoryListView
+- [ ] Date Picker bug on budget edit
+  
+- [ ] Decide on how to tackle deletion
+- [ ] Decide on how to aggregate budget usage in the category tree
 
 ## Design doc
 
@@ -13,6 +18,7 @@
 - Expense: committed expenditure 
 - Budget: planned expense
 - Debt payoff plan: special type of budget
+
 
 ### Screens
 

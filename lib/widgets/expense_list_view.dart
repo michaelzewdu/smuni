@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/src/provider.dart';
+import 'package:smuni/blocs/details_page.dart';
 import 'package:smuni/models/models.dart';
-import 'package:smuni/screens/Expense/expense_details_page.dart';
+import 'package:smuni/screens/Expense/expense_edit_page.dart';
 import 'package:smuni/utilities.dart';
 
 import '../constants.dart';
@@ -78,7 +80,7 @@ class ExpenseListView extends StatelessWidget {
       case FilterLevel.All:
         break;
     }*/
-    return Column(children: [
+    return ListView(children: [
       //Year tab bar: always visible
       Container(
         height: 50,
@@ -89,7 +91,7 @@ class ExpenseListView extends StatelessWidget {
             Builder(builder: (context) {
               final range =
                   DateRangeFilter("All", DateRange(), FilterLevel.all);
-              return _tabButton("All", () => loadRange(range),
+              return _tabButton("All Years", () => loadRange(range),
                   displayedRange.range.contains(range.range));
             }),
             ...yearGroups.map(
@@ -117,7 +119,7 @@ class ExpenseListView extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               children: [
                 // All expenses in current year button
-                _tabButton("All", () => loadRange(currentYearRange),
+                _tabButton("All months", () => loadRange(currentYearRange),
                     displayedRange.range.contains(currentYearRange.range)),
                 ...monthGroups
                     .where((e) => e.range.overlaps(currentYearRange.range))
@@ -141,7 +143,7 @@ class ExpenseListView extends StatelessWidget {
                         displayedRange.range.startTime),
                   ),
                   FilterLevel.month);
-              return _tabButton("All", () => loadRange(range),
+              return _tabButton("All days", () => loadRange(range),
                   displayedRange.range.contains(range.range));
             }),
             ...dayGroups
@@ -252,49 +254,118 @@ class _ExpensesExpandableState extends State<ExpensesExpandable> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: Container(
-        child: ExpansionPanelList(
-          expansionCallback: (int index, bool isExpanded) {
-            setState(() {
-              final tappedId = widget.expenses[index].id;
-              if (tappedId != _expandedItem) {
-                _expandedItem = tappedId;
-              } else {
-                _expandedItem = null;
-              }
-            });
-          },
-          children: widget.expenses.map<ExpansionPanel>((e) {
-            return ExpansionPanel(
-              headerBuilder: (BuildContext context, bool isExpanded) {
-                return //isExpanded
-                    ListTile(
-                  title: Text(
-                    e.name,
-                    textScaleFactor: 1.25,
-                  ),
-                  subtitle: Text(
-                      '${e.amount.amount.toString()} ${e.amount.currency.toString()}'),
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      ExpenseDetailsPage.routeName,
-                      arguments: e.id,
-                    );
-                  },
-                );
-                //  : ListTile(title: Text(e.name));
-              },
-              body: Column(
+      child: ExpansionPanelList(
+        dividerColor: Colors.transparent,
+        animationDuration: Duration(seconds: 1),
+        expansionCallback: (int index, bool isExpanded) {
+          setState(() {
+            final tappedId = widget.expenses[index].id;
+            if (tappedId != _expandedItem) {
+              _expandedItem = tappedId;
+            } else {
+              _expandedItem = null;
+            }
+          });
+        },
+        children: widget.expenses.map<ExpansionPanel>((e) {
+          return ExpansionPanel(
+            headerBuilder: (BuildContext context, bool isExpanded) {
+              return //isExpanded
+                  ListTile(
+                title: Text(
+                  e.name,
+                  textScaleFactor: 1.25,
+                ),
+                subtitle: Text(
+                    '${e.amount.amount.toString()} ${e.amount.currency.toString()}'),
+                onTap: () {
+                  /*
+                  Navigator.pushNamed(
+                    context,
+                    ExpenseDetailsPage.routeName,
+                    arguments: e.id,
+                  );
+
+                   */
+                },
+              );
+              //  : ListTile(title: Text(e.name));
+            },
+            body: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Updated on: ${e.updatedAt}'),
-                  Text('Created on: ${e.createdAt}')
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Text(' Updated on: ${e.updatedAt}'),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Text('Created on: ${e.createdAt}'),
+                      )
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Center(
+                        ///The buttons below are copied from Yoph's expense page and the delete button
+                        ///uses the Expense details bloc(Which doesn't actually delete anything)
+                        child: IconButton(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                ExpenseEditPage.routeName,
+                                arguments: e.id,
+                              );
+                            },
+                            icon: Icon(Icons.edit)),
+                      ),
+                      // FIXME: The delete button below doesn't actually delete
+
+                      IconButton(
+                          onPressed: () {
+                            showDialog<bool?>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Confirm deletion'),
+                                content: Text(
+                                    'Are you sure you want to delete entry ${e.name}?'),
+                                actions: <Widget>[
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context, true);
+                                    },
+                                    child: const Text('Confirm'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context, false);
+                                    },
+                                    child: const Text('Cancel'),
+                                  ),
+                                ],
+                              ),
+                            ).then((confirm) {
+                              if (confirm != null && confirm) {
+                                context
+                                    .read<DetailsPageBloc<String, Expense>>()
+                                    .add(DeleteItem());
+                                Navigator.pop(context);
+                              }
+                            });
+                          },
+                          icon: Icon(Icons.delete))
+                    ],
+                  )
                 ],
               ),
-              isExpanded: e.id == _expandedItem,
-            );
-          }).toList(),
-        ),
+            ),
+            isExpanded: e.id == _expandedItem,
+          );
+        }).toList(),
       ),
     );
   }

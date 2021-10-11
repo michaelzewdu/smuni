@@ -11,7 +11,7 @@ import 'package:smuni/widgets/category_selector.dart';
 import 'package:smuni/widgets/money_editor.dart';
 
 class BudgetEditPage extends StatefulWidget {
-  static const String routeName = "budgetEdit";
+  static const String routeName = "/budgetEdit";
 
   const BudgetEditPage({Key? key}) : super(key: key);
 
