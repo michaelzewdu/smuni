@@ -10,10 +10,10 @@ import 'blocs/blocs.dart';
 import 'constants.dart';
 import 'models/models.dart';
 import 'repositories/repositories.dart';
+import 'providers/cache/cache.dart';
 import 'screens/routes.dart';
 
 void main() async {
-  Bloc.observer = SimpleBlocObserver();
   runApp(MyApp());
 }
 
@@ -270,8 +270,19 @@ class MyApp extends StatelessWidget {
                   create: (context) =>
                       UserBloc(context.read<UserRepository>(), defaultUser.id),
                 ),
+                BlocProvider(
+                  create: (context) {
+                    var blocErrorBloc = BlocErrorBloc();
+                    Bloc.observer = SimpleBlocObserver(blocErrorBloc);
+                    return blocErrorBloc;
+                  },
+                ),
               ],
-              child: MaterialApp(
+              child: BlocBuilder<BlocErrorBloc, BlocErrorBlocState>(
+                  builder: (context, state) {
+                if (state is ErrorObserved) throw state.error;
+
+                return MaterialApp(
                   title: 'Smuni',
                   localizationsDelegates: [
                     GlobalMaterialLocalizations.delegate,
@@ -295,7 +306,9 @@ class MyApp extends StatelessWidget {
                   ),
                   onGenerateRoute: Routes.myOnGenerateRoute,
                   // initialRoute: CategoryListPage.routeName,
-                  home: SmuniHomeScreen()),
+                  home: SmuniHomeScreen(),
+                );
+              }),
             ),
           );
         },
