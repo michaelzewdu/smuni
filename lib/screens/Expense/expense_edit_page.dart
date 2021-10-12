@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smuni/blocs/edit_page.dart';
 
-import 'package:smuni/blocs/expense_edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/money_editor.dart';
@@ -23,7 +23,7 @@ class ExpenseEditPage extends StatefulWidget {
         settings: const RouteSettings(name: routeName),
         builder: (context) => BlocProvider(
           create: (context) =>
-              ExpenseEditPageBloc(context.read<ExpenseRepository>(), id),
+              EditPageBloc.fromRepo(context.read<ExpenseRepository>(), id),
           child: ExpenseEditPage(),
         ),
       );
@@ -42,8 +42,8 @@ class ExpenseEditPage extends StatefulWidget {
           amount: MonetaryAmount(currency: "ETB", amount: 0),
         );
         return BlocProvider(
-          create: (context) => ExpenseEditPageBloc.modified(
-              context.read<ExpenseRepository>(), item),
+          create: (context) =>
+              EditPageBloc.modified(context.read<ExpenseRepository>(), item),
           child: ExpenseEditPage(),
         );
       });
@@ -57,7 +57,9 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
   MonetaryAmount _amount = MonetaryAmount(currency: "ETB", amount: 0);
   String _name = "";
 
-  Widget _showForm(BuildContext context, UnmodifiedEditState state) => Form(
+  Widget _showForm(
+          BuildContext context, UnmodifiedEditState<String, Expense> state) =>
+      Form(
         key: _formKey,
         child: Scaffold(
           appBar: AppBar(
@@ -68,9 +70,9 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                   final form = _formKey.currentState;
                   if (form != null && form.validate()) {
                     form.save();
-                    context.read<ExpenseEditPageBloc>()
+                    context.read<EditPageBloc<String, Expense>>()
                       ..add(
-                        ModifyItem(
+                        ModifyItem<String, Expense>(
                           Expense.from(
                             state.unmodified,
                             name: _name,
@@ -78,7 +80,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                           ),
                         ),
                       )
-                      ..add(SaveChanges());
+                      ..add(SaveChanges<String, Expense>());
                     Navigator.pop(context, true);
                   }
                 },
@@ -86,7 +88,9 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  context.read<ExpenseEditPageBloc>().add(DiscardChanges());
+                  context
+                      .read<EditPageBloc<String, Expense>>()
+                      .add(DiscardChanges());
                   Navigator.pop(context, false);
                 },
                 child: const Text("Cancel"),
@@ -128,10 +132,10 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
       );
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<ExpenseEditPageBloc, ExpenseEditPageBlocState>(
+  Widget build(BuildContext context) => BlocBuilder<
+          EditPageBloc<String, Expense>, EditPageBlocState<String, Expense>>(
         builder: (context, state) {
-          if (state is UnmodifiedEditState) {
+          if (state is UnmodifiedEditState<String, Expense>) {
             return _showForm(context, state);
           } else if (state is LoadingItem) {
             return Scaffold(
@@ -142,7 +146,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                 child: CircularProgressIndicator(),
               ),
             );
-          } else if (state is ItemNotFound) {
+          } else if (state is ItemNotFound<String, Expense>) {
             return Scaffold(
               appBar: AppBar(
                 title: const Text("Item not found"),

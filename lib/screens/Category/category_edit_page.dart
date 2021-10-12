@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smuni/blocs/category_edit_page.dart';
+
 import 'package:smuni/blocs/category_list_page.dart';
+import 'package:smuni/blocs/edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/category_selector.dart';
@@ -15,7 +16,7 @@ class CategoryEditPage extends StatefulWidget {
         settings: const RouteSettings(name: routeName),
         builder: (context) => BlocProvider(
           create: (context) =>
-              CategoryEditPageBloc(context.read<CategoryRepository>(), id),
+              EditPageBloc.fromRepo(context.read<CategoryRepository>(), id),
           child: CategoryEditPage(),
         ),
       );
@@ -32,8 +33,8 @@ class CategoryEditPage extends StatefulWidget {
           tags: [],
         );
         return BlocProvider(
-          create: (context) => CategoryEditPageBloc.modified(
-              context.read<CategoryRepository>(), item),
+          create: (context) =>
+              EditPageBloc.modified(context.read<CategoryRepository>(), item),
           child: CategoryEditPage(),
         );
       });
@@ -59,7 +60,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                   final form = _formKey.currentState;
                   if (form != null && form.validate()) {
                     form.save();
-                    context.read<CategoryEditPageBloc>()
+                    context.read<EditPageBloc<String, Category>>()
                       ..add(
                         ModifyItem(
                           Category.from(
@@ -77,7 +78,9 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  context.read<CategoryEditPageBloc>().add(DiscardChanges());
+                  context
+                      .read<EditPageBloc<String, Category>>()
+                      .add(DiscardChanges());
                   Navigator.pop(context, false);
                 },
                 child: const Text("Cancel"),
@@ -146,11 +149,11 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
       );
 
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<CategoryEditPageBloc, CategoryEditPageBlocState>(
+  Widget build(BuildContext context) => BlocConsumer<
+          EditPageBloc<String, Category>, EditPageBlocState<String, Category>>(
         listener: (context, state) {
-          if (state is UnmodifiedEditState) {
-            final value = state is ModifiedEditState
+          if (state is UnmodifiedEditState<String, Category>) {
+            final value = state is ModifiedEditState<String, Category>
                 ? state.modified.parentId != null
                 : state.unmodified.parentId != null;
             if (value != _isSubcategory) {
@@ -161,7 +164,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
           }
         },
         builder: (context, state) {
-          if (state is UnmodifiedEditState) {
+          if (state is UnmodifiedEditState<String, Category>) {
             return _showForm(context, state);
           } else if (state is LoadingItem) {
             return Scaffold(
@@ -172,7 +175,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                 child: CircularProgressIndicator(),
               ),
             );
-          } else if (state is ItemNotFound) {
+          } else if (state is ItemNotFound<String, Category>) {
             return Scaffold(
               appBar: AppBar(
                 title: const Text("Item not found"),

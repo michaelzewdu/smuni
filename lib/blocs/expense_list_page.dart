@@ -100,6 +100,9 @@ class ExpenseListPageBloc
             initialCategoryToLoad,
           ),
         ) {
+    on<LoadExpenses>(streamToEmitterAdapter(_mapLoadExpensesEventToState));
+    on<DeleteExpense>(streamToEmitterAdapter(_mapDeleteExpenseEventToState));
+
     repo.changedItems.listen((ids) {
       final current = state;
       if (current is ExpensesLoadSuccess) {
@@ -118,6 +121,7 @@ class ExpenseListPageBloc
         throw Exception("Unhandled type.");
       }
     });
+
     add(LoadExpenses(
       initialRangeToLoad,
       ofBudget: initialBudgetToLoad,
@@ -125,69 +129,62 @@ class ExpenseListPageBloc
     ));
   }
 
-  @override
-  Stream<ExpenseListPageBlocState> mapEventToState(
-    ExpensesListBlocEvent event,
-  ) async* {
-    if (event is LoadExpenses) {
-      Set<String>? catFilter;
-      final ofCategory = event.ofCategory;
-      if (ofCategory != null) {
-        final tree =
-            (await categoryRepo.getCategoryDescendantsTree(ofCategory));
-        if (tree == null) throw Exception("category not found");
-        catFilter = tree.toSet();
-      }
+  Stream<ExpenseListPageBlocState> _mapDeleteExpenseEventToState(
+      DeleteExpense event) async* {
+    final current = state;
+    if (current is ExpensesLoadSuccess) {
+      await repo.removeItem(event.id);
+      current.items.remove(event.id);
+      final dateRangeFilters =
+          await repo.getDateRangeFilters(ofCategories: current.categoryFilter);
 
-      final budgetFilter = event.ofBudget != null ? {event.ofBudget!} : null;
-
-      final items = await repo.getItemsInRange(
-        event.range.range,
-        ofBudgets: budgetFilter,
-        ofCategories: catFilter,
-      );
-      final dateRangeFilters = await repo.getDateRangeFilters(
-        ofCategories: catFilter,
-        ofBudgets: budgetFilter,
-      );
-      // TODO:  load from fs
       yield ExpensesLoadSuccess(
-        HashMap.fromIterable(
-          items,
-          key: (i) => i.id,
-          value: (i) => i,
-        ),
-        event.range,
+        current.items,
+        current.range,
         dateRangeFilters,
-        event.ofBudget,
-        event.ofCategory,
-        catFilter,
+        current.ofBudget,
+        current.ofCategory,
+        current.categoryFilter,
       );
+    } else if (current is ExpensesLoading) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      add(event);
       return;
-    } else if (event is DeleteExpense) {
-      final current = state;
-      if (current is ExpensesLoadSuccess) {
-        // TODO
-        await repo.removeItem(event.id);
-        current.items.remove(event.id);
-        final dateRangeFilters = await repo.getDateRangeFilters(
-            ofCategories: current.categoryFilter);
-
-        yield ExpensesLoadSuccess(
-          current.items,
-          current.range,
-          dateRangeFilters,
-          current.ofBudget,
-          current.ofCategory,
-          current.categoryFilter,
-        );
-        return;
-      } else if (current is ExpensesLoading) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        add(event);
-        return;
-      }
     }
-    throw Exception("Unhandled event");
+  }
+
+  Stream<ExpenseListPageBlocState> _mapLoadExpensesEventToState(
+      LoadExpenses event) async* {
+    Set<String>? catFilter;
+    final ofCategory = event.ofCategory;
+    if (ofCategory != null) {
+      final tree = (await categoryRepo.getCategoryDescendantsTree(ofCategory));
+      if (tree == null) throw Exception("category not found");
+      catFilter = tree.toSet();
+    }
+
+    final budgetFilter = event.ofBudget != null ? {event.ofBudget!} : null;
+
+    final items = await repo.getItemsInRange(
+      event.range.range,
+      ofBudgets: budgetFilter,
+      ofCategories: catFilter,
+    );
+    final dateRangeFilters = await repo.getDateRangeFilters(
+      ofCategories: catFilter,
+      ofBudgets: budgetFilter,
+    );
+    yield ExpensesLoadSuccess(
+      HashMap.fromIterable(
+        items,
+        key: (i) => i.id,
+        value: (i) => i,
+      ),
+      event.range,
+      dateRangeFilters,
+      event.ofBudget,
+      event.ofCategory,
+      catFilter,
+    );
   }
 }

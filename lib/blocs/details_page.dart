@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 
 import 'package:smuni/repositories/repositories.dart';
+import 'package:smuni/utilities.dart';
 
 // EVENTS
 
@@ -59,45 +60,55 @@ class LoadSuccess<Identifer, Item> extends DetailsPageState<Identifer, Item> {
 
 class DetailsPageBloc<Identifier, Item> extends Bloc<
     DetailsPageEvent<Identifier, Item>, DetailsPageState<Identifier, Item>> {
-  Repository<Identifier, Item> repo;
+  Repository<Identifier, Item, dynamic, dynamic> repo;
   DetailsPageBloc(this.repo, Identifier id) : super(LoadingItem(id)) {
+    on<LoadItem<Identifier, Item>>(
+      streamToEmitterAdapter(_handleLoadItem),
+    );
+    on<DeleteItem<Identifier, Item>>(
+      streamToEmitterAdapter(_handleDeleteItem),
+    );
+
     repo.changedItems.listen((ids) {
-      if (ids[0] == id) {
-        add(LoadItem(id));
+      final current = state;
+      final id = current is LoadSuccess<Identifier, Item>
+          ? current.id
+          : current is ItemNotFound<Identifier, Item>
+              ? current.id
+              : current is LoadingItem<Identifier, Item>
+                  ? current.id
+                  : null;
+      if (id != null) {
+        if (ids.contains(id)) {
+          add(LoadItem(id));
+        }
       }
     });
     add(LoadItem(id));
   }
 
-  @override
-  Stream<DetailsPageState<Identifier, Item>> mapEventToState(
-    DetailsPageEvent<Identifier, Item> event,
-  ) async* {
-    if (event is LoadItem<Identifier, Item>) {
-      yield LoadingItem(event.id);
-      final item = await repo.getItem(event.id);
-      if (item != null) {
-        yield LoadSuccess(event.id, item);
-        return;
-      } else {
-        yield ItemNotFound(event.id);
-        return;
-      }
-    } else if (event is DeleteItem<Identifier, Item>) {
-      final current = state;
-      if (current is LoadSuccess<Identifier, Item>) {
-        // TODO
-        await repo.removeItem(current.id);
-        yield ItemNotFound(current.id);
-        return;
-      } else if (current is LoadingItem) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        add(event);
-        return;
-      } else if (current is ItemNotFound) {
-        return;
-      }
+  Stream<DetailsPageState<Identifier, Item>> _handleLoadItem(
+      LoadItem<Identifier, Item> event) async* {
+    yield LoadingItem(event.id);
+    final item = await repo.getItem(event.id);
+    if (item != null) {
+      yield LoadSuccess(event.id, item);
+    } else {
+      yield ItemNotFound(event.id);
     }
-    throw Exception("Unhandeled event");
+  }
+
+  Stream<DetailsPageState<Identifier, Item>> _handleDeleteItem(
+      DeleteItem<Identifier, Item> event) async* {
+    final current = state;
+    if (current is LoadSuccess<Identifier, Item>) {
+      await repo.removeItem(current.id);
+      yield ItemNotFound(current.id);
+    } else if (current is LoadingItem) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      add(event);
+    } else if (current is ItemNotFound) {
+      throw Exception("impossible event");
+    }
   }
 }

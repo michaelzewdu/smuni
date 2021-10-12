@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
+import 'package:smuni/utilities.dart';
 
 // EVENTS
 
@@ -51,36 +52,32 @@ class BudgetListPageBloc
   BudgetListPageBloc(
     this.repo,
   ) : super(BudgetsLoading()) {
+    on<LoadBudgets>(streamToEmitterAdapter(_handleLoadBudge));
+    on<DeleteBudget>(streamToEmitterAdapter(_handleDeleteBudget));
+
     repo.changedItems.listen((ids) {
       add(LoadBudgets());
     });
     add(LoadBudgets());
   }
 
-  @override
-  Stream<BudgetListPageBlocState> mapEventToState(
-    BudgetsListBlocEvent event,
-  ) async* {
-    if (event is LoadBudgets) {
-      yield BudgetsLoadSuccess(await repo.getItems());
-      return;
-    } else if (event is DeleteBudget) {
-      final current = state;
-      if (current is BudgetsLoadSuccess) {
-        // TODO
-        await repo.removeItem(event.id);
-        current.items.remove(event.id);
+  Stream<BudgetListPageBlocState> _handleLoadBudge(event) async* {
+    yield BudgetsLoadSuccess(await repo.getItems());
+  }
 
-        yield BudgetsLoadSuccess(
-          current.items,
-        );
-        return;
-      } else if (current is BudgetsLoading) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        add(event);
-        return;
-      }
+  Stream<BudgetListPageBlocState> _handleDeleteBudget(
+      DeleteBudget event) async* {
+    final current = state;
+    if (current is BudgetsLoadSuccess) {
+      await repo.removeItem(event.id);
+      current.items.remove(event.id);
+
+      yield BudgetsLoadSuccess(
+        current.items,
+      );
+    } else if (current is BudgetsLoading) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      add(event);
     }
-    throw Exception("Unhandled event");
   }
 }

@@ -116,19 +116,22 @@ void main() {
     });
     test("throws if email and phoneNumber missing", () {
       expect(
-        () => client.createUser(
-            username: username, password: password, firebaseId: firebaseId),
+        () => client.createUser(CreateUserInput(
+          username: username,
+          password: password,
+          firebaseId: firebaseId,
+        )),
         throwsException,
       );
     });
     test("throws if username occupied", () {
       expect(
-        () => client.createUser(
+        () => client.createUser(CreateUserInput(
           username: testUser.username,
           password: password,
           firebaseId: firebaseId,
           email: email,
-        ),
+        )),
         throwsEndpointError(
           400,
           "UsernameOccupied",
@@ -137,12 +140,12 @@ void main() {
     });
     test("throws if email occupied", () {
       expect(
-        () => client.createUser(
+        () => client.createUser(CreateUserInput(
           username: username,
           password: password,
           firebaseId: firebaseId,
           email: testUser.email!,
-        ),
+        )),
         throwsEndpointError(
           400,
           "EmailOccupied",
@@ -151,12 +154,12 @@ void main() {
     });
     test("throws if phoneNumber occupied", () {
       expect(
-        () => client.createUser(
+        () => client.createUser(CreateUserInput(
           username: username,
           password: password,
           firebaseId: firebaseId,
           phoneNumber: testUser.phoneNumber!,
-        ),
+        )),
         throwsEndpointError(
           400,
           "PhoneNumberOccupied",
@@ -166,13 +169,13 @@ void main() {
 
     // run the succeds test last to avoid occupied errors
     test("succeeds", () async {
-      var response = await client.createUser(
+      var response = await client.createUser(CreateUserInput(
         username: username,
         password: password,
         email: email,
         phoneNumber: phoneNumber,
         firebaseId: firebaseId,
-      );
+      ));
       expect(response.id, isNotEmpty);
       expect(response.username, equals(username));
       expect(response.email, equals(email));
@@ -203,15 +206,16 @@ void main() {
 
     test("succeeds", () async {
       var response = await client.updateUser(
-        testUser.username,
-        token,
-        newUsername: username,
-        email: email,
-        password: password,
-        phoneNumber: phoneNumber,
-        pictureURL: pictureURL,
-        lastSeenVersion: testUser.version,
-      );
+          testUser.username,
+          token,
+          UpdateUserInput(
+            newUsername: username,
+            email: email,
+            password: password,
+            phoneNumber: phoneNumber,
+            pictureURL: pictureURL,
+            lastSeenVersion: testUser.version,
+          ));
       expect(response.username, equals(username));
       expect(response.email, equals(email));
       expect(response.phoneNumber, equals(phoneNumber));
@@ -220,11 +224,12 @@ void main() {
     test("throws when not found", () {
       expect(
         () => client.updateUser(
-          "randomrandom",
-          token,
-          email: email,
-          lastSeenVersion: 0,
-        ),
+            "randomrandom",
+            token,
+            UpdateUserInput(
+              email: email,
+              lastSeenVersion: 0,
+            )),
         throwsEndpointError(
           403,
           "AccessDenied",
@@ -306,15 +311,16 @@ void main() {
       };
 
       var response = await client.createBudget(
-        testUser.username,
-        token,
-        name: name,
-        allocatedAmount: allocatedAmount,
-        frequency: frequency,
-        startTime: startTime,
-        endTime: endTime,
-        categoryAllocations: categoryAllocations,
-      );
+          testUser.username,
+          token,
+          CreateBudgetInput(
+            name: name,
+            allocatedAmount: allocatedAmount,
+            frequency: frequency,
+            startTime: startTime,
+            endTime: endTime,
+            categoryAllocations: categoryAllocations,
+          ));
       expect(response.id, isNotEmpty);
       expect(response.name, equals(name));
       expect(response.allocatedAmount, equals(allocatedAmount));
@@ -327,15 +333,16 @@ void main() {
     test("throws if category not found", () {
       expect(
         () => client.createBudget(
-          testUser.username,
-          token,
-          name: name,
-          allocatedAmount: allocatedAmount,
-          frequency: frequency,
-          startTime: startTime,
-          endTime: endTime,
-          categoryAllocations: {"614193c7f2ea51b47f5896be": 1000 * 100},
-        ),
+            testUser.username,
+            token,
+            CreateBudgetInput(
+              name: name,
+              allocatedAmount: allocatedAmount,
+              frequency: frequency,
+              startTime: startTime,
+              endTime: endTime,
+              categoryAllocations: {"614193c7f2ea51b47f5896be": 1000 * 100},
+            )),
         throwsEndpointError(
           404,
           "CategoryNotFound",
@@ -366,17 +373,18 @@ void main() {
         testUser.categories[1].id: 500 * 100,
       };
       var response = await client.updateBudget(
-        testUser.budgets[0].id,
-        testUser.username,
-        token,
-        lastSeenVersion: testUser.budgets[0].version,
-        name: name,
-        allocatedAmount: allocatedAmount,
-        frequency: frequency,
-        startTime: startTime,
-        endTime: endTime,
-        categoryAllocations: categoryAllocations,
-      );
+          testUser.budgets[0].id,
+          testUser.username,
+          token,
+          UpdateBudgetInput(
+            lastSeenVersion: testUser.budgets[0].version,
+            name: name,
+            allocatedAmount: allocatedAmount,
+            frequency: frequency,
+            startTime: startTime,
+            endTime: endTime,
+            categoryAllocations: categoryAllocations,
+          ));
       expect(response.name, equals(name));
       expect(response.allocatedAmount, equals(allocatedAmount));
       expect(response.frequency, equals(frequency));
@@ -388,8 +396,11 @@ void main() {
     test("throws when not found", () {
       expect(
         () => client.updateBudget(
-            "614193c7f2ea51b47f5896be", testUser.username, token,
-            lastSeenVersion: 0, name: name),
+          "614193c7f2ea51b47f5896be",
+          testUser.username,
+          token,
+          UpdateBudgetInput(lastSeenVersion: 0, name: name),
+        ),
         throwsEndpointError(
           404,
           "BudgetNotFound",
@@ -402,8 +413,10 @@ void main() {
           testUser.budgets[0].id,
           testUser.username,
           token,
-          categoryAllocations: {"614193c7f2ea51b47f5896be": 1000 * 100},
-          lastSeenVersion: testUser.budgets[0].version,
+          UpdateBudgetInput(
+            categoryAllocations: {"614193c7f2ea51b47f5896be": 1000 * 100},
+            lastSeenVersion: testUser.budgets[0].version,
+          ),
         ),
         throwsEndpointError(
           404,
@@ -484,12 +497,13 @@ void main() {
       final parentId = testUser.categories[0].id;
 
       var response = await client.createCategory(
-        testUser.username,
-        token,
-        name: name,
-        tags: tags,
-        parentId: parentId,
-      );
+          testUser.username,
+          token,
+          CreateCategoryInput(
+            name: name,
+            tags: tags,
+            parentId: parentId,
+          ));
       expect(response.id, isNotEmpty);
       expect(response.name, equals(name));
       expect(response.tags, equals(tags));
@@ -500,9 +514,11 @@ void main() {
         () => client.createCategory(
           testUser.username,
           token,
-          name: name,
-          tags: tags,
-          parentId: "614193c7f2ea51b47f5896be",
+          CreateCategoryInput(
+            name: name,
+            tags: tags,
+            parentId: "614193c7f2ea51b47f5896be",
+          ),
         ),
         throwsEndpointError(
           404,
@@ -529,14 +545,15 @@ void main() {
       final parentId = testUser.categories[0].id;
 
       var response = await client.updateCategory(
-        testUser.categories[0].id,
-        testUser.username,
-        token,
-        lastSeenVersion: testUser.categories[0].version,
-        name: name,
-        tags: tags,
-        parentId: parentId,
-      );
+          testUser.categories[0].id,
+          testUser.username,
+          token,
+          UpdateCategoryInput(
+            lastSeenVersion: testUser.categories[0].version,
+            name: name,
+            tags: tags,
+            parentId: parentId,
+          ));
       expect(response.name, equals(name));
       expect(response.tags, equals(tags));
       expect(response.parentId, equals(parentId));
@@ -544,8 +561,11 @@ void main() {
     test("throws when not found", () {
       expect(
         () => client.updateCategory(
-            "614193c7f2ea51b47f5896be", testUser.username, token,
-            name: name, lastSeenVersion: 0),
+          "614193c7f2ea51b47f5896be",
+          testUser.username,
+          token,
+          UpdateCategoryInput(name: name, lastSeenVersion: 0),
+        ),
         throwsEndpointError(
           404,
           "CategoryNotFound",
@@ -555,12 +575,13 @@ void main() {
     test("throws if category not found", () {
       expect(
         () => client.updateCategory(
-          testUser.categories[0].id,
-          testUser.username,
-          token,
-          lastSeenVersion: testUser.categories[0].version,
-          parentId: "614193c7f2ea51b47f5896be",
-        ),
+            testUser.categories[0].id,
+            testUser.username,
+            token,
+            UpdateCategoryInput(
+              lastSeenVersion: testUser.categories[0].version,
+              parentId: "614193c7f2ea51b47f5896be",
+            )),
         throwsEndpointError(
           404,
           "CategoryNotFound",
@@ -642,13 +663,14 @@ void main() {
       final categoryId = testUser.categories[0].id;
 
       var response = await client.createExpense(
-        testUser.username,
-        token,
-        name: name,
-        amount: amount,
-        budgetId: budgetId,
-        categoryId: categoryId,
-      );
+          testUser.username,
+          token,
+          CreateExpenseInput(
+            name: name,
+            amount: amount,
+            budgetId: budgetId,
+            categoryId: categoryId,
+          ));
       expect(response.id, isNotEmpty);
       expect(response.name, equals(name));
       expect(response.amount, equals(amount));
@@ -659,13 +681,14 @@ void main() {
       final categoryId = testUser.categories[0].id;
       expect(
         () => client.createExpense(
-          testUser.username,
-          token,
-          name: name,
-          amount: amount,
-          budgetId: "614193c7f2ea51b47f5896be",
-          categoryId: categoryId,
-        ),
+            testUser.username,
+            token,
+            CreateExpenseInput(
+              name: name,
+              amount: amount,
+              budgetId: "614193c7f2ea51b47f5896be",
+              categoryId: categoryId,
+            )),
         throwsEndpointError(
           404,
           "BudgetNotFound",
@@ -676,13 +699,14 @@ void main() {
       final budgetId = testUser.budgets[0].id;
       expect(
         () => client.createExpense(
-          testUser.username,
-          token,
-          name: name,
-          amount: amount,
-          budgetId: budgetId,
-          categoryId: "614193c7f2ea51b47f5896be",
-        ),
+            testUser.username,
+            token,
+            CreateExpenseInput(
+              name: name,
+              amount: amount,
+              budgetId: budgetId,
+              categoryId: "614193c7f2ea51b47f5896be",
+            )),
         throwsEndpointError(
           404,
           "CategoryNotFound",
@@ -706,13 +730,14 @@ void main() {
 
     test("succeeds", () async {
       var response = await client.updateExpense(
-        testUser.expenses[0].id,
-        testUser.username,
-        token,
-        lastSeenVersion: testUser.expenses[0].version,
-        name: name,
-        amount: amount,
-      );
+          testUser.expenses[0].id,
+          testUser.username,
+          token,
+          UpdateExpenseInput(
+            lastSeenVersion: testUser.expenses[0].version,
+            name: name,
+            amount: amount,
+          ));
       expect(response.name, equals(name));
       expect(response.amount, equals(amount));
     });
@@ -722,8 +747,7 @@ void main() {
           "614193c7f2ea51b47f5896be",
           testUser.username,
           token,
-          name: name,
-          lastSeenVersion: 0,
+          UpdateExpenseInput(name: name, lastSeenVersion: 0),
         ),
         throwsEndpointError(
           404,
@@ -775,75 +799,84 @@ Future<SignInRepsonse> setupTestUser(SmuniApiClient client) async {
     // ignore: empty_catches
   } catch (e) {}
 
-  final user = await client.createUser(
+  final user = await client.createUser(CreateUserInput(
     username: username,
     password: password,
     email: email,
     phoneNumber: "+251900001212",
     firebaseId: "1234567ABCDEFGHHGFEDCBA00000",
-  );
+  ));
   final token = (await client.signInEmail(email, password)).accessToken;
   late Category category01;
   late Category category02;
   {
     category01 = await client.createCategory(
-      user.username,
-      token,
-      name: "Medicine",
-      tags: ["pharma"],
-    );
+        user.username,
+        token,
+        CreateCategoryInput(
+          name: "Medicine",
+          tags: ["pharma"],
+        ));
     category02 = await client.createCategory(
-      user.username,
-      token,
-      name: "RejuvPill",
-      tags: ["pharma", "health"],
-    );
+        user.username,
+        token,
+        CreateCategoryInput(
+          name: "RejuvPill",
+          tags: ["pharma", "health"],
+        ));
   }
   late Budget budget01;
   {
     budget01 = await client.createBudget(
       user.username,
       token,
-      name: "Monthly budget",
-      allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
-      frequency: Recurring(2592000),
-      startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
-      endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
-      categoryAllocations: {
-        category01.id: 1000 * 100,
-        category02.id: 1000 * 100,
-      },
+      CreateBudgetInput(
+        name: "Monthly budget",
+        allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
+        frequency: Recurring(2592000),
+        startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
+        endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
+        categoryAllocations: {
+          category01.id: 1000 * 100,
+          category02.id: 1000 * 100,
+        },
+      ),
     );
     await client.createBudget(
-      user.username,
-      token,
-      name: "Special budget",
-      startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
-      endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
-      allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
-      frequency: OneTime(),
-      categoryAllocations: {
-        category01.id: 1000 * 100,
-        category02.id: 1000 * 100,
-      },
-    );
+        user.username,
+        token,
+        CreateBudgetInput(
+          name: "Special budget",
+          startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
+          endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
+          allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
+          frequency: OneTime(),
+          categoryAllocations: {
+            category01.id: 1000 * 100,
+            category02.id: 1000 * 100,
+          },
+        ));
   }
   {
     await client.createExpense(
       user.username,
       token,
-      name: "Pill purchase",
-      categoryId: category02.id,
-      budgetId: budget01.id,
-      amount: MonetaryAmount(currency: "ETB", amount: 400 * 100),
+      CreateExpenseInput(
+        name: "Pill purchase",
+        categoryId: category02.id,
+        budgetId: budget01.id,
+        amount: MonetaryAmount(currency: "ETB", amount: 400 * 100),
+      ),
     );
     await client.createExpense(
       user.username,
       token,
-      name: "Xanax purchase",
-      categoryId: category01.id,
-      budgetId: budget01.id,
-      amount: MonetaryAmount(currency: "ETB", amount: 200 * 100),
+      CreateExpenseInput(
+        name: "Xanax purchase",
+        categoryId: category01.id,
+        budgetId: budget01.id,
+        amount: MonetaryAmount(currency: "ETB", amount: 200 * 100),
+      ),
     );
   }
   return await client.signInEmail(email, password);

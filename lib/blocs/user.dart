@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
+import 'package:smuni/utilities.dart';
 
 // EVENTS
 
@@ -58,22 +59,27 @@ class UserBloc extends Bloc<UserEvent, UserBlocState> {
   final String loggedInUser;
   final UserRepository repo;
   UserBloc(this.repo, this.loggedInUser) : super(UserLoading(loggedInUser)) {
+    on<UpdateUser>(streamToEmitterAdapter(_mapUpdateUserEventToState));
+    on<LoadUser>(streamToEmitterAdapter(_mapLoadUserEventToState));
+
     add(LoadUser(loggedInUser));
   }
 
-  @override
-  Stream<UserBlocState> mapEventToState(
-    UserEvent event,
-  ) async* {
-    if (event is UpdateUser) {
-      await repo.setItem(event.update.id, event.update);
+  Stream<UserBlocState> _mapLoadUserEventToState(LoadUser event) async* {
+    final item = await repo.getItem(event.id);
+    yield UserLoadSuccess(item!);
+  }
+
+  Stream<UserBlocState> _mapUpdateUserEventToState(UpdateUser event) async* {
+    final current = state;
+    if (current is UserLoadSuccess) {
+      await repo.updateItem(
+        event.update.id,
+        repo.updateFromDiff(event.update, current.item),
+      );
       yield UserLoadSuccess(event.update);
-      return;
-    } else if (event is LoadUser) {
-      final item = await repo.getItem(event.id);
-      yield UserLoadSuccess(item!);
-      return;
+    } else {
+      throw Exception("impossible event");
     }
-    throw Exception("Unhandled event");
   }
 }

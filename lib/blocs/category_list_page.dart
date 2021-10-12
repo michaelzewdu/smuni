@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
+import 'package:smuni/utilities.dart';
 
 // EVENTS
 
@@ -55,37 +56,33 @@ class CategoryListPageBloc
   CategoryListPageBloc(
     this.repo,
   ) : super(CategoriesLoading()) {
+    on<LoadCategories>(streamToEmitterAdapter(_handleLoadCategories));
+    on<DeleteCategory>(streamToEmitterAdapter(_handleDeleteCategory));
+
     repo.changedItems.listen((ids) {
       add(LoadCategories());
     });
     add(LoadCategories());
   }
 
-  @override
-  Stream<CategoryListPageBlocState> mapEventToState(
-    CategoriesListBlocEvent event,
-  ) async* {
-    if (event is LoadCategories) {
-      yield CategoriesLoadSuccess(
-        await repo.getItems(),
-        await repo.ancestryGraph,
-      );
-      return;
-    } else if (event is DeleteCategory) {
-      final current = state;
-      if (current is CategoriesLoadSuccess) {
-        // TODO
-        await repo.removeItem(event.id);
-        current.items.remove(event.id);
-
-        yield CategoriesLoadSuccess(current.items, await repo.ancestryGraph);
-        return;
-      } else if (current is CategoriesLoading) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        add(event);
-        return;
-      }
+  Stream<CategoryListPageBlocState> _handleDeleteCategory(
+      DeleteCategory event) async* {
+    final current = state;
+    if (current is CategoriesLoadSuccess) {
+      await repo.removeItem(event.id);
+      current.items.remove(event.id);
+      yield CategoriesLoadSuccess(current.items, await repo.ancestryGraph);
+    } else if (current is CategoriesLoading) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      add(event);
     }
-    throw Exception("Unhandled event");
+  }
+
+  Stream<CategoryListPageBlocState> _handleLoadCategories(
+      LoadCategories event) async* {
+    yield CategoriesLoadSuccess(
+      await repo.getItems(),
+      await repo.ancestryGraph,
+    );
   }
 }

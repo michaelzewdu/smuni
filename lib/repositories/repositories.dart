@@ -1,43 +1,43 @@
-export 'hash_map.dart';
-export 'sqlite.dart';
+export 'auth.dart';
 
 import 'dart:async';
 import 'dart:collection';
 
 import 'package:smuni/models/models.dart';
+import 'package:smuni/providers/cache/cache.dart';
 import 'package:smuni/utilities.dart';
+import 'package:smuni_api_client/smuni_api_client.dart';
 
-abstract class Repository<Identifier, Item> {
+import 'auth.dart';
+import 'category.dart';
+import 'user.dart';
+
+abstract class Repository<Identifier, Item, CreateInput, UpdateInput> {
   Future<Item?> getItem(Identifier id);
   Future<Map<Identifier, Item>> getItems();
-  Future<void> setItem(Identifier id, Item item);
+  Future<Item> createItem(CreateInput input, [Identifier? id]);
+  Future<Item> updateItem(Identifier id, UpdateInput input);
   Future<void> removeItem(Identifier id);
-  Stream<List<Identifier>> get changedItems;
+  Stream<Set<Identifier>> get changedItems;
+  UpdateInput updateFromDiff(Item update, Item old);
 }
 
-abstract class Cache<Identifier, Item> {
-  Future<Item?> getItem(Identifier id);
-  Future<Map<Identifier, Item>> getItems();
-  Future<void> setItem(Identifier id, Item item);
-  Future<void> removeItem(Identifier id);
-  Stream<List<Identifier>> get changedItems;
-}
+typedef UserRepository = SimpleUserRepository;
+typedef BudgetRepository = SimpleBudgetRepository;
+typedef CategoryRepository = SimpleCategoryRepository;
+typedef ExpenseRepository = SimpleExpenseRepository;
 
-class TreeNode<T> {
-  final TreeNode<T>? parent;
-  final T item;
-  final List<T> children;
-
-  TreeNode(this.item, {required this.children, this.parent});
-}
-
-class SimpleRepository<Identifier, Item> extends Repository<Identifier, Item> {
+class SimpleRepository<Identifier, Item>
+    extends Repository<Identifier, Item, Item, Item> {
   final Cache<Identifier, Item> cache;
 
   SimpleRepository(this.cache);
 
+  final StreamController<Set<Identifier>> _changedItemsController =
+      StreamController.broadcast();
+
   @override
-  Stream<List<Identifier>> get changedItems => cache.changedItems;
+  Stream<Set<Identifier>> get changedItems => _changedItemsController.stream;
 
   @override
   Future<Item?> getItem(Identifier id) => cache.getItem(id);
@@ -45,24 +45,44 @@ class SimpleRepository<Identifier, Item> extends Repository<Identifier, Item> {
   @override
   Future<Map<Identifier, Item>> getItems() => cache.getItems();
   @override
-  Future<void> removeItem(Identifier id) => cache.removeItem(id);
+  Future<void> removeItem(Identifier id) async {
+    await cache.removeItem(id);
+    _changedItemsController.add({id});
+  }
 
   @override
-  Future<void> setItem(Identifier id, Item item) => cache.setItem(id, item);
+  Future<Item> createItem(Item input, [Identifier? id]) async {
+    if (await cache.getItem(id!) != null) {
+      throw Exception("Identifier occupied");
+    }
+    await cache.setItem(id, input);
+    _changedItemsController.add({id});
+    return input;
+  }
+
+  @override
+  Future<Item> updateItem(Identifier id, Item input) async {
+    await cache.setItem(id, input);
+    _changedItemsController.add({id});
+    return input;
+  }
+
+  @override
+  Item updateFromDiff(Item update, Item old) => update;
 }
 
-class UserRepository extends SimpleRepository<String, User> {
-  UserRepository(Cache<String, User> cache) : super(cache);
+class SimpleUserRepository extends SimpleRepository<String, User> {
+  SimpleUserRepository(Cache<String, User> cache) : super(cache);
 }
 
-class BudgetRepository extends SimpleRepository<String, Budget> {
-  BudgetRepository(Cache<String, Budget> cache) : super(cache);
+class SimpleBudgetRepository extends SimpleRepository<String, Budget> {
+  SimpleBudgetRepository(Cache<String, Budget> cache) : super(cache);
 }
 
-class CategoryRepository extends SimpleRepository<String, Category> {
+class SimpleCategoryRepository extends SimpleRepository<String, Category> {
   Future<Map<String, TreeNode<String>>>? _ancestryGraph;
 
-  CategoryRepository(Cache<String, Category> cache) : super(cache);
+  SimpleCategoryRepository(Cache<String, Category> cache) : super(cache);
 
   Future<Map<String, TreeNode<String>>> get ancestryGraph {
     _ancestryGraph ??= _calcAncestryTree();
@@ -70,9 +90,17 @@ class CategoryRepository extends SimpleRepository<String, Category> {
   }
 
   @override
-  Future<void> setItem(String id, Category item) async {
-    await super.setItem(id, item);
+  Future<Category> createItem(Category input, [String? id]) async {
+    final update = super.createItem(input, id);
     _ancestryGraph = null;
+    return update;
+  }
+
+  @override
+  Future<Category> updateItem(String id, Category input) async {
+    final update = super.updateItem(id, input);
+    _ancestryGraph = null;
+    return update;
   }
 
   // FIXME: fix this func
@@ -131,8 +159,8 @@ class CategoryRepository extends SimpleRepository<String, Category> {
   }
 }
 
-class ExpenseRepository extends SimpleRepository<String, Expense> {
-  ExpenseRepository(Cache<String, Expense> cache) : super(cache);
+class SimpleExpenseRepository extends SimpleRepository<String, Expense> {
+  SimpleExpenseRepository(Cache<String, Expense> cache) : super(cache);
 
   Future<Map<DateRange, DateRangeFilter>> getDateRangeFilters(
       {Set<String>? ofBudgets, Set<String>? ofCategories}) async {
@@ -171,5 +199,39 @@ class ExpenseRepository extends SimpleRepository<String, Expense> {
                       ofCategories.contains(e.categoryId)
                   : (e) => range.containsTimestamp(e.createdAt),
     );
+  }
+}
+
+class ItemNotFoundException implements Exception {
+  final String identifier;
+
+  const ItemNotFoundException(this.identifier);
+}
+
+T? ifNotEqualTo<T>(T value, T ifNotEqualTo) =>
+    value != ifNotEqualTo ? value : null;
+
+// FIXME: bad idea
+class CacheRefresher {
+  final SmuniApiClient client;
+  final AuthTokenRepository tokenRepo;
+
+  final Cache<String, User> userCache;
+  final Cache<String, Category> categoryCache;
+
+  CacheRefresher(this.client, this.tokenRepo, ApiUserRepository userRepo,
+      ApiCategoryRepository categoryRepo)
+      : userCache = userRepo.cache,
+        categoryCache = categoryRepo.cache;
+
+  Future<void> refreshCache() async {
+    final user = await client.getUser(
+      tokenRepo.username,
+      await tokenRepo.accessToken,
+    );
+    await userCache.setItem(user.username, User.from(user));
+    for (final category in user.categories) {
+      await categoryCache.setItem(category.id, category);
+    }
   }
 }

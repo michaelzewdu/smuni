@@ -1,7 +1,5 @@
 // TODO: optimize me
 
-export 'hash_map.dart';
-
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
@@ -9,7 +7,7 @@ import 'dart:convert';
 import 'package:smuni/models/models.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
-import 'repositories.dart';
+import 'cache.dart';
 
 Future<void> migrateV1(sqflite.Transaction txn) async {
   await txn.execute('''
@@ -65,6 +63,56 @@ create table expenses (
   createdAt integer not null,
   updatedAt integer not null)
 ''');
+
+  await txn.execute('''
+create table stuff ( 
+  key text primary key,
+  value text key not null)
+''');
+}
+
+class _StuffCache {
+  final sqflite.Database db;
+
+  _StuffCache(this.db);
+
+  Future<String?> getStuff(String key) async {
+    List<Map<String, Object?>> maps = await db.query("stuff",
+        columns: ["value"], where: "key = ?", whereArgs: [key]);
+    if (maps.isNotEmpty) {
+      return (maps.first as Map<String, String>)["value"];
+    }
+    return null;
+  }
+
+  Future<void> setStuff(String key, String value) async {
+    await db.insert(
+      "stuff",
+      {
+        "key": key,
+        "value": value,
+      },
+      conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+    );
+  }
+}
+
+class AuthTokenCache {
+  final _StuffCache _stuffCache;
+
+  AuthTokenCache(sqflite.Database db) : _stuffCache = _StuffCache(db);
+
+  Future<String?> getAccessToken() => _stuffCache.getStuff("accessToken");
+  Future<void> setAccessToken(String token) =>
+      _stuffCache.setStuff("accessToken", token);
+
+  Future<String?> getRefreshToken() => _stuffCache.getStuff("refreshToken");
+  Future<void> setRefreshToken(String token) =>
+      _stuffCache.setStuff("refreshToken", token);
+
+  Future<String?> getUsername() => _stuffCache.getStuff("loggedInUsername");
+  Future<void> setUsername(String token) =>
+      _stuffCache.setStuff("loggedInUsername", token);
 }
 
 abstract class SqliteCache<Identifier, Item> extends Cache<Identifier, Item> {
@@ -121,14 +169,7 @@ abstract class SqliteCache<Identifier, Item> extends Cache<Identifier, Item> {
       map,
       conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
     );
-    _changedItemsController.add([id]);
   }
-
-  final StreamController<List<Identifier>> _changedItemsController =
-      StreamController.broadcast();
-
-  @override
-  Stream<List<Identifier>> get changedItems => _changedItemsController.stream;
 }
 
 class SqliteUserCache extends SqliteCache<String, User> {

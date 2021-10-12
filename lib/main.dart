@@ -249,20 +249,22 @@ class MyApp extends StatelessWidget {
           final db = snapshot.data!;
           return MultiRepositoryProvider(
             providers: [
+              /* RepositoryProvider(
+                create: (context) => AuthTokenRepository.fromCache(client, AuthTokenCache(db)),
+              ), */
               RepositoryProvider(
-                  create: (context) => UserRepository(SqliteUserCache(db))),
-              RepositoryProvider(create: (context) {
-                var repo = BudgetRepository(SqliteBudgetCache(db));
-                return repo;
-              }),
-              RepositoryProvider(create: (context) {
-                var repo = CategoryRepository(SqliteCategoryCache(db));
-                return repo;
-              }),
-              RepositoryProvider(create: (context) {
-                var repo = ExpenseRepository(SqliteExpenseCache(db));
-                return repo;
-              }),
+                create: (context) => UserRepository(SqliteUserCache(db)),
+              ),
+              RepositoryProvider(
+                create: (context) => BudgetRepository(SqliteBudgetCache(db)),
+              ),
+              RepositoryProvider(
+                create: (context) =>
+                    CategoryRepository(SqliteCategoryCache(db)),
+              ),
+              RepositoryProvider(
+                create: (context) => ExpenseRepository(SqliteExpenseCache(db)),
+              ),
             ],
             child: MultiBlocProvider(
               providers: [

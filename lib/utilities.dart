@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart' as flutter;
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class Pair<A, B> {
   final A a;
@@ -33,7 +36,6 @@ class EnemeratedIterable<T> extends Iterable<Pair<int, T>> {
   EnemeratedIterable(this.iterable);
 
   @override
-  // TODO: implement iterator
   Iterator<Pair<int, T>> get iterator => EnemeratedIterator(iterable.iterator);
 }
 
@@ -184,3 +186,20 @@ Map<DateRange, DateRangeFilter> generateDateRangesFilters(
   }
   return filters;
 }
+
+class TreeNode<T> {
+  final TreeNode<T>? parent;
+  final T item;
+  final List<T> children;
+
+  TreeNode(this.item, {required this.children, this.parent});
+}
+
+FutureOr<void> Function(Event, Emitter<State>)
+    streamToEmitterAdapter<Event, State>(
+            Stream<State> Function(Event) eventHandler) =>
+        (event, emit) async {
+          await for (final state in eventHandler(event)) {
+            emit(state);
+          }
+        };

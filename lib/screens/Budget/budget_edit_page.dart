@@ -2,8 +2,9 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smuni/blocs/budget_edit_page.dart';
+
 import 'package:smuni/blocs/category_list_page.dart';
+import 'package:smuni/blocs/edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
@@ -19,7 +20,7 @@ class BudgetEditPage extends StatefulWidget {
         settings: const RouteSettings(name: routeName),
         builder: (context) => BlocProvider(
           create: (context) =>
-              BudgetEditPageBloc(context.read<BudgetRepository>(), id),
+              EditPageBloc.fromRepo(context.read<BudgetRepository>(), id),
           child: BlocProvider(
             create: (context) =>
                 CategoryListPageBloc(context.read<CategoryRepository>()),
@@ -45,8 +46,8 @@ class BudgetEditPage extends StatefulWidget {
           categoryAllocations: {},
         );
         return BlocProvider(
-          create: (context) => BudgetEditPageBloc.modified(
-              context.read<BudgetRepository>(), item),
+          create: (context) =>
+              EditPageBloc.modified(context.read<BudgetRepository>(), item),
           child: BlocProvider(
             create: (context) =>
                 CategoryListPageBloc(context.read<CategoryRepository>()),
@@ -72,10 +73,10 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
   String? _selectedCategory;
 
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<BudgetEditPageBloc, BudgetEditPageBlocState>(
+  Widget build(BuildContext context) => BlocConsumer<
+          EditPageBloc<String, Budget>, EditPageBlocState<String, Budget>>(
         listener: (context, state) {
-          if (state is UnmodifiedEditState) {
+          if (state is UnmodifiedEditState<String, Budget>) {
             setState(() {
               _isOneTime = state.unmodified.frequency is OneTime;
               _amount = state.unmodified.allocatedAmount;
@@ -85,7 +86,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
           }
         },
         builder: (context, state) {
-          if (state is UnmodifiedEditState) {
+          if (state is UnmodifiedEditState<String, Budget>) {
             return _form(context, state);
           } else if (state is LoadingItem) {
             return Scaffold(
@@ -96,7 +97,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                 child: CircularProgressIndicator(),
               ),
             );
-          } else if (state is ItemNotFound) {
+          } else if (state is ItemNotFound<String, Budget>) {
             return Scaffold(
               appBar: AppBar(
                 title: const Text("Item not found"),
@@ -144,7 +145,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     endTime: _endTime,
                     categoryAllocation: _categoryAllocation,
                   );
-                  context.read<BudgetEditPageBloc>()
+                  context.read<EditPageBloc<String, Budget>>()
                     ..add(
                       ModifyItem(modified),
                     )
@@ -162,7 +163,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                context.read<BudgetEditPageBloc>().add(DiscardChanges());
+                context
+                    .read<EditPageBloc<String, Budget>>()
+                    .add(DiscardChanges());
                 Navigator.pop(context, false);
               },
               child: const Text("Cancel"),
