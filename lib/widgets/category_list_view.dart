@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 
@@ -18,7 +17,10 @@ class CategoryListView extends StatelessWidget {
     final isDisabled = disabledItems.contains(item.id);
     return ListTile(
       dense: isDisabled,
-      title: Text(item.name),
+      title: Text(
+        item.name,
+        style: TextStyle(fontSize: 18),
+      ),
       subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
       onTap: () => !isDisabled ? onSelect?.call(item.id) : null,
     );

@@ -18,12 +18,20 @@ class BudgetListView extends StatelessWidget {
             itemCount: keys.length,
             itemBuilder: (context, index) {
               final item = items[keys.elementAt(index)]!;
-              return ListTile(
-                  title: Text(item.name),
-                  trailing: Text(
-                    "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
-                  ),
-                  onTap: () => onSelect?.call(item.id));
+              return Column(
+                children: [
+                  ListTile(
+                      title: Text(
+                        item.name,
+                        textScaleFactor: 1.3,
+                      ),
+                      trailing: Text(
+                        "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
+                      ),
+                      onTap: () => onSelect?.call(item.id)),
+                  Divider()
+                ],
+              );
             },
           )
         : const Center(child: Text("No budgets."));

@@ -176,22 +176,25 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
           key: _formKey,
           child: Column(
             children: [
-              TextFormField(
-                initialValue: state.unmodified.name,
-                onSaved: (value) {
-                  setState(() {
-                    _name = value!;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Name can't be empty";
-                  }
-                },
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  hintText: "Name",
-                  helperText: "Name",
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextFormField(
+                  initialValue: state.unmodified.name,
+                  onSaved: (value) {
+                    setState(() {
+                      _name = value!;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Name can't be empty";
+                    }
+                  },
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    hintText: "Name",
+                    helperText: "Name",
+                  ),
                 ),
               ),
               MoneyFormEditor(
@@ -207,7 +210,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
               ), */
               _isOneTime
                   ? _oneTimeDateRangeSelctor(context, state)
-                  : _recurringDateRangeSelctor(context, state),
+                  : _recurringDateRangeSelector(context, state),
               CheckboxListTile(
                 dense: true,
                 title: Text('One Time'),
@@ -330,7 +333,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
         ),
       );
 
-  Widget _recurringDateRangeSelctor(
+  Widget _recurringDateRangeSelector(
     BuildContext context,
     UnmodifiedEditState state,
   ) {
@@ -739,51 +742,59 @@ class _SimpleDateRangeEditorState extends State<SimpleDateRangeEditor> {
     return Column(
       children: [
         if (widget.caption != null) widget.caption!,
-        Row(
-          children: [
-            ChoiceChip(
-              selected: _range == custom.range,
-              onSelected: (_) async {
-                final range = await showDateRangePicker(
-                  context: context,
-                  helpText: "Custom Budget Day Range",
-                  fieldStartLabelText: "Start Date",
-                  fieldEndLabelText: "End Date",
-                  initialEntryMode: DatePickerEntryMode.input,
-                  initialDateRange: custom.range.toFlutter(),
-                  firstDate: DateTime.fromMillisecondsSinceEpoch(0),
-                  lastDate:
-                      DateTime.fromMillisecondsSinceEpoch(8640000000000000),
-                  // TODO: localization
-                );
-                if (range != null) {
-                  setState(() {
-                    custom = DateRangeFilter(
-                      "Custom",
-                      DateRange.fromFlutter(range),
-                      FilterLevel.custom,
-                    );
-                    _range = DateRange.fromFlutter(range);
-                  });
-                }
-              },
-              label: Row(
-                  children: const [Icon(Icons.arrow_downward), Text("Custom")]),
-            ),
-            ...widget.rangesToShow.map(
-              (e) => ChoiceChip(
-                selected: _range == e.range,
-                onSelected: (selected) {
-                  if (selected) {
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ChoiceChip(
+                selected: _range == custom.range,
+                onSelected: (_) async {
+                  final range = await showDateRangePicker(
+                    context: context,
+                    helpText: "Custom Budget Day Range",
+                    fieldStartLabelText: "Start Date",
+                    fieldEndLabelText: "End Date",
+                    initialEntryMode: DatePickerEntryMode.input,
+                    initialDateRange: custom.range.toFlutter(),
+                    firstDate: DateTime.fromMillisecondsSinceEpoch(0),
+                    lastDate:
+                        DateTime.fromMillisecondsSinceEpoch(8640000000000000),
+                    // TODO: localization
+                  );
+                  if (range != null) {
                     setState(() {
-                      _range = e.range;
+                      custom = DateRangeFilter(
+                        "Custom",
+                        DateRange.fromFlutter(range),
+                        FilterLevel.custom,
+                      );
+                      _range = DateRange.fromFlutter(range);
                     });
                   }
                 },
-                label: Text(e.name),
+                label: Row(children: const [
+                  Icon(Icons.arrow_downward),
+                  Text("Custom")
+                ]),
               ),
-            ),
-          ],
+              ...widget.rangesToShow.map(
+                (e) => Padding(
+                  padding: const EdgeInsets.all(2.0),
+                  child: ChoiceChip(
+                    selected: _range == e.range,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _range = e.range;
+                        });
+                      }
+                    },
+                    label: Text(e.name),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

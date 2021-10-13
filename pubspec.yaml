@@ -30,6 +30,7 @@ dependencies:
   sqflite: ^2.0.0+4
   path: ^1.8.0
   http: ^0.13.3
+  google_fonts: ^2.1.0
   smuni_api_client:
     path: packages/smuni_api_client
 

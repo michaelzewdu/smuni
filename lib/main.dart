@@ -9,8 +9,8 @@ import 'bloc_observer.dart';
 import 'blocs/blocs.dart';
 import 'constants.dart';
 import 'models/models.dart';
-import 'repositories/repositories.dart';
 import 'providers/cache/cache.dart';
+import 'repositories/repositories.dart';
 import 'screens/routes.dart';
 
 void main() async {
@@ -41,13 +41,15 @@ class MyApp extends StatelessWidget {
           name: "Monthly budget",
           startTime: DateTime.parse("2021-07-31T21:00:00.000Z"),
           endTime: DateTime.parse("2021-08-31T21:00:00.000Z"),
-          allocatedAmount: MonetaryAmount(currency: "ETB", amount: 7000 * 100),
+          allocatedAmount: MonetaryAmount(currency: "ETB", amount: 15000 * 100),
           frequency: Recurring(2592000),
           categoryAllocations: {
             "fpoq3cum4cpu43241u34": 1000 * 100,
             "mucpxo2ur3p98u32proxi34": 300 * 100,
             "614193c7f2ea51b47f5896b8": 1000 * 100,
-            "614193c7f2ea51b47f5896b9": 500 * 100
+            "614193c7f2ea51b47f5896b9": 500 * 100,
+            "w3ioeunvfnasdlkjfnalk": 6000 * 100,
+            "dnfvoijwemkzopsiejrklasldk": 5000 * 100
           },
         ),
         Budget(
@@ -115,6 +117,22 @@ class MyApp extends StatelessWidget {
           parentId: "jfaksdpofjasodf",
           tags: ["Ego"],
         ),
+        Category(
+          id: "w3ioeunvfnasdlkjfnalk",
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          name: "Kicks",
+          parentId: null,
+          tags: ["Footlocker"],
+        ),
+        Category(
+          id: "dnfvoijwemkzopsiejrklasldk",
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          name: "Curry 3ZER0",
+          parentId: "w3ioeunvfnasdlkjfnalk",
+          tags: [""],
+        ),
       ],
       expenses: [
         Expense(
@@ -148,7 +166,7 @@ class MyApp extends StatelessWidget {
           id: "j2cpiojr2p3io4jrc92p34jr234r",
           createdAt: now.add(Duration(days: -40)),
           updatedAt: now.add(Duration(days: -40)),
-          name: "Switchblade puchase",
+          name: "Switchblade purchase",
           categoryId: "fpoq3cum4cpu43241u34",
           budgetId: "614193c7f2ea51b47f5896ba",
           amount: MonetaryAmount(currency: "ETB", amount: 100 * 100),

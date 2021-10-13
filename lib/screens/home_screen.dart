@@ -1,17 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/blocs/budget_list_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/budget_selector.dart';
 
-import 'Budget/budget_list_page.dart';
-import 'Expense/expense_list_page.dart';
 import 'Budget/budget_details_page.dart';
+import 'Budget/budget_list_page.dart';
 import 'Category/category_list_page.dart';
+import 'Expense/expense_list_page.dart';
 import 'settings_page.dart';
 
 class SmuniHomeScreen extends StatefulWidget {
@@ -51,11 +50,7 @@ class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
               Icons.align_horizontal_center,
               "Categories"
             ],
-            [
-              Icons.account_circle_sharp,
-              Icons.account_circle_outlined,
-              "Profile"
-            ],
+            [Icons.assignment, Icons.wysiwyg_sharp, "Menu"],
           ]
               .map((e) => BottomNavigationBarItem(
                     icon: Icon(e[0]),
@@ -67,7 +62,7 @@ class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
         // return Center(child: Text("Shit"));
         switch (_selectedPage) {
           case 4:
-            return SettingsPage();
+            return MenusPage();
           case 3:
             return CategoryListPage.page();
           case 2:

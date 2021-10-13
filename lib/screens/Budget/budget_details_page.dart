@@ -2,7 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
@@ -10,6 +10,7 @@ import 'package:smuni/screens/Expense/expense_edit_page.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/expense_list_view.dart';
 
+import '../../constants.dart';
 import 'budget_edit_page.dart';
 
 class BudgetDetailsPage extends StatefulWidget {
@@ -200,6 +201,89 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        RichText(
+                            text: TextSpan(children: [
+                          TextSpan(
+                              text: 'Current  ',
+                              style: TextStyle(
+                                  fontSize: 24, fontWeight: FontWeight.w200)),
+                          TextSpan(
+                              text: 'Standings', style: TextStyle(fontSize: 23))
+                        ])),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RichText(
+                                text: TextSpan(children: [
+                              TextSpan(
+                                  text: 'Used: ',
+                                  style: TextStyle(fontSize: 18)),
+                              _totalUsed != null
+                                  ? TextSpan(
+                                      text: "$currency ${_totalUsed! / 100}",
+                                      style: _totalUsed! > totalAllocated
+                                          ? TextStyle(
+                                              color: Colors.red, fontSize: 18)
+                                          : null,
+                                    )
+                                  : TextSpan(text: 'loading..'),
+                            ])),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: RichText(
+                                  text: TextSpan(children: [
+                                TextSpan(
+                                    text: 'Remaining: ',
+                                    style: TextStyle(fontSize: 18)),
+                                _totalUsed != null
+                                    ? TextSpan(
+                                        text:
+                                            "$currency ${(totalAllocated - _totalUsed!) / 100}",
+                                        style: _totalUsed! > totalAllocated
+                                            ? TextStyle(
+                                                color: Colors.red,
+                                                //backgroundColor: Colors.white,
+                                                fontSize: 18)
+                                            : TextStyle(
+                                                color: Colors.black,
+                                                backgroundColor: Colors.white,
+                                                fontSize: 20),
+                                      )
+                                    : TextSpan(text: 'loading..'),
+                              ])),
+                            ),
+                            RichText(
+                                text: TextSpan(children: [
+                              TextSpan(text: 'Allocated: '),
+                              _totalUsed != null
+                                  ? TextSpan(
+                                      text: "$currency ${totalAllocated / 100}",
+                                    )
+                                  : TextSpan(text: 'loading..'),
+                            ])),
+                          ],
+                        ),
+                        /*
+                        Text(
+                          '-15,000 Br',
+                          textScaleFactor: 3,
+                          style: TextStyle(backgroundColor: Colors.white),
+                        ),
+                        Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
+                            child: RichText(
+                                text: TextSpan(children: [
+                              TextSpan(
+                                  text: 'Off ',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w200,
+                                      fontSize: 16)),
+                              TextSpan(
+                                  text: '5000.00 Br',
+                                  style: TextStyle(fontSize: 16))
+                            ])))
+
                         Text(state.item.name),
                         Text("frequency: ${state.item.frequency}"),
                         Text("startTime: ${state.item.startTime}"),
@@ -207,6 +291,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                         Text("id: ${state.item.id}"),
                         Text("createdAt: ${state.item.createdAt}"),
                         Text("updatedAt: ${state.item.updatedAt}"),
+
+                         */
                       ],
                     ),
                   ),
@@ -214,6 +300,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
               ),
               actions: widget.actionsListBuilder(context, state),
             ),
+            /*
             _totalUsed != null
                 ? SliverToBoxAdapter(
                     child: Padding(
@@ -315,6 +402,29 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                     child: const Center(
                         child: CircularProgressIndicator.adaptive()),
                   ),
+
+             */
+            SliverToBoxAdapter(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 22, horizontal: 16.0),
+                child: Text('${state.item.name!}\'s categories',
+                    style:
+                        GoogleFonts.secularOne(fontSize: 23, color: semuni700)),
+              ),
+              /*
+              child: BlocBuilder<UserBloc, UserBlocState>(
+                  builder: (context, userState) {
+                if (userState is UserLoadSuccess &&
+                    userState.item.mainBudget != null) {
+                  return Text(userState.item.mainBudget!);
+                } else {
+                  return Text('Budget Categories');
+                }
+              }),
+
+               */
+            ),
             _perCategoryUsed != null
                 ? BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
                     builder: (context, catListState) {
@@ -389,9 +499,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
             ? Builder(builder: (context) {
                 final used = perCategoryUsed[id] ?? 0;
                 return ListTile(
-                  title: Text(item.name),
-                  subtitle:
-                      Text(item.tags.map((e) => "#$e").toList().join(" ")),
+                  title: Text(item.name, style: TextStyle(fontSize: 18)),
+                  subtitle: item.tags.isEmpty
+                      ? null
+                      : Text(item.tags.map((e) => "#$e").toList().join(" ")),
                   trailing: SizedBox(
                     width: MediaQuery.of(context).size.width * 0.5,
                     child: Column(

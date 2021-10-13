@@ -7,6 +7,7 @@
 - [ ] Search feature for the list pages
 - [ ] Optional add category button on CategoryListView
 - [ ] Date Picker bug on budget edit
+- [ ] Budget switch is buggy
   
 - [ ] Decide on how to tackle deletion
 - [ ] Decide on how to aggregate budget usage in the category tree

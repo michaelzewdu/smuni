@@ -19,8 +19,8 @@ class Routes {
     switch (settings.name) {
       case SmuniHomeScreen.routeName:
         return SmuniHomeScreen.route();
-      case SettingsPage.routeName:
-        return SettingsPage.route();
+      case MenusPage.routeName:
+        return MenusPage.route();
       case BudgetListPage.routeName:
         return BudgetListPage.route();
       case BudgetDetailsPage.routeName:

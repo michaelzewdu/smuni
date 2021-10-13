@@ -1,32 +1,33 @@
 import 'package:flutter/material.dart';
-
 import 'package:smuni/constants.dart';
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+class MenusPage extends StatelessWidget {
+  const MenusPage({Key? key}) : super(key: key);
 
   static const String routeName = '/settings';
 
   static Route route() {
     return MaterialPageRoute(
       settings: const RouteSettings(name: routeName),
-      builder: (context) => SettingsPage(),
+      builder: (context) => MenusPage(),
     );
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: Text("Settings"),
+          centerTitle: true,
+          title: Text(
+            'Kamasio',
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              'Kamasio',
-              style: TextStyle(
-                  fontSize: 32, fontWeight: FontWeight.w900, color: semuni500),
-            ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: DrawerButtons(
