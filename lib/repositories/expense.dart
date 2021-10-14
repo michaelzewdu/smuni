@@ -31,8 +31,8 @@ class ApiExpenseRepository extends Repository<String, Expense,
       item = await client.getExpense(id, tokenRepo.username, token);
       await cache.setItem(id, item);
       return item;
-    } catch (e) {
-      if (e is EndpointError && e.type == "ExpenseNotFound") return null;
+    } on EndpointError catch (e) {
+      if (e.type == "ExpenseNotFound") return null;
       rethrow;
     }
   }
@@ -64,9 +64,7 @@ class ApiExpenseRepository extends Repository<String, Expense,
     return item;
   }
 
-  Future<void> deleteItem(
-    String id,
-  ) async {
+  Future<void> deleteItem(String id) async {
     final token = await tokenRepo.accessToken;
     await client.deleteExpense(
       id,
@@ -97,19 +95,27 @@ class ApiExpenseRepository extends Repository<String, Expense,
     return UpdateExpenseInput.fromDiff(update: update, old: old);
   }
 
+  @override
+  CreateExpenseInput createFromItem(Expense item) => CreateExpenseInput(
+        name: item.name,
+        budgetId: item.budgetId,
+        categoryId: item.categoryId,
+        amount: item.amount,
+      );
+
   Future<Map<DateRange, DateRangeFilter>> getDateRangeFilters({
-    Set<String>? ofExpenses,
+    Set<String>? ofBudgets,
     Set<String>? ofCategories,
   }) async {
     final items = await getItems();
     return generateDateRangesFilters(
       items.values
-          .where(ofExpenses != null && ofCategories != null
+          .where(ofBudgets != null && ofCategories != null
               ? (e) =>
-                  ofExpenses.contains(e.budgetId) &&
+                  ofBudgets.contains(e.budgetId) &&
                   ofCategories.contains(e.categoryId)
-              : ofExpenses != null
-                  ? (e) => ofExpenses.contains(e.budgetId)
+              : ofBudgets != null
+                  ? (e) => ofBudgets.contains(e.budgetId)
                   : ofCategories != null
                       ? (e) => ofCategories.contains(e.categoryId)
                       : (e) => true)
@@ -119,20 +125,20 @@ class ApiExpenseRepository extends Repository<String, Expense,
 
   Future<Iterable<Expense>> getItemsInRange(
     DateRange range, {
-    Set<String>? ofExpenses,
+    Set<String>? ofBudgets,
     Set<String>? ofCategories,
   }) async {
     final items = await getItems();
     return items.values.where(
-      ofExpenses != null && ofCategories != null
+      ofBudgets != null && ofCategories != null
           ? (e) =>
               range.containsTimestamp(e.createdAt) &&
-              ofExpenses.contains(e.budgetId) &&
+              ofBudgets.contains(e.budgetId) &&
               ofCategories.contains(e.categoryId)
-          : ofExpenses != null
+          : ofBudgets != null
               ? (e) =>
                   range.containsTimestamp(e.createdAt) &&
-                  ofExpenses.contains(e.budgetId)
+                  ofBudgets.contains(e.budgetId)
               : ofCategories != null
                   ? (e) =>
                       range.containsTimestamp(e.createdAt) &&

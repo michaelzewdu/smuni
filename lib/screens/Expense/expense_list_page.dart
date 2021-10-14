@@ -6,6 +6,8 @@ import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/expense_list_view.dart';
 
+import 'expense_edit_page.dart';
+
 class ExpenseListPage extends StatefulWidget {
   static const String routeName = "/expenseList";
 
@@ -45,6 +47,39 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
                 items: state.items,
                 allDateRanges: state.dateRangeFilters.values,
                 displayedRange: state.range,
+                onEdit: (id) => Navigator.pushNamed(
+                  context,
+                  ExpenseEditPage.routeName,
+                  arguments: id,
+                ),
+                onDelete: (id) async {
+                  final item = state.items[id]!;
+                  final confirm = await showDialog<bool?>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Confirm deletion'),
+                      content: Text(
+                          'Are you sure you want to delete entry ${item.name}?'),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context, false);
+                          },
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context, true);
+                          },
+                          child: const Text('Confirm'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm != null && confirm) {
+                    context.read<ExpenseListPageBloc>().add(DeleteExpense(id));
+                  }
+                },
                 loadRange: (range) => context
                     .read<ExpenseListPageBloc>()
                     .add(LoadExpenses(range)),

@@ -19,7 +19,7 @@ class ApiUserRepository
   @override
   Stream<Set<String>> get changedItems => _changedItemsController.stream;
 
-  ApiUserRepository(this.client, this.cache, this.tokenRepo);
+  ApiUserRepository(this.cache, this.client, this.tokenRepo);
 
   @override
   Future<User?> getItem(String username) async {
@@ -30,8 +30,8 @@ class ApiUserRepository
       user = User.from(await client.getUser(username, token));
       await cache.setItem(username, user);
       return user;
-    } catch (e) {
-      if (e is EndpointError && e.type == "UserNotFound") return null;
+    } on EndpointError catch (e) {
+      if (e.type == "UserNotFound") return null;
       rethrow;
     }
   }
@@ -72,5 +72,11 @@ class ApiUserRepository
   @override
   UpdateUserInput updateFromDiff(User update, User old) {
     return UpdateUserInput.fromDiff(update: update, old: old);
+  }
+
+  @override
+  CreateUserInput createFromItem(User item) {
+    // TODO: implement removeItem
+    throw UnimplementedError();
   }
 }

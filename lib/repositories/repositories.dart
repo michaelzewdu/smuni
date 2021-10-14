@@ -9,7 +9,9 @@ import 'package:smuni/utilities.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
 import 'auth.dart';
+import 'budget.dart';
 import 'category.dart';
+import 'expense.dart';
 import 'user.dart';
 
 abstract class Repository<Identifier, Item, CreateInput, UpdateInput> {
@@ -20,12 +22,13 @@ abstract class Repository<Identifier, Item, CreateInput, UpdateInput> {
   Future<void> removeItem(Identifier id);
   Stream<Set<Identifier>> get changedItems;
   UpdateInput updateFromDiff(Item update, Item old);
+  CreateInput createFromItem(Item item);
 }
 
-typedef UserRepository = SimpleUserRepository;
-typedef BudgetRepository = SimpleBudgetRepository;
-typedef CategoryRepository = SimpleCategoryRepository;
-typedef ExpenseRepository = SimpleExpenseRepository;
+typedef UserRepository = ApiUserRepository;
+typedef BudgetRepository = ApiBudgetRepository;
+typedef CategoryRepository = ApiCategoryRepository;
+typedef ExpenseRepository = ApiExpenseRepository;
 
 class SimpleRepository<Identifier, Item>
     extends Repository<Identifier, Item, Item, Item> {
@@ -69,6 +72,9 @@ class SimpleRepository<Identifier, Item>
 
   @override
   Item updateFromDiff(Item update, Item old) => update;
+
+  @override
+  Item createFromItem(Item item) => item;
 }
 
 class SimpleUserRepository extends SimpleRepository<String, User> {
@@ -217,21 +223,43 @@ class CacheRefresher {
   final AuthTokenRepository tokenRepo;
 
   final Cache<String, User> userCache;
+  final Cache<String, Budget> budgetCache;
   final Cache<String, Category> categoryCache;
+  final Cache<String, Expense> expenseCache;
 
-  CacheRefresher(this.client, this.tokenRepo, ApiUserRepository userRepo,
-      ApiCategoryRepository categoryRepo)
-      : userCache = userRepo.cache,
-        categoryCache = categoryRepo.cache;
+  CacheRefresher(
+    this.client,
+    this.tokenRepo, {
+    required ApiUserRepository userRepo,
+    required ApiBudgetRepository budgetRepo,
+    required ApiCategoryRepository categoryRepo,
+    required ApiExpenseRepository expenseRepo,
+  })  : userCache = userRepo.cache,
+        budgetCache = budgetRepo.cache,
+        categoryCache = categoryRepo.cache,
+        expenseCache = expenseRepo.cache;
 
   Future<void> refreshCache() async {
     final user = await client.getUser(
       tokenRepo.username,
       await tokenRepo.accessToken,
     );
+    await refreshFromUser(user);
+  }
+
+  Future<void> refreshFromUser(UserDenorm user) async {
     await userCache.setItem(user.username, User.from(user));
+
+    for (final budget in user.budgets) {
+      await budgetCache.setItem(budget.id, budget);
+    }
+
     for (final category in user.categories) {
       await categoryCache.setItem(category.id, category);
+    }
+
+    for (final expense in user.expenses) {
+      await expenseCache.setItem(expense.id, expense);
     }
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart' as flutter;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smuni_api_client/smuni_api_client.dart';
 
 class Pair<A, B> {
   final A a;
@@ -197,9 +198,45 @@ class TreeNode<T> {
 
 FutureOr<void> Function(Event, Emitter<State>)
     streamToEmitterAdapter<Event, State>(
-            Stream<State> Function(Event) eventHandler) =>
+  Stream<State> Function(Event) eventHandler,
+) =>
         (event, emit) async {
           await for (final state in eventHandler(event)) {
             emit(state);
+          }
+        };
+
+abstract class OperationException implements Exception {}
+
+class TimeoutException implements OperationException {}
+
+class ConnectionException extends OperationException {
+  final SocketException inner;
+
+  ConnectionException(this.inner);
+
+  @override
+  String toString() => "${runtimeType.toString()} { inner: $inner }";
+}
+
+typedef OperationSuccessNotifier = void Function();
+typedef OperationExceptionNotifier = void Function(OperationException error);
+mixin StatusAwareEvent {
+  OperationSuccessNotifier? onSuccess;
+  OperationExceptionNotifier? onError;
+}
+
+FutureOr<void> Function(Event, Emitter<State>)
+    streamToEmitterAdapterStatusAware<Event extends StatusAwareEvent, State>(
+  Stream<State> Function(Event) eventHandler,
+) =>
+        (event, emit) async {
+          try {
+            await for (final state in eventHandler(event)) {
+              emit(state);
+            }
+            event.onSuccess?.call();
+          } on OperationException catch (err) {
+            event.onError?.call(err);
           }
         };

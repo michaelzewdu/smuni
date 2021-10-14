@@ -789,7 +789,7 @@ Matcher throwsEndpointError(
       ),
     );
 
-Future<SignInRepsonse> setupTestUser(SmuniApiClient client) async {
+Future<SignInResponse> setupTestUser(SmuniApiClient client) async {
   final password = "password";
   final username = "client_test_dummy";
   final email = "hello@under.world";

@@ -71,22 +71,23 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
   Frequency _frequency = OneTime();
   Map<String, int> _categoryAllocation = {};
   String? _selectedCategory;
+  bool _awaitingSave = false;
 
   @override
   Widget build(BuildContext context) => BlocConsumer<
           EditPageBloc<String, Budget>, EditPageBlocState<String, Budget>>(
         listener: (context, state) {
-          if (state is UnmodifiedEditState<String, Budget>) {
+          if (state is LoadSuccessEditState<String, Budget>) {
             setState(() {
-              _isOneTime = state.unmodified.frequency is OneTime;
-              _amount = state.unmodified.allocatedAmount;
+              _isOneTime = state.item.frequency is OneTime;
+              _amount = state.item.allocatedAmount;
               _categoryAllocation =
-                  HashMap.from(state.unmodified.categoryAllocations);
+                  HashMap.from(state.item.categoryAllocations);
             });
           }
         },
         builder: (context, state) {
-          if (state is UnmodifiedEditState<String, Budget>) {
+          if (state is LoadSuccessEditState<String, Budget>) {
             return _form(context, state);
           } else if (state is LoadingItem) {
             return Scaffold(
@@ -114,61 +115,83 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
         },
       );
 
-  Widget _form(BuildContext context, UnmodifiedEditState state) => Scaffold(
+  Widget _form(BuildContext context, LoadSuccessEditState state) => Scaffold(
         appBar: AppBar(
-          title: Text("Editing budget: ${state.unmodified.name}"),
+          title: Text(
+              "Editing budget: ${state is ModifiedEditState<String, Budget> ? state.unmodified.name : state.item.name}"),
           actions: [
             ElevatedButton(
-              onPressed: () {
-                final allocated = _categoryAllocation.isNotEmpty
-                    ? _categoryAllocation.values.reduce((a, b) => a + b)
-                    : 0;
-                final remaining = _amount.amount - allocated;
+              onPressed: !_awaitingSave
+                  ? () {
+                      final allocated = _categoryAllocation.isNotEmpty
+                          ? _categoryAllocation.values.reduce((a, b) => a + b)
+                          : 0;
+                      final remaining = _amount.amount - allocated;
 
-                final form = _formKey.currentState;
-                if (remaining != 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(remaining > 0
-                        ? "Unallocated amount remains."
-                        : "Allocation over budget."),
-                    behavior: SnackBarBehavior.floating,
-                  ));
-                }
-                if (form != null && form.validate() && remaining == 0) {
-                  form.save();
-                  final modified = Budget.from(
-                    state.unmodified,
-                    name: _name,
-                    allocatedAmount: _amount,
-                    frequency: _frequency,
-                    startTime: _startTime,
-                    endTime: _endTime,
-                    categoryAllocation: _categoryAllocation,
-                  );
-                  context.read<EditPageBloc<String, Budget>>()
-                    ..add(
-                      ModifyItem(modified),
-                    )
-                    ..add(SaveChanges());
-                  /* Navigator.popAndPushNamed(
-                          context,
-                          CategoryDetailsPage.routeName,
-                          arguments: bloc.state.unmodified.id,
-                        ); 
-                        */
-                  Navigator.pop(context, true);
-                }
-              },
-              child: const Text("Save"),
+                      final form = _formKey.currentState;
+                      if (remaining != 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(remaining > 0
+                              ? "Unallocated amount remains."
+                              : "Allocation over budget."),
+                          behavior: SnackBarBehavior.floating,
+                        ));
+                      }
+                      if (form != null && form.validate() && remaining == 0) {
+                        form.save();
+                        final modified = Budget.from(
+                          state is ModifiedEditState<String, Budget>
+                              ? state.unmodified
+                              : state.item,
+                          name: _name,
+                          allocatedAmount: _amount,
+                          frequency: _frequency,
+                          startTime: _startTime,
+                          endTime: _endTime,
+                          categoryAllocation: _categoryAllocation,
+                        );
+                        context.read<EditPageBloc<String, Budget>>()
+                          ..add(
+                            ModifyItem(modified),
+                          )
+                          ..add(
+                            SaveChanges<String, Budget>(
+                              onSuccess: () {
+                                setState(() => _awaitingSave = false);
+                                Navigator.pop(context);
+                              },
+                              onError: (err) {
+                                setState(() => _awaitingSave = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: err is ConnectionException
+                                        ? Text('Connection Failed')
+                                        : Text('Unknown Error Occured'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                      }
+                    }
+                  : null,
+              child: !_awaitingSave
+                  ? const Text("Save")
+                  : const CircularProgressIndicator(),
             ),
             ElevatedButton(
-              onPressed: () {
-                context
-                    .read<EditPageBloc<String, Budget>>()
-                    .add(DiscardChanges());
-                Navigator.pop(context, false);
-              },
-              child: const Text("Cancel"),
+              onPressed: !_awaitingSave
+                  ? () {
+                      context
+                          .read<EditPageBloc<String, Budget>>()
+                          .add(DiscardChanges());
+                      Navigator.pop(context, false);
+                    }
+                  : null,
+              child: !_awaitingSave
+                  ? const Text("Cancel")
+                  : const CircularProgressIndicator(),
             ),
           ],
         ),
@@ -179,7 +202,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
-                  initialValue: state.unmodified.name,
+                  initialValue: state.item.name,
                   onSaved: (value) {
                     setState(() {
                       _name = value!;
@@ -198,16 +221,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                 ),
               ),
               MoneyFormEditor(
-                initialValue: state.unmodified.allocatedAmount,
+                initialValue: state.item.allocatedAmount,
                 onChanged: (v) => setState(() => _amount = v!),
               ),
-              /* Padding(
-                padding: const EdgeInsets.fromLTRB(0, 4, 8, 0),
-                child: FrequencyFormEditor(
-                  initialValue: state.unmodified.frequency,
-                  onChanged: (value) => setState(() => _frequency = value!),
-                ),
-              ), */
               _isOneTime
                   ? _oneTimeDateRangeSelctor(context, state)
                   : _recurringDateRangeSelector(context, state),
@@ -335,7 +351,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
 
   Widget _recurringDateRangeSelector(
     BuildContext context,
-    UnmodifiedEditState state,
+    LoadSuccessEditState state,
   ) {
     final now = DateTime.now();
     final weekRange = DateRange.weekRange(now);
@@ -344,8 +360,8 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
         endTime: weekRange.endTime + Duration(days: 7).inMilliseconds);
     return SimpleDateRangeFormEditor(
       initialValue: DateRange.usingDates(
-        start: state.unmodified.startTime,
-        end: state.unmodified.endTime,
+        start: state.item.startTime,
+        end: state.item.endTime,
       ),
       rangesToShow: [
         DateRangeFilter("Every Day", DateRange.dayRange(now), FilterLevel.day),
@@ -367,13 +383,12 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
       validator: (range) {
         if (range == null) return "Name can't be empty";
       },
-      // initialFrequency: state.unmodified.frequency,
     );
   }
 
   Widget _oneTimeDateRangeSelctor(
     BuildContext context,
-    UnmodifiedEditState state,
+    LoadSuccessEditState state,
   ) {
     final now = DateTime.now();
     final weekRange = DateRange.weekRange(now);
@@ -391,8 +406,8 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
     );
     return SimpleDateRangeFormEditor(
       initialValue: DateRange.usingDates(
-        start: state.unmodified.startTime,
-        end: state.unmodified.endTime,
+        start: state.item.startTime,
+        end: state.item.endTime,
       ),
       rangesToShow: [
         DateRangeFilter("Today", DateRange.dayRange(now), FilterLevel.day),
@@ -416,7 +431,6 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
           _endTime = range.end;
         });
       },
-      // initialFrequency: state.unmodified.frequency,
     );
   }
 
@@ -485,8 +499,10 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                       ListTile(
                         title: const Text("Deallocated"),
                         leading: Icon(Icons.delete),
-                        onTap: () =>
-                            setState(() => _categoryAllocation.remove(id)),
+                        onTap: () => setState(() {
+                          _categoryAllocation.remove(id);
+                          _selectedCategory = null;
+                        }),
                       ),
                     ]),
                   ),
@@ -582,101 +598,6 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
     );
   }
 }
-
-/* class FrequencyFormEditor extends FormField<Frequency> {
-  FrequencyFormEditor({
-    Key? key,
-    Widget? caption,
-    Frequency? initialValue,
-    FormFieldSetter<Frequency>? onSaved,
-    void Function(Frequency?)? onChanged,
-    FormFieldValidator<Frequency>? validator,
-    // AutovalidateMode? autovalidateMode,
-    // bool? enabled,
-    String? restorationId,
-  }) : super(
-          key: key,
-          initialValue: initialValue,
-          validator: validator,
-          onSaved: onSaved,
-          restorationId: restorationId,
-          builder: (state) => FrequencyEditor(
-            caption: state.errorText != null
-                ? Text(state.errorText!, style: TextStyle(color: Colors.red))
-                : caption != null
-                    ? caption
-                    : null,
-            initialValue: state.value,
-            onChanged: (value) {
-              state.didChange(value);
-              onChanged?.call(value);
-            },
-          ),
-        );
-}
-
-class FrequencyEditor extends StatefulWidget {
-  final Widget? caption;
-  final Frequency initialValue;
-  final void Function(Frequency)? onChanged;
-  const FrequencyEditor(
-      {Key? key, Frequency? initialValue, this.onChanged, this.caption})
-      : this.initialValue = initialValue ?? const OneTime(),
-        super(key: key);
-
-  @override
-  _FrequencyEditorState createState() => _FrequencyEditorState();
-}
-
-class _FrequencyEditorState extends State<FrequencyEditor> {
-  late bool _isOneTime = widget.initialValue is OneTime;
-  late int _recurrenceIntervals =
-      (widget.initialValue as Recurring?)?.recurringIntervalSecs ?? 0;
-  @override
-  Widget build(BuildContext context) => Column(
-        children: [
-          widget.caption ?? const Text("Frequency"),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Checkbox(
-                value: _isOneTime,
-                onChanged: (value) {
-                  setState(() {
-                    _isOneTime = value!;
-                  });
-                  widget.onChanged?.call(
-                    value! ? const OneTime() : Recurring(_recurrenceIntervals),
-                  );
-                },
-              ),
-              Text('One Time'),
-              if (!_isOneTime)
-                DropdownButton<int>(
-                    onChanged: (value) {
-                      setState(() {
-                        _recurrenceIntervals = value!;
-                      });
-                      widget.onChanged?.call(
-                        _isOneTime ? const OneTime() : Recurring(value!),
-                      );
-                    },
-                    value: _recurrenceIntervals,
-                    items: <List<dynamic>>[
-                      ['Every Day', Duration(days: 1).inSeconds],
-                      ['Every Week', Duration(days: 7).inSeconds],
-                      ['Every two Weeks', Duration(days: 14).inSeconds],
-                      ['Every Month', Duration(days: 30).inSeconds]
-                    ]
-                        .map((e) => DropdownMenuItem<int>(
-                            value: e[1], child: Text(e[0])))
-                        .toList())
-            ],
-          ),
-        ],
-      );
-}
- */
 
 class SimpleDateRangeFormEditor extends FormField<DateRange> {
   SimpleDateRangeFormEditor({

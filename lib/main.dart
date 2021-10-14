@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:smuni/screens/home_screen.dart';
+import 'package:smuni/utilities.dart';
+import 'package:smuni_api_client/smuni_api_client.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 import 'bloc_observer.dart';
@@ -13,15 +17,18 @@ import 'providers/cache/cache.dart';
 import 'repositories/repositories.dart';
 import 'screens/routes.dart';
 
-void main() async {
-  runApp(MyApp());
-}
+void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   MyApp({
     Key? key,
   }) : super(key: key);
 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   final UserDenorm defaultUser = (() {
     final now = DateTime.now();
     return UserDenorm(
@@ -220,117 +227,197 @@ class MyApp extends StatelessWidget {
     );
   })();
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) => FutureBuilder(
-        future: () async {
-          var databasesPath = await sqflite.getDatabasesPath();
-          final path = databasesPath + "main.db";
-          return await sqflite.openDatabase(
-            // sqflite.inMemoryDatabasePath,
-            path,
-            version: 1,
-            onCreate: (db, version) => db.transaction((txn) async {
-              await migrateV1(txn);
-              await SqliteUserCache(db)
-                  .setItem(defaultUser.id, User.from(defaultUser));
-              {
-                final cache = SqliteBudgetCache(db);
-                for (var item in defaultUser.budgets) {
-                  await cache.setItem(item.id, item);
-                }
-              }
-              {
-                final cache = SqliteCategoryCache(db);
-                for (var item in defaultUser.categories) {
-                  await cache.setItem(item.id, item);
-                }
-              }
-              {
-                final cache = SqliteExpenseCache(db);
-                for (var item in defaultUser.expenses) {
-                  await cache.setItem(item.id, item);
-                }
-              }
-            }),
-          );
-        }(),
-        builder: (context, AsyncSnapshot<sqflite.Database> snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-          if (snapshot.hasError) {
-            throw snapshot.error!;
-          }
-          final db = snapshot.data!;
-          return MultiRepositoryProvider(
-            providers: [
-              /* RepositoryProvider(
-                create: (context) => AuthTokenRepository.fromCache(client, AuthTokenCache(db)),
-              ), */
-              RepositoryProvider(
-                create: (context) => UserRepository(SqliteUserCache(db)),
-              ),
-              RepositoryProvider(
-                create: (context) => BudgetRepository(SqliteBudgetCache(db)),
-              ),
-              RepositoryProvider(
-                create: (context) =>
-                    CategoryRepository(SqliteCategoryCache(db)),
-              ),
-              RepositoryProvider(
-                create: (context) => ExpenseRepository(SqliteExpenseCache(db)),
-              ),
-            ],
-            child: MultiBlocProvider(
-              providers: [
-                BlocProvider(
-                  create: (context) =>
-                      UserBloc(context.read<UserRepository>(), defaultUser.id),
-                ),
-                BlocProvider(
-                  create: (context) {
-                    var blocErrorBloc = BlocErrorBloc();
-                    Bloc.observer = SimpleBlocObserver(blocErrorBloc);
-                    return blocErrorBloc;
-                  },
-                ),
-              ],
-              child: BlocBuilder<BlocErrorBloc, BlocErrorBlocState>(
-                  builder: (context, state) {
-                if (state is ErrorObserved) throw state.error;
+  late Future<Pair<sqflite.Database, AuthTokenRepository>> _initAsyncFuture;
+  final _client = SmuniApiClient("http://192.168.8.103:3000");
 
-                return MaterialApp(
-                  title: 'Smuni',
-                  localizationsDelegates: [
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate
-                  ],
-                  supportedLocales: [
-                    Locale('en', ''), //English
-                    Locale('am', ''), //አማርኛ
-                    Locale('ti', ''), //ትግርኛ
-                    Locale('aa', ''), //አፋር
-                    Locale('so', ''), //ሶማሊ
-                    Locale('sgw', ''), //ሰባት ቤት ጉራጌ
-                    Locale('sid', ''), //ሲዳሞ
-                    Locale('wal', ''), //ወላይታ
-                  ],
-                  theme: ThemeData(
-                    primarySwatch: primarySmuniSwatch,
-                    buttonTheme:
-                        ButtonThemeData(textTheme: ButtonTextTheme.primary),
-                  ),
-                  onGenerateRoute: Routes.myOnGenerateRoute,
-                  // initialRoute: CategoryListPage.routeName,
-                  home: SmuniHomeScreen(),
-                );
-              }),
-            ),
-          );
-        },
+  Future<Pair<sqflite.Database, AuthTokenRepository>> _initAsync() async {
+    var databasesPath = await sqflite.getDatabasesPath();
+    final path = databasesPath + "main.db";
+
+    try {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    } catch (_) {}
+
+    final db = await sqflite.openDatabase(
+      sqflite.inMemoryDatabasePath,
+      // path,
+      version: 1,
+      onCreate: (db, version) => db.transaction((txn) async {
+        await migrateV1(txn);
+/*         await SqliteUserCache(db)
+            .setItem(defaultUser.id, User.from(defaultUser));
+        {
+          final cache = SqliteBudgetCache(db);
+          for (var item in defaultUser.budgets) {
+            await cache.setItem(item.id, item);
+          }
+        }
+        {
+          final cache = SqliteCategoryCache(db);
+          for (var item in defaultUser.categories) {
+            await cache.setItem(item.id, item);
+          }
+        }
+        {
+          final cache = SqliteExpenseCache(db);
+          for (var item in defaultUser.expenses) {
+            await cache.setItem(item.id, item);
+          }
+        } */
+      }),
+    );
+
+    final response = await _client.signInEmail(defaultUser.email!, "password");
+
+    await SqliteUserCache(db)
+        .setItem(response.user.username, User.from(response.user));
+    {
+      final cache = SqliteBudgetCache(db);
+      for (final item in response.user.budgets) {
+        await cache.setItem(item.id, item);
+      }
+    }
+    {
+      final cache = SqliteCategoryCache(db);
+      for (final item in response.user.categories) {
+        await cache.setItem(item.id, item);
+      }
+    }
+    {
+      final cache = SqliteExpenseCache(db);
+      for (final item in response.user.expenses) {
+        await cache.setItem(item.id, item);
+      }
+    }
+
+    return Pair(
+      db,
+      await AuthTokenRepository.fromValues(
+          client: _client,
+          cache: AuthTokenCache(db),
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+          loggedInUsername: defaultUser.username),
+    );
+  }
+
+  @override
+  void initState() {
+    _initAsyncFuture = _initAsync();
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) => RepositoryProvider.value(
+        value: _client,
+        child: Builder(
+            builder: (context) => FutureBuilder(
+                  future: _initAsyncFuture,
+                  builder: (context,
+                      AsyncSnapshot<Pair<sqflite.Database, AuthTokenRepository>>
+                          snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return Center(
+                        child: Column(
+                          children: const [
+                            CircularProgressIndicator(),
+                            // Text("Accessing db..."),
+                          ],
+                        ),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      throw snapshot.error!;
+                    }
+                    final db = snapshot.data!.a;
+                    return MultiRepositoryProvider(
+                      providers: [
+                        RepositoryProvider.value(value: snapshot.data!.b),
+                        RepositoryProvider(
+                          create: (context) => UserRepository(
+                            SqliteUserCache(db),
+                            context.read<SmuniApiClient>(),
+                            context.read<AuthTokenRepository>(),
+                          ),
+                        ),
+                        RepositoryProvider(
+                          create: (context) => BudgetRepository(
+                            SqliteBudgetCache(db),
+                            context.read<SmuniApiClient>(),
+                            context.read<AuthTokenRepository>(),
+                          ),
+                        ),
+                        RepositoryProvider(
+                          create: (context) => CategoryRepository(
+                            SqliteCategoryCache(db),
+                            context.read<SmuniApiClient>(),
+                            context.read<AuthTokenRepository>(),
+                          ),
+                        ),
+                        RepositoryProvider(
+                          create: (context) => ExpenseRepository(
+                            SqliteExpenseCache(db),
+                            context.read<SmuniApiClient>(),
+                            context.read<AuthTokenRepository>(),
+                          ),
+                        ),
+                        /* RepositoryProvider(
+                          create: (context) => CacheRefresher(
+                              context.read<SmuniApiClient>(),
+                              SqliteExpenseCache(db)),
+                        ), */
+                      ],
+                      child: MultiBlocProvider(
+                        providers: [
+                          BlocProvider(
+                            create: (context) => UserBloc(
+                                context.read<UserRepository>(), defaultUser.id),
+                          ),
+                          BlocProvider(
+                            create: (context) {
+                              var blocErrorBloc = BlocErrorBloc();
+                              Bloc.observer = SimpleBlocObserver(blocErrorBloc);
+                              return blocErrorBloc;
+                            },
+                          ),
+                        ],
+                        child: BlocBuilder<BlocErrorBloc, BlocErrorBlocState>(
+                            builder: (context, state) {
+                          if (state is ErrorObserved) throw state.error;
+
+                          return MaterialApp(
+                            title: 'Smuni',
+                            localizationsDelegates: [
+                              GlobalMaterialLocalizations.delegate,
+                              GlobalWidgetsLocalizations.delegate,
+                              GlobalCupertinoLocalizations.delegate
+                            ],
+                            supportedLocales: [
+                              Locale('en', ''), //English
+                              Locale('am', ''), //አማርኛ
+                              Locale('ti', ''), //ትግርኛ
+                              Locale('aa', ''), //አፋር
+                              Locale('so', ''), //ሶማሊ
+                              Locale('sgw', ''), //ሰባት ቤት ጉራጌ
+                              Locale('sid', ''), //ሲዳሞ
+                              Locale('wal', ''), //ወላይታ
+                            ],
+                            theme: ThemeData(
+                              primarySwatch: primarySmuniSwatch,
+                              buttonTheme: ButtonThemeData(
+                                textTheme: ButtonTextTheme.primary,
+                              ),
+                            ),
+                            onGenerateRoute: Routes.myOnGenerateRoute,
+                            // initialRoute: CategoryListPage.routeName,
+                            home: SmuniHomeScreen(),
+                          );
+                        }),
+                      ),
+                    );
+                    ;
+                  },
+                )),
       );
 }

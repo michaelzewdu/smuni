@@ -32,9 +32,8 @@ class ApiCategoryRepository extends Repository<String, Category,
       item = await client.getCategory(id, tokenRepo.username, token);
       await cache.setItem(id, item);
       return item;
-    } catch (e) {
-      if (e is EndpointError && e.type == "CategoryNotFound") return null;
-      rethrow;
+    } on EndpointError catch (e) {
+      if (e.type == "CategoryNotFound") return null;
     }
   }
 
@@ -158,4 +157,11 @@ class ApiCategoryRepository extends Repository<String, Category,
 
     return descendants;
   }
+
+  @override
+  CreateCategoryInput createFromItem(Category item) => CreateCategoryInput(
+        name: item.name,
+        parentId: item.parentId,
+        tags: item.tags,
+      );
 }

@@ -5,6 +5,7 @@ import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/blocs/edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
+import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/category_selector.dart';
 
 class CategoryEditPage extends StatefulWidget {
@@ -48,12 +49,14 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
   String _name = "";
   bool _isSubcategory = false;
   String? _parentId;
+  bool _awaitingSave = false;
 
-  Widget _showForm(BuildContext context, UnmodifiedEditState state) => Form(
+  Widget _showForm(BuildContext context, LoadSuccessEditState state) => Form(
         key: _formKey,
         child: Scaffold(
           appBar: AppBar(
-            title: Text("Editing category: ${state.unmodified.name}"),
+            title: Text(
+                "Editing category: ${state is ModifiedEditState<String, Category> ? state.unmodified.name : state.item.name}"),
             actions: [
               ElevatedButton(
                 onPressed: () {
@@ -64,14 +67,31 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                       ..add(
                         ModifyItem(
                           Category.from(
-                            state.unmodified,
+                            state is ModifiedEditState<String, Category>
+                                ? state.unmodified
+                                : state.item,
                             name: _name,
                             parentId: _parentId,
                           ),
                         ),
                       )
-                      ..add(SaveChanges());
-                    Navigator.pop(context, true);
+                      ..add(SaveChanges(
+                        onSuccess: () {
+                          setState(() => _awaitingSave = false);
+                          Navigator.pop(context);
+                        },
+                        onError: (err) {
+                          setState(() => _awaitingSave = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: err is ConnectionException
+                                  ? Text('Connection Failed')
+                                  : Text('Unknown Error Occured'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ));
                   }
                 },
                 child: const Text("Save"),
@@ -90,7 +110,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
           body: Column(
             children: <Widget>[
               TextFormField(
-                initialValue: state.unmodified.name,
+                initialValue: state.item.name,
                 onSaved: (value) {
                   setState(() {
                     _name = value!;
@@ -107,9 +127,9 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                   helperText: "Name",
                 ),
               ),
-              Text("id: ${state.unmodified.id}"),
-              Text("createdAt: ${state.unmodified.createdAt}"),
-              Text("updatedAt: ${state.unmodified.updatedAt}"),
+              Text("id: ${state.item.id}"),
+              Text("createdAt: ${state.item.createdAt}"),
+              Text("updatedAt: ${state.item.updatedAt}"),
               // Text("category: ${state.unmodified.categoryId}"),
               CheckboxListTile(
                 value: _isSubcategory,
@@ -125,9 +145,9 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                     child: Expanded(
                       child: CategoryFormSelector(
                         caption: Text("Parent category"),
-                        initialValue: state.unmodified.parentId == null
+                        initialValue: state.item.parentId == null
                             ? null
-                            : state.unmodified.parentId!,
+                            : state.item.parentId!,
                         onChanged: (value) {
                           setState(() {
                             _parentId = value!;
@@ -152,10 +172,8 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
   Widget build(BuildContext context) => BlocConsumer<
           EditPageBloc<String, Category>, EditPageBlocState<String, Category>>(
         listener: (context, state) {
-          if (state is UnmodifiedEditState<String, Category>) {
-            final value = state is ModifiedEditState<String, Category>
-                ? state.modified.parentId != null
-                : state.unmodified.parentId != null;
+          if (state is LoadSuccessEditState<String, Category>) {
+            final value = state.item.parentId != null;
             if (value != _isSubcategory) {
               setState(() {
                 _isSubcategory = value;
@@ -164,7 +182,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
           }
         },
         builder: (context, state) {
-          if (state is UnmodifiedEditState<String, Category>) {
+          if (state is LoadSuccessEditState<String, Category>) {
             return _showForm(context, state);
           } else if (state is LoadingItem) {
             return Scaffold(

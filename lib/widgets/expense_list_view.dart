@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/src/provider.dart';
 import 'package:smuni/blocs/details_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/screens/Expense/expense_edit_page.dart';
@@ -8,12 +9,14 @@ import 'package:smuni/utilities.dart';
 
 import '../constants.dart';
 
-class ExpenseListView extends StatelessWidget {
+class ExpenseListView extends StatefulWidget {
   final Map<String, Expense> items;
   final void Function(DateRangeFilter) loadRange;
   final DateRangeFilter displayedRange;
   final Iterable<DateRangeFilter> allDateRanges;
   final bool dense;
+  final FutureOr<void> Function(String)? onDelete;
+  final FutureOr<void> Function(String)? onEdit;
 
   const ExpenseListView({
     Key? key,
@@ -22,7 +25,16 @@ class ExpenseListView extends StatelessWidget {
     required this.displayedRange,
     required this.allDateRanges,
     this.dense = false,
+    this.onDelete,
+    this.onEdit,
   }) : super(key: key);
+
+  @override
+  State<ExpenseListView> createState() => _ExpenseListViewState();
+}
+
+class _ExpenseListViewState extends State<ExpenseListView> {
+  String? _selectedItem;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +42,7 @@ class ExpenseListView extends StatelessWidget {
         monthGroups = [],
         weekGroups = [],
         dayGroups = [];
-    for (final filter in allDateRanges) {
+    for (final filter in widget.allDateRanges) {
       switch (filter.level) {
         case FilterLevel.year:
           yearGroups.add(filter);
@@ -50,7 +62,7 @@ class ExpenseListView extends StatelessWidget {
       }
     }
 
-    final currentFilterLevel = displayedRange.level;
+    final currentFilterLevel = widget.displayedRange.level;
     /*List<DateRangeFilter>? visibleGroups;
     switch (currentFilterLevel) {
       case FilterLevel.Year:
@@ -91,12 +103,12 @@ class ExpenseListView extends StatelessWidget {
             Builder(builder: (context) {
               final range =
                   DateRangeFilter("All", DateRange(), FilterLevel.all);
-              return _tabButton("All Years", () => loadRange(range),
-                  displayedRange.range.contains(range.range));
+              return _tabButton("All Years", () => widget.loadRange(range),
+                  widget.displayedRange.range.contains(range.range));
             }),
             ...yearGroups.map(
-              (e) => _tabButton(e.name, () => loadRange(e),
-                  displayedRange.range.contains(e.range)),
+              (e) => _tabButton(e.name, () => widget.loadRange(e),
+                  widget.displayedRange.range.contains(e.range)),
             ),
           ],
         ),
@@ -110,7 +122,7 @@ class ExpenseListView extends StatelessWidget {
               "All months",
               DateRange.yearRange(
                 DateTime.fromMillisecondsSinceEpoch(
-                    displayedRange.range.startTime),
+                    widget.displayedRange.range.startTime),
               ),
               FilterLevel.year);
           return Container(
@@ -119,12 +131,15 @@ class ExpenseListView extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               children: [
                 // All expenses in current year button
-                _tabButton("All months", () => loadRange(currentYearRange),
-                    displayedRange.range.contains(currentYearRange.range)),
+                _tabButton(
+                    "All months",
+                    () => widget.loadRange(currentYearRange),
+                    widget.displayedRange.range
+                        .contains(currentYearRange.range)),
                 ...monthGroups
                     .where((e) => e.range.overlaps(currentYearRange.range))
-                    .map((e) => _tabButton(e.name, () => loadRange(e),
-                        displayedRange.range.contains(e.range))),
+                    .map((e) => _tabButton(e.name, () => widget.loadRange(e),
+                        widget.displayedRange.range.contains(e.range))),
               ],
             ),
           );
@@ -140,65 +155,28 @@ class ExpenseListView extends StatelessWidget {
                   "All days",
                   DateRange.monthRange(
                     DateTime.fromMillisecondsSinceEpoch(
-                        displayedRange.range.startTime),
+                        widget.displayedRange.range.startTime),
                   ),
                   FilterLevel.month);
-              return _tabButton("All days", () => loadRange(range),
-                  displayedRange.range.contains(range.range));
+              return _tabButton("All days", () => widget.loadRange(range),
+                  widget.displayedRange.range.contains(range.range));
             }),
             ...dayGroups
-                .where((e) => e.range.overlaps(displayedRange.range))
+                .where((e) => e.range.overlaps(widget.displayedRange.range))
                 .map((e) => _tabButton(
                       e.name.split(" ")[1],
-                      () => loadRange(e),
-                      displayedRange.range.contains(e.range),
+                      () => widget.loadRange(e),
+                      widget.displayedRange.range.contains(e.range),
                     )),
           ],
         ),
-      Builder(builder: (context) {
-        //final keys = items.keys;
-        var expenses = [];
-        items.forEach((key, value) {
-          expenses.add(value);
-        });
-        //final values = items.map((key, value) => null)
-        return expenses.isNotEmpty
-            ? ExpensesExpandable(expenses: expenses)
-            : Center(
-                child: const Text(
-                    'Ooops, looks like you didn\'t add any expenses mate.'));
-        /*
-        return items.isNotEmpty
-            ? ListView.builder(
-                shrinkWrap: true,
-                itemCount: keys.length,
-                itemBuilder: (context, index) {
-                  final item = items[keys.elementAt(index)]!;
-                  return Column(
-                    children: [
-                      ListTile(
-                        dense: dense,
-                        title: Text(item.name),
-                        subtitle: Text(
-                          "${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}",
-                        ),
-                        trailing: Text(
-                          "${item.amount.currency} ${item.amount.amount / 100}",
-                        ),
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          ExpenseDetailsPage.routeName,
-                          arguments: item.id,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              )
-            : Center(child: const Text("No expenses."));
-
-         */
-      }),
+      widget.items.isNotEmpty
+          ? _expenseListView(context)
+          : const Center(
+              child: Text(
+                'Ooops, looks like you didn\'t add any expenses mate.',
+              ),
+            ),
     ]);
   }
 
@@ -234,139 +212,84 @@ class ExpenseListView extends StatelessWidget {
                 style: ButtonStyle(),
               ),
             );
-}
 
-class ExpensesExpandable extends StatefulWidget {
-  const ExpensesExpandable({
-    Key? key,
-    required this.expenses,
-  }) : super(key: key);
-
-  final List expenses;
-
-  @override
-  State<ExpensesExpandable> createState() => _ExpensesExpandableState();
-}
-
-class _ExpensesExpandableState extends State<ExpensesExpandable> {
-  // var isExpenseExpandedMap = new Map<String, bool>();
-  String? _expandedItem;
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: ExpansionPanelList(
-        dividerColor: Colors.transparent,
-        animationDuration: Duration(seconds: 1),
-        expansionCallback: (int index, bool isExpanded) {
-          setState(() {
-            final tappedId = widget.expenses[index].id;
-            if (tappedId != _expandedItem) {
-              _expandedItem = tappedId;
-            } else {
-              _expandedItem = null;
-            }
-          });
-        },
-        children: widget.expenses.map<ExpansionPanel>((e) {
-          return ExpansionPanel(
-            headerBuilder: (BuildContext context, bool isExpanded) {
-              return //isExpanded
-                  ListTile(
-                title: Text(
-                  e.name,
-                  textScaleFactor: 1.25,
-                ),
-                subtitle: Text(
-                    '${e.amount.amount.toString()} ${e.amount.currency.toString()}'),
-                onTap: () {
-                  /*
-                  Navigator.pushNamed(
-                    context,
-                    ExpenseDetailsPage.routeName,
-                    arguments: e.id,
-                  );
-
-                   */
-                },
-              );
-              //  : ListTile(title: Text(e.name));
+  Widget _expenseListView(BuildContext context) => SingleChildScrollView(
+        child: Builder(builder: (context) {
+          final keys = widget.items.keys.toList();
+          return ExpansionPanelList(
+            dividerColor: Colors.transparent,
+            animationDuration: Duration(seconds: 1),
+            expansionCallback: (int index, bool isExpanded) {
+              setState(() {
+                final tappedId = widget.items[keys[index]]!.id;
+                if (tappedId != _selectedItem) {
+                  _selectedItem = tappedId;
+                } else {
+                  _selectedItem = null;
+                }
+              });
             },
-            body: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(6.0),
-                        child: Text(' Updated on: ${e.updatedAt}'),
+            children: keys
+                .map((k) => widget.items[k]!)
+                .map<ExpansionPanel>((item) => ExpansionPanel(
+                      headerBuilder: (BuildContext context, bool isExpanded) =>
+                          ListTile(
+                        title: Text(
+                          item.name,
+                          textScaleFactor: 1.25,
+                        ),
+                        dense: widget.dense,
+                        trailing: Text(
+                          "${item.amount.currency} ${item.amount.amount / 100}",
+                        ),
+                        subtitle: Text(
+                          '${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}',
+                        ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(6.0),
-                        child: Text('Created on: ${e.createdAt}'),
-                      )
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Center(
-                        ///The buttons below are copied from Yoph's expense page and the delete button
-                        ///uses the Expense details bloc(Which doesn't actually delete anything)
-                        child: IconButton(
-                            onPressed: () {
-                              Navigator.pushNamed(
-                                context,
-                                ExpenseEditPage.routeName,
-                                arguments: e.id,
-                              );
-                            },
-                            icon: Icon(Icons.edit)),
-                      ),
-                      // FIXME: The delete button below doesn't actually delete
+                      body: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(6.0),
+                                  child: Text(
+                                      '${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}'),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(6.0),
+                                  child: Text(
+                                      'TODO: show budget and category here'),
+                                )
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                Center(
+                                  ///The buttons below are copied from Yoph's expense page and the delete button
+                                  ///uses the Expense details bloc(Which doesn't actually delete anything)
+                                  child: IconButton(
+                                      onPressed: () =>
+                                          widget.onEdit?.call(item.id),
+                                      icon: Icon(Icons.edit)),
+                                ),
+                                // FIXME: The delete button below doesn't actually delete
 
-                      IconButton(
-                          onPressed: () {
-                            showDialog<bool?>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Confirm deletion'),
-                                content: Text(
-                                    'Are you sure you want to delete entry ${e.name}?'),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, true);
-                                    },
-                                    child: const Text('Confirm'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, false);
-                                    },
-                                    child: const Text('Cancel'),
-                                  ),
-                                ],
-                              ),
-                            ).then((confirm) {
-                              if (confirm != null && confirm) {
-                                context
-                                    .read<DetailsPageBloc<String, Expense>>()
-                                    .add(DeleteItem());
-                                Navigator.pop(context);
-                              }
-                            });
-                          },
-                          icon: Icon(Icons.delete))
-                    ],
-                  )
-                ],
-              ),
-            ),
-            isExpanded: e.id == _expandedItem,
+                                IconButton(
+                                    onPressed: () =>
+                                        widget.onDelete?.call(item.id),
+                                    icon: Icon(Icons.delete))
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                      isExpanded: item.id == _selectedItem,
+                    ))
+                .toList(),
           );
-        }).toList(),
-      ),
-    );
-  }
+        }),
+      );
 }

@@ -55,7 +55,9 @@ class BudgetDetailsPage extends StatefulWidget {
   }
 
   static List<Widget> defaultActionsListBuilder(
-          BuildContext context, LoadSuccess<String, Budget> state) =>
+    BuildContext context,
+    LoadSuccess<String, Budget> state,
+  ) =>
       [
         ElevatedButton(
           onPressed: () => Navigator.pushNamed(
@@ -75,17 +77,17 @@ class BudgetDetailsPage extends StatefulWidget {
                   'Are you sure you want to delete entry ${state.item.name}?\nTODO: decide on how deletion works'),
               actions: <Widget>[
                 TextButton(
+                  onPressed: () {
+                    Navigator.pop(context, false);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
                   /* onPressed: () {
                         Navigator.pop(context, true);
                       }, */
                   onPressed: null,
                   child: const Text('TODO'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context, false);
-                  },
-                  child: const Text('Cancel'),
                 ),
               ],
             ),
@@ -456,7 +458,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                       nodes, _perCategoryUsed!, item);
                                 }, childCount: rootNodes.length),
                               )
-                            : catListState.items.isEmpty
+                            : state.item.categoryAllocations.isEmpty
                                 ? SliverFillRemaining(
                                     child: Center(
                                         child: const Text("No categories.")))

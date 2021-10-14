@@ -30,9 +30,8 @@ class ApiBudgetRepository
       item = await client.getBudget(id, tokenRepo.username, token);
       await cache.setItem(id, item);
       return item;
-    } catch (e) {
-      if (e is EndpointError && e.type == "BudgetNotFound") return null;
-      rethrow;
+    } on EndpointError catch (err) {
+      if (err.type == "BudgetNotFound") return null;
     }
   }
 
@@ -95,4 +94,14 @@ class ApiBudgetRepository
   UpdateBudgetInput updateFromDiff(Budget update, Budget old) {
     return UpdateBudgetInput.fromDiff(update: update, old: old);
   }
+
+  @override
+  CreateBudgetInput createFromItem(Budget item) => CreateBudgetInput(
+        name: item.name,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        frequency: item.frequency,
+        allocatedAmount: item.allocatedAmount,
+        categoryAllocations: item.categoryAllocations,
+      );
 }

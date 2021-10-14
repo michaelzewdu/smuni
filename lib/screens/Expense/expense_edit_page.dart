@@ -58,12 +58,13 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
   String _name = "";
 
   Widget _showForm(
-          BuildContext context, UnmodifiedEditState<String, Expense> state) =>
+          BuildContext context, LoadSuccessEditState<String, Expense> state) =>
       Form(
         key: _formKey,
         child: Scaffold(
           appBar: AppBar(
-            title: Text("Editing expense: ${state.unmodified.name}"),
+            title: Text(
+                "Editing expense: ${state is ModifiedEditState<String, Expense> ? state.unmodified.name : state.item.name}"),
             actions: [
               ElevatedButton(
                 onPressed: () {
@@ -74,7 +75,9 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                       ..add(
                         ModifyItem<String, Expense>(
                           Expense.from(
-                            state.unmodified,
+                            state is ModifiedEditState<String, Expense>
+                                ? state.unmodified
+                                : state.item,
                             name: _name,
                             amount: _amount,
                           ),
@@ -100,7 +103,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
           body: Column(
             children: <Widget>[
               TextFormField(
-                initialValue: state.unmodified.name,
+                initialValue: state.item.name,
                 onSaved: (value) {
                   setState(() {
                     _name = value!;
@@ -118,14 +121,14 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                 ),
               ),
               MoneyFormEditor(
-                initialValue: state.unmodified.amount,
+                initialValue: state.item.amount,
                 onSaved: (v) => setState(() => _amount = v!),
               ),
-              Text("id: ${state.unmodified.id}"),
-              Text("createdAt: ${state.unmodified.createdAt}"),
-              Text("updatedAt: ${state.unmodified.updatedAt}"),
-              Text("budget: ${state.unmodified.budgetId}"),
-              Text("category: ${state.unmodified.categoryId}"),
+              Text("id: ${state.item.id}"),
+              Text("createdAt: ${state.item.createdAt}"),
+              Text("updatedAt: ${state.item.updatedAt}"),
+              Text("budget: ${state.item.budgetId}"),
+              Text("category: ${state.item.categoryId}"),
             ],
           ),
         ),
@@ -135,7 +138,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
   Widget build(BuildContext context) => BlocBuilder<
           EditPageBloc<String, Expense>, EditPageBlocState<String, Expense>>(
         builder: (context, state) {
-          if (state is UnmodifiedEditState<String, Expense>) {
+          if (state is LoadSuccessEditState<String, Expense>) {
             return _showForm(context, state);
           } else if (state is LoadingItem) {
             return Scaffold(

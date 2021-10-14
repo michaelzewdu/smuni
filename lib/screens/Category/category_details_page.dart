@@ -46,17 +46,17 @@ class CategoryDetailsPage extends StatelessWidget {
                       'Are you sure you want to delete entry ${state.item.name}?\nTODO: decide on how deletion works'),
                   actions: <Widget>[
                     TextButton(
+                      onPressed: () {
+                        Navigator.pop(context, false);
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
                       /* onPressed: () {
                         Navigator.pop(context, true);
                       }, */
                       onPressed: null,
                       child: const Text('TODO'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context, false);
-                      },
-                      child: const Text('Cancel'),
                     ),
                   ],
                 ),

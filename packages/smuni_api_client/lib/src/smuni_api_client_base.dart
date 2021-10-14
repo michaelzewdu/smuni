@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' as io;
 
 import 'package:http/http.dart' as http;
 
@@ -16,7 +17,7 @@ class SmuniApiClient {
     }
   }
 
-  Future<SignInRepsonse> _signIn(
+  Future<SignInResponse> _signIn(
     String identifierType,
     String identifier,
     String password,
@@ -26,22 +27,22 @@ class SmuniApiClient {
       "/auth_token",
       jsonBody: {identifierType: identifier, "password": password},
     );
-    return SignInRepsonse.fromJson(_json.decode(response.body));
+    return SignInResponse.fromJson(_json.decode(response.body));
   }
 
-  Future<SignInRepsonse> signInEmail(
+  Future<SignInResponse> signInEmail(
     String email,
     String password,
   ) =>
       _signIn("email", email, password);
 
-  Future<SignInRepsonse> signInPhone(
+  Future<SignInResponse> signInPhone(
     String phoneNumber,
     String password,
   ) =>
       _signIn("phoneNumber", phoneNumber, password);
 
-  Future<SignInRepsonse> signInFirebaseId(
+  Future<SignInResponse> signInFirebaseId(
     String firebaseId,
     String password,
   ) =>
@@ -272,11 +273,12 @@ class SmuniApiClient {
     if (authToken != null) {
       request.headers["Authorization"] = "Bearer $authToken";
     }
-    final sResponse = await client.send(request);
-    final response = await http.Response.fromStream(sResponse);
-    // print(response.body);
-    if (sResponse.statusCode >= 200 && sResponse.statusCode < 300) {
-      /*  if (fromJson != null) {
+    try {
+      final sResponse = await client.send(request);
+      final response = await http.Response.fromStream(sResponse);
+      // print(response.body);
+      if (sResponse.statusCode >= 200 && sResponse.statusCode < 300) {
+        /*  if (fromJson != null) {
         final response = await http.Response.fromStream(sResponse);
         try {
           final json = _json.decode(response.body);
@@ -286,9 +288,15 @@ class SmuniApiClient {
               "expected response json", response.statusCode, response.body);
         }
       } */
-      return response;
-    } else {
-      throw EndpointError.fromResponse(response, _json);
+        return response;
+      } else {
+        throw EndpointError.fromResponse(response, _json);
+      }
+    } catch (err) {
+      if (err is io.SocketException) {
+        throw SocketException(err);
+      }
+      rethrow;
     }
   }
 }
@@ -327,6 +335,7 @@ class UpdateUserInput {
   final String? phoneNumber;
   final String? password;
   final String? pictureURL;
+  final String? mainBudget;
 
   const UpdateUserInput({
     required this.lastSeenVersion,
@@ -335,6 +344,7 @@ class UpdateUserInput {
     this.phoneNumber,
     this.password,
     this.pictureURL,
+    this.mainBudget,
   });
 
   UpdateUserInput.fromDiff({
@@ -345,6 +355,7 @@ class UpdateUserInput {
         newUsername = ifNotEqualTo(update.username, old.username),
         email = ifNotEqualTo(update.email, old.email),
         phoneNumber = ifNotEqualTo(update.phoneNumber, old.phoneNumber),
+        mainBudget = ifNotEqualTo(update.mainBudget, old.mainBudget),
         pictureURL = ifNotEqualTo(update.pictureURL, old.pictureURL);
 
   Map<String, dynamic> toJson() => {
@@ -353,6 +364,7 @@ class UpdateUserInput {
         "phoneNumber": phoneNumber,
         "password": password,
         "pictureURL": pictureURL,
+        "mainBudget": mainBudget,
         "lastSeenVersion": lastSeenVersion,
       };
 
@@ -361,6 +373,7 @@ class UpdateUserInput {
       email == null &&
       phoneNumber == null &&
       password == null &&
+      mainBudget == null &&
       pictureURL == null;
 }
 
@@ -590,18 +603,26 @@ class ClientDecodingError extends ClientError {
 
 class UpdateEmptyException implements Exception {}
 
-class SignInRepsonse {
+class SocketException implements Exception {
+  final io.SocketException inner;
+
+  SocketException(this.inner);
+  @override
+  String toString() => "${runtimeType.toString()} { inner: $inner }";
+}
+
+class SignInResponse {
   final String accessToken;
   final String refreshToken;
   final UserDenorm user;
 
-  SignInRepsonse({
+  SignInResponse({
     required this.accessToken,
     required this.refreshToken,
     required this.user,
   });
 
-  factory SignInRepsonse.fromJson(Map<String, dynamic> json) => SignInRepsonse(
+  factory SignInResponse.fromJson(Map<String, dynamic> json) => SignInResponse(
         accessToken: checkedConvert(json, "accessToken", (v) => v as String),
         refreshToken: checkedConvert(json, "refreshToken", (v) => v as String),
         user: checkedConvert(json, "user",
@@ -624,10 +645,10 @@ Set<T>? setINotEqualTo<T>(Set<T> value, Set<T> test) =>
 /// This returns the [value] if it's not equal to the [test]. Returns null otherwise.
 Map<K, V>? mapIfNotEqualTo<K, V>(Map<K, V> value, Map<K, V> test) {
   if (value.length != test.length) {
-    return null;
+    return value;
   }
   for (final e in value.entries) {
-    if (e.value != test[e.key]) return null;
+    if (e.value != test[e.key]) return value;
   }
-  return value;
+  return null;
 }
