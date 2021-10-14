@@ -2,23 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/category_list_page.dart';
-import 'package:smuni/blocs/edit_page.dart';
+import 'package:smuni/blocs/edit_page/category_edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/category_selector.dart';
+import 'package:smuni_api_client/smuni_api_client.dart';
 
 class CategoryEditPage extends StatefulWidget {
   static const String routeName = "categoryEdit";
 
-  const CategoryEditPage({Key? key}) : super(key: key);
+  final Category item;
+  final bool isCreating;
 
-  static Route route(String id) => MaterialPageRoute(
+  const CategoryEditPage({
+    Key? key,
+    required this.item,
+    required this.isCreating,
+  }) : super(key: key);
+
+  static Route route(Category item) => MaterialPageRoute(
         settings: const RouteSettings(name: routeName),
         builder: (context) => BlocProvider(
-          create: (context) =>
-              EditPageBloc.fromRepo(context.read<CategoryRepository>(), id),
-          child: CategoryEditPage(),
+          create: (context) => CategoryEditPageBloc(
+            context.read<CategoryRepository>(),
+          ),
+          child: CategoryEditPage(item: item, isCreating: false),
         ),
       );
 
@@ -35,8 +44,8 @@ class CategoryEditPage extends StatefulWidget {
         );
         return BlocProvider(
           create: (context) =>
-              EditPageBloc.modified(context.read<CategoryRepository>(), item),
-          child: CategoryEditPage(),
+              CategoryEditPageBloc(context.read<CategoryRepository>()),
+          child: CategoryEditPage(item: item, isCreating: true),
         );
       });
 
@@ -46,108 +55,115 @@ class CategoryEditPage extends StatefulWidget {
 
 class _CategoryEditPageState extends State<CategoryEditPage> {
   final _formKey = GlobalKey<FormState>();
-  String _name = "";
-  bool _isSubcategory = false;
-  String? _parentId;
+
+  late var _name = widget.item.name;
+  late var _parentId = widget.item.parentId;
+  late var _isSubcategory = widget.item.parentId != null;
+
   bool _awaitingSave = false;
 
-  Widget _showForm(BuildContext context, LoadSuccessEditState state) => Form(
-        key: _formKey,
+  @override
+  Widget build(BuildContext context) =>
+      BlocListener<CategoryEditPageBloc, CategoryEditPageBlocState>(
+        listener: (context, state) {
+          if (state is CategoryEditSuccess) {
+            if (_awaitingSave) setState(() => {_awaitingSave = false});
+            Navigator.pop(context);
+          } else if (state is CategoryEditFailed) {
+            if (_awaitingSave) setState(() => {_awaitingSave = false});
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: state.error is ConnectionException
+                    ? Text('Connection Failed')
+                    : Text('Unknown Error Occured'),
+                behavior: SnackBarBehavior.floating,
+                duration: Duration(seconds: 1),
+              ),
+            );
+          }
+          throw Exception("Unhandled type");
+        },
         child: Scaffold(
           appBar: AppBar(
-            title: Text(
-                "Editing category: ${state is ModifiedEditState<String, Category> ? state.unmodified.name : state.item.name}"),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  final form = _formKey.currentState;
-                  if (form != null && form.validate()) {
-                    form.save();
-                    context.read<EditPageBloc<String, Category>>()
-                      ..add(
-                        ModifyItem(
-                          Category.from(
-                            state is ModifiedEditState<String, Category>
-                                ? state.unmodified
-                                : state.item,
-                            name: _name,
-                            parentId: _parentId,
-                          ),
-                        ),
-                      )
-                      ..add(SaveChanges(
-                        onSuccess: () {
-                          setState(() => _awaitingSave = false);
-                          Navigator.pop(context);
-                        },
-                        onError: (err) {
-                          setState(() => _awaitingSave = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: err is ConnectionException
-                                  ? Text('Connection Failed')
-                                  : Text('Unknown Error Occured'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
-                      ));
-                  }
-                },
-                child: const Text("Save"),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  context
-                      .read<EditPageBloc<String, Category>>()
-                      .add(DiscardChanges());
-                  Navigator.pop(context, false);
-                },
-                child: const Text("Cancel"),
-              ),
-            ],
+            title: _awaitingSave
+                ? const Text("Loading...")
+                : Text("Editing category: ${widget.item.name}"),
+            actions: !_awaitingSave
+                ? [
+                    ElevatedButton(
+                      child: const Text("Save"),
+                      onPressed: () {
+                        final form = _formKey.currentState;
+                        if (form != null && form.validate()) {
+                          form.save();
+
+                          if (widget.isCreating) {
+                            context.read<CategoryEditPageBloc>().add(
+                                  CreateCategory(CreateCategoryInput(
+                                    name: _name,
+                                    parentId: _parentId,
+                                  )),
+                                );
+                          } else {
+                            context.read<CategoryEditPageBloc>().add(
+                                  UpdateCategory(
+                                      widget.item.id,
+                                      UpdateCategoryInput.fromDiff(
+                                        update: Category.from(
+                                          widget.item,
+                                          name: _name,
+                                          parentId: _parentId,
+                                        ),
+                                        old: widget.item,
+                                      )),
+                                );
+                          }
+                          setState(() => _awaitingSave = true);
+                        }
+                      },
+                    ),
+                    ElevatedButton(
+                      child: const Text("Cancel"),
+                      onPressed: () => Navigator.pop(context, false),
+                    ),
+                  ]
+                : null,
           ),
-          body: Column(
-            children: <Widget>[
-              TextFormField(
-                initialValue: state.item.name,
-                onSaved: (value) {
-                  setState(() {
-                    _name = value!;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Name can't be empty";
-                  }
-                },
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  hintText: "Name",
-                  helperText: "Name",
+          body: Form(
+            key: _formKey,
+            child: Column(
+              children: <Widget>[
+                TextFormField(
+                  initialValue: _name,
+                  onSaved: (value) => setState(() => _name = value!),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Name can't be empty";
+                    }
+                  },
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    hintText: "Name",
+                    helperText: "Name",
+                  ),
                 ),
-              ),
-              Text("id: ${state.item.id}"),
-              Text("createdAt: ${state.item.createdAt}"),
-              Text("updatedAt: ${state.item.updatedAt}"),
-              // Text("category: ${state.unmodified.categoryId}"),
-              CheckboxListTile(
-                value: _isSubcategory,
-                title: const Text("Is Subcategory"),
-                onChanged: (value) => setState(() {
-                  _isSubcategory = value!;
-                }),
-              ),
-              if (_isSubcategory)
-                BlocProvider(
+                Text("id: ${widget.item.id}"),
+                Text("createdAt: ${widget.item.createdAt}"),
+                Text("updatedAt: ${widget.item.updatedAt}"),
+                // Text("category: ${state.unmodified.categoryId}"),
+                CheckboxListTile(
+                  value: _isSubcategory,
+                  title: const Text("Is Subcategory"),
+                  onChanged: (value) => setState(() => _isSubcategory = value!),
+                ),
+                if (_isSubcategory)
+                  BlocProvider(
                     create: (context) => CategoryListPageBloc(
                         context.read<CategoryRepository>()),
                     child: Expanded(
                       child: CategoryFormSelector(
                         caption: Text("Parent category"),
-                        initialValue: state.item.parentId == null
-                            ? null
-                            : state.item.parentId!,
+                        initialValue: _parentId == null ? null : _parentId!,
                         onChanged: (value) {
                           setState(() {
                             _parentId = value!;
@@ -159,54 +175,11 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                           }
                         },
                       ),
-                    )),
-              Column(
-                children: [],
-              ),
-            ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
-      );
-
-  @override
-  Widget build(BuildContext context) => BlocConsumer<
-          EditPageBloc<String, Category>, EditPageBlocState<String, Category>>(
-        listener: (context, state) {
-          if (state is LoadSuccessEditState<String, Category>) {
-            final value = state.item.parentId != null;
-            if (value != _isSubcategory) {
-              setState(() {
-                _isSubcategory = value;
-              });
-            }
-          }
-        },
-        builder: (context, state) {
-          if (state is LoadSuccessEditState<String, Category>) {
-            return _showForm(context, state);
-          } else if (state is LoadingItem) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text("Loading category..."),
-              ),
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          } else if (state is ItemNotFound<String, Category>) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text("Item not found"),
-              ),
-              body: Center(
-                child: Text(
-                  "Error: unable to find item at id: ${state.id}.",
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            );
-          }
-          throw Exception("Unhandled state");
-        },
       );
 }

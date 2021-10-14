@@ -228,7 +228,7 @@ class _MyAppState extends State<MyApp> {
   })();
 
   late Future<Pair<sqflite.Database, AuthTokenRepository>> _initAsyncFuture;
-  final _client = SmuniApiClient("http://192.168.8.103:3000");
+  final _client = SmuniApiClient("http://192.168.8.104:3000");
 
   Future<Pair<sqflite.Database, AuthTokenRepository>> _initAsync() async {
     var databasesPath = await sqflite.getDatabasesPath();

@@ -50,7 +50,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
                 onEdit: (id) => Navigator.pushNamed(
                   context,
                   ExpenseEditPage.routeName,
-                  arguments: id,
+                  arguments: state.items[id],
                 ),
                 onDelete: (id) async {
                   final item = state.items[id]!;
@@ -59,18 +59,15 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
                     builder: (context) => AlertDialog(
                       title: const Text('Confirm deletion'),
                       content: Text(
-                          'Are you sure you want to delete entry ${item.name}?'),
+                        'Are you sure you want to delete entry ${item.name}?',
+                      ),
                       actions: <Widget>[
                         TextButton(
-                          onPressed: () {
-                            Navigator.pop(context, false);
-                          },
+                          onPressed: () => Navigator.pop(context, false),
                           child: const Text('Cancel'),
                         ),
                         TextButton(
-                          onPressed: () {
-                            Navigator.pop(context, true);
-                          },
+                          onPressed: () => Navigator.pop(context, true),
                           child: const Text('Confirm'),
                         ),
                       ],

@@ -63,7 +63,7 @@ class BudgetDetailsPage extends StatefulWidget {
           onPressed: () => Navigator.pushNamed(
             context,
             BudgetEditPage.routeName,
-            arguments: state.item.id,
+            arguments: state.item,
           ),
           child: const Text("Edit"),
         ),

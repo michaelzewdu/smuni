@@ -2,6 +2,8 @@
 
 import 'package:flutter/widgets.dart';
 
+import 'package:smuni/models/models.dart';
+
 import 'Budget/budget_details_page.dart';
 import 'Budget/budget_edit_page.dart';
 import 'Budget/budget_list_page.dart';
@@ -28,7 +30,7 @@ class Routes {
       case BudgetEditPage.routeName:
         return settings.arguments == null
             ? BudgetEditPage.routeNew()
-            : BudgetEditPage.route(settings.arguments as String);
+            : BudgetEditPage.route(settings.arguments as Budget);
       case ExpenseListPage.routeName:
         return ExpenseListPage.route();
       case ExpenseDetailsPage.routeName:
@@ -40,7 +42,7 @@ class Routes {
         return settings.arguments is ExpenseEditPageNewArgs
             ? ExpenseEditPage.routeNew(
                 settings.arguments as ExpenseEditPageNewArgs)
-            : ExpenseEditPage.route(settings.arguments as String);
+            : ExpenseEditPage.route(settings.arguments as Expense);
       case CategoryListPage.routeName:
         return CategoryListPage.route();
       case CategoryDetailsPage.routeName:
@@ -48,7 +50,7 @@ class Routes {
       case CategoryEditPage.routeName:
         return settings.arguments == null
             ? CategoryEditPage.routeNew()
-            : CategoryEditPage.route(settings.arguments as String);
+            : CategoryEditPage.route(settings.arguments as Category);
       default:
         return SmuniHomeScreen.route();
     }

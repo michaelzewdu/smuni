@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smuni/blocs/edit_page.dart';
 
+import 'package:smuni/blocs/edit_page/expense_edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
+import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/money_editor.dart';
+import 'package:smuni_api_client/smuni_api_client.dart';
 
 class ExpenseEditPageNewArgs {
   final String budgetId;
@@ -17,14 +19,24 @@ class ExpenseEditPageNewArgs {
 class ExpenseEditPage extends StatefulWidget {
   static const String routeName = "expenseEdit";
 
-  const ExpenseEditPage({Key? key}) : super(key: key);
+  final Expense item;
+  final bool isCreating;
 
-  static Route route(String id) => MaterialPageRoute(
+  const ExpenseEditPage({
+    Key? key,
+    required this.item,
+    required this.isCreating,
+  }) : super(key: key);
+
+  static Route route(Expense item) => MaterialPageRoute(
         settings: const RouteSettings(name: routeName),
         builder: (context) => BlocProvider(
           create: (context) =>
-              EditPageBloc.fromRepo(context.read<ExpenseRepository>(), id),
-          child: ExpenseEditPage(),
+              ExpenseEditPageBloc(context.read<ExpenseRepository>()),
+          child: ExpenseEditPage(
+            item: item,
+            isCreating: false,
+          ),
         ),
       );
 
@@ -42,9 +54,10 @@ class ExpenseEditPage extends StatefulWidget {
           amount: MonetaryAmount(currency: "ETB", amount: 0),
         );
         return BlocProvider(
-          create: (context) =>
-              EditPageBloc.modified(context.read<ExpenseRepository>(), item),
-          child: ExpenseEditPage(),
+          create: (context) => ExpenseEditPageBloc(
+            context.read<ExpenseRepository>(),
+          ),
+          child: ExpenseEditPage(item: item, isCreating: true),
         );
       });
 
@@ -54,115 +67,118 @@ class ExpenseEditPage extends StatefulWidget {
 
 class _ExpenseEditPageState extends State<ExpenseEditPage> {
   final _formKey = GlobalKey<FormState>();
-  MonetaryAmount _amount = MonetaryAmount(currency: "ETB", amount: 0);
-  String _name = "";
 
-  Widget _showForm(
-          BuildContext context, LoadSuccessEditState<String, Expense> state) =>
-      Form(
-        key: _formKey,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(
-                "Editing expense: ${state is ModifiedEditState<String, Expense> ? state.unmodified.name : state.item.name}"),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  final form = _formKey.currentState;
-                  if (form != null && form.validate()) {
-                    form.save();
-                    context.read<EditPageBloc<String, Expense>>()
-                      ..add(
-                        ModifyItem<String, Expense>(
-                          Expense.from(
-                            state is ModifiedEditState<String, Expense>
-                                ? state.unmodified
-                                : state.item,
-                            name: _name,
-                            amount: _amount,
-                          ),
-                        ),
-                      )
-                      ..add(SaveChanges<String, Expense>());
-                    Navigator.pop(context, true);
-                  }
-                },
-                child: const Text("Save"),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  context
-                      .read<EditPageBloc<String, Expense>>()
-                      .add(DiscardChanges());
-                  Navigator.pop(context, false);
-                },
-                child: const Text("Cancel"),
-              ),
-            ],
-          ),
-          body: Column(
-            children: <Widget>[
-              TextFormField(
-                initialValue: state.item.name,
-                onSaved: (value) {
-                  setState(() {
-                    _name = value!;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Name can't be empty";
-                  }
-                },
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  hintText: "Name",
-                  helperText: "Name",
-                ),
-              ),
-              MoneyFormEditor(
-                initialValue: state.item.amount,
-                onSaved: (v) => setState(() => _amount = v!),
-              ),
-              Text("id: ${state.item.id}"),
-              Text("createdAt: ${state.item.createdAt}"),
-              Text("updatedAt: ${state.item.updatedAt}"),
-              Text("budget: ${state.item.budgetId}"),
-              Text("category: ${state.item.categoryId}"),
-            ],
-          ),
-        ),
-      );
+  late var _amount = widget.item.amount;
+  late var _name = widget.item.name;
+
+  bool _awaitingSave = false;
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<
-          EditPageBloc<String, Expense>, EditPageBlocState<String, Expense>>(
-        builder: (context, state) {
-          if (state is LoadSuccessEditState<String, Expense>) {
-            return _showForm(context, state);
-          } else if (state is LoadingItem) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text("Loading expense..."),
-              ),
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          } else if (state is ItemNotFound<String, Expense>) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text("Item not found"),
-              ),
-              body: Center(
-                child: Text(
-                  "Error: unable to find item at id: ${state.id}.",
-                  style: TextStyle(color: Colors.red),
-                ),
+  Widget build(context) =>
+      BlocListener<ExpenseEditPageBloc, ExpenseEditPageBlocState>(
+        listener: (context, state) {
+          if (state is ExpenseEditSuccess) {
+            if (_awaitingSave) setState(() => {_awaitingSave = false});
+            Navigator.pop(context);
+          } else if (state is ExpenseEditFailed) {
+            if (_awaitingSave) setState(() => {_awaitingSave = false});
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: state.error is ConnectionException
+                    ? Text('Connection Failed')
+                    : Text('Unknown Error Occured'),
+                behavior: SnackBarBehavior.floating,
+                duration: Duration(seconds: 1),
               ),
             );
+          } else {
+            throw Exception("Unhandled type");
           }
-          throw Exception("Unhandled state");
         },
+        child: Scaffold(
+          appBar: AppBar(
+            title: _awaitingSave
+                ? const Text("Loading...")
+                : Text("Editing expense: ${widget.item.name}"),
+            actions: [
+              ElevatedButton(
+                child: const Text("Save"),
+                onPressed: !_awaitingSave
+                    ? () {
+                        final form = _formKey.currentState;
+                        if (form != null && form.validate()) {
+                          form.save();
+                          if (widget.isCreating) {
+                            context.read<ExpenseEditPageBloc>().add(
+                                  CreateExpense(CreateExpenseInput(
+                                      name: _name,
+                                      budgetId: widget.item.budgetId,
+                                      categoryId: widget.item.categoryId,
+                                      amount: _amount)),
+                                );
+                          } else {
+                            context.read<ExpenseEditPageBloc>().add(
+                                  UpdateExpense(
+                                    widget.item.id,
+                                    UpdateExpenseInput.fromDiff(
+                                      update: Expense.from(
+                                        widget.item,
+                                        name: _name,
+                                        amount: _amount,
+                                      ),
+                                      old: widget.item,
+                                    ),
+                                  ),
+                                );
+                          }
+                          setState(() => _awaitingSave = true);
+                        }
+                      }
+                    : null,
+              ),
+              ElevatedButton(
+                child: !_awaitingSave
+                    ? const Text("Cancel")
+                    : const CircularProgressIndicator(),
+                onPressed:
+                    !_awaitingSave ? () => Navigator.pop(context, false) : null,
+              ),
+            ],
+          ),
+          body: Form(
+            key: _formKey,
+            child: Column(
+              children: <Widget>[
+                TextFormField(
+                  initialValue: _name,
+                  onSaved: (value) {
+                    setState(() {
+                      _name = value!;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Name can't be empty";
+                    }
+                  },
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    hintText: "Name",
+                    helperText: "Name",
+                  ),
+                ),
+                MoneyFormEditor(
+                  initialValue: _amount,
+                  onSaved: (v) => setState(() => _amount = v!),
+                ),
+                Text("id: ${widget.item.id}"),
+                Text("createdAt: ${widget.item.createdAt}"),
+                Text("updatedAt: ${widget.item.updatedAt}"),
+                Text("budget: ${widget.item.budgetId}"),
+                Text("category: ${widget.item.categoryId}"),
+              ],
+            ),
+          ),
+        ),
       );
 }

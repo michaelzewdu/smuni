@@ -33,7 +33,7 @@ class CategoryDetailsPage extends StatelessWidget {
               onPressed: () => Navigator.pushNamed(
                 context,
                 CategoryEditPage.routeName,
-                arguments: state.item.id,
+                arguments: state.item,
               ),
               child: const Text("Edit"),
             ),

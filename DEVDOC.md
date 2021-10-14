@@ -8,6 +8,7 @@
 - [ ] Optional add category button on CategoryListView
 - [ ] Date Picker bug on budget edit
 - [ ] Budget switch is buggy
+- [ ] Item archival
   
 - [ ] Decide on how to tackle deletion
 - [ ] Decide on how to aggregate budget usage in the category tree
@@ -63,5 +64,4 @@
 ### Features
 
 
-## Dev-log 
-
+## dev-log
