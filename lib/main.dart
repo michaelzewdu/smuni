@@ -40,6 +40,7 @@ class _MyAppState extends State<MyApp> {
       firebaseId: "ABCDEF_123456_ABCDEF_123456_",
       phoneNumber: "+251900112233",
       pictureURL: "https://imagine.co/9q6roh3cifnp",
+      mainBudget: "614193c7f2ea51b47f5896ba",
       budgets: [
         Budget(
           id: "614193c7f2ea51b47f5896ba",
@@ -245,7 +246,7 @@ class _MyAppState extends State<MyApp> {
       version: 1,
       onCreate: (db, version) => db.transaction((txn) async {
         await migrateV1(txn);
-/*         await SqliteUserCache(db)
+        await SqliteUserCache(db)
             .setItem(defaultUser.id, User.from(defaultUser));
         {
           final cache = SqliteBudgetCache(db);
@@ -264,13 +265,13 @@ class _MyAppState extends State<MyApp> {
           for (var item in defaultUser.expenses) {
             await cache.setItem(item.id, item);
           }
-        } */
+        }
       }),
     );
 
     final response = await _client.signInEmail(defaultUser.email!, "password");
 
-    await SqliteUserCache(db)
+    /*  await SqliteUserCache(db)
         .setItem(response.user.username, User.from(response.user));
     {
       final cache = SqliteBudgetCache(db);
@@ -289,7 +290,7 @@ class _MyAppState extends State<MyApp> {
       for (final item in response.user.expenses) {
         await cache.setItem(item.id, item);
       }
-    }
+    } */
 
     return Pair(
       db,

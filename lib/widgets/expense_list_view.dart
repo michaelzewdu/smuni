@@ -92,7 +92,7 @@ class _ExpenseListViewState extends State<ExpenseListView> {
       case FilterLevel.All:
         break;
     }*/
-    return ListView(children: [
+    return Column(children: [
       //Year tab bar: always visible
       Container(
         height: 50,
@@ -206,10 +206,7 @@ class _ExpenseListViewState extends State<ExpenseListView> {
               padding: const EdgeInsets.all(8.0),
               child: TextButton(
                 onPressed: onPressed,
-                child: Text(
-                  text,
-                ),
-                style: ButtonStyle(),
+                child: Text(text),
               ),
             );
 
@@ -218,7 +215,8 @@ class _ExpenseListViewState extends State<ExpenseListView> {
           final keys = widget.items.keys.toList();
           return ExpansionPanelList(
             dividerColor: Colors.transparent,
-            animationDuration: Duration(seconds: 1),
+            expandedHeaderPadding: const EdgeInsets.symmetric(vertical: 2),
+            animationDuration: Duration(milliseconds: 400),
             expansionCallback: (int index, bool isExpanded) {
               setState(() {
                 final tappedId = widget.items[keys[index]]!.id;
@@ -232,6 +230,7 @@ class _ExpenseListViewState extends State<ExpenseListView> {
             children: keys
                 .map((k) => widget.items[k]!)
                 .map<ExpansionPanel>((item) => ExpansionPanel(
+                      canTapOnHeader: true,
                       headerBuilder: (BuildContext context, bool isExpanded) =>
                           ListTile(
                         title: Text(
