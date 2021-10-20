@@ -48,79 +48,76 @@ class MoneyEditor extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            if (caption != null) caption!,
-            Row(
-              children: [
-                Expanded(
+  Widget build(BuildContext context) => Column(
+        children: [
+          if (caption != null) caption!,
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  textAlign: TextAlign.end,
+                  keyboardType: TextInputType.numberWithOptions(),
+                  initialValue: amount.wholes.toString(),
+                  onChanged: (value) {
+                    final parsed = int.tryParse(value);
+                    if (parsed != null) {
+                      final newAmount = MonetaryAmount(
+                          currency: amount.currency,
+                          amount: parsed * 100 + amount.cents);
+                      onChanged?.call(newAmount);
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null || int.tryParse(value) == null) {
+                      return "Must be a whole number";
+                    }
+                  },
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8))),
+                    hintText: "Amount",
+                    helperText: "Amount",
+                    prefix: const Text("ETB"),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.3,
+                  ),
                   child: TextFormField(
-                    textAlign: TextAlign.end,
+                    inputFormatters: [LengthLimitingTextInputFormatter(2)],
                     keyboardType: TextInputType.numberWithOptions(),
-                    initialValue: amount.wholes.toString(),
+                    initialValue: amount.cents.toString(),
                     onChanged: (value) {
                       final parsed = int.tryParse(value);
                       if (parsed != null) {
                         final newAmount = MonetaryAmount(
                             currency: amount.currency,
-                            amount: parsed * 100 + amount.cents);
+                            amount: amount.wholes * 100 + parsed);
                         onChanged?.call(newAmount);
                       }
                     },
                     validator: (value) {
                       if (value == null || int.tryParse(value) == null) {
-                        return "Must be a whole number";
+                        return "Invalid";
                       }
                     },
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(8))),
-                      hintText: "Amount",
-                      helperText: "Amount",
-                      prefix: const Text("ETB"),
+                      hintText: "Cents",
+                      helperText: "Cents",
                     ),
                   ),
                 ),
-                Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.3,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextFormField(
-                      inputFormatters: [LengthLimitingTextInputFormatter(2)],
-                      keyboardType: TextInputType.numberWithOptions(),
-                      initialValue: amount.cents.toString(),
-                      onChanged: (value) {
-                        final parsed = int.tryParse(value);
-                        if (parsed != null) {
-                          final newAmount = MonetaryAmount(
-                              currency: amount.currency,
-                              amount: amount.wholes * 100 + parsed);
-                          onChanged?.call(newAmount);
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || int.tryParse(value) == null) {
-                          return "Invalid";
-                        }
-                      },
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8))),
-                        hintText: "Cents",
-                        helperText: "Cents",
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       );
 }

@@ -9,6 +9,7 @@
 - [ ] Date Picker bug on budget edit
 - [ ] Budget switch is buggy
 - [ ] Item archival
+- [ ] Expense name suggestions
   
 - [ ] Decide on how to tackle deletion
 - [ ] Decide on how to aggregate budget usage in the category tree

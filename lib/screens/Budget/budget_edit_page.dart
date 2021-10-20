@@ -2,7 +2,6 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/blocs/edit_page/budget_edit_page.dart';
 import 'package:smuni/models/models.dart';
@@ -11,6 +10,8 @@ import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/category_selector.dart';
 import 'package:smuni/widgets/money_editor.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
+
+import '../../constants.dart';
 
 class BudgetEditPage extends StatefulWidget {
   static const String routeName = "/budgetEdit";
@@ -114,7 +115,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
           appBar: AppBar(
             title: _awaitingSave
                 ? const Text("Loading...")
-                : Text("Editing budget: ${widget.item.name}"),
+                : widget.isCreating
+                    ? const Text("Create budget")
+                    : Text("Editing budget: ${widget.item.name}"),
             actions: !_awaitingSave
                 ? [
                     ElevatedButton(
@@ -181,40 +184,57 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
             key: _formKey,
             child: Column(
               children: [
-                TextFormField(
-                  initialValue: _name,
-                  onSaved: (value) {
-                    setState(() {
-                      _name = value!;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Name can't be empty";
-                    }
-                  },
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    hintText: "Name",
-                    helperText: "Name",
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: TextFormField(
+                    initialValue: _name,
+                    onSaved: (value) {
+                      setState(() {
+                        _name = value!;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Name can't be empty";
+                      }
+                    },
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12))),
+                      hintText: "Name",
+                      helperText: "Name",
+                    ),
                   ),
                 ),
-                MoneyFormEditor(
-                  initialValue: _amount,
-                  onChanged: (v) => setState(() => _amount = v!),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8.0, 0, 8),
+                  child: MoneyFormEditor(
+                    initialValue: _amount,
+                    onChanged: (v) => setState(() => _amount = v!),
+                  ),
                 ),
                 _isOneTime
                     ? _oneTimeDateRangeSelctor(context)
                     : _recurringDateRangeSelctor(context),
                 CheckboxListTile(
-                  dense: true,
-                  title: Text('One Time'),
+                  dense: false,
+                  title: Text(
+                    'One Time',
+                    textScaleFactor: 1.3,
+                  ),
                   value: _isOneTime,
                   onChanged: (value) {
                     setState(() {
                       _isOneTime = value!;
                     });
                   },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  secondary: _isOneTime
+                      ? Icon(Icons.looks_one, color: semuni500)
+                      : Icon(
+                          Icons.repeat,
+                          color: semuni500,
+                        ),
                 ),
                 Builder(builder: (context) {
                   final allocated = _categoryAllocation.isNotEmpty
@@ -223,19 +243,29 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                   final remaining = _amount.amount - allocated;
                   return Column(
                     children: [
-                      Text("Allocated categories"),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Text(
-                              "Allocated: ${_amount.currency} ${allocated / 100}"),
-                          Text(
-                            "Remaining: ${_amount.currency} ${(remaining) / 100}",
-                            style: remaining == 0
-                                ? TextStyle(color: Colors.green)
-                                : TextStyle(color: Colors.red),
-                          )
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Allocated: ${_amount.currency} ${allocated / 100}",
+                              textScaleFactor: 1.2,
+                            ),
+                            Text(
+                              "Remaining: ${_amount.currency} ${(remaining) / 100}",
+                              textScaleFactor: 1.2,
+                              style: remaining == 0
+                                  ? TextStyle(color: Colors.green)
+                                  : TextStyle(color: Colors.red),
+                            )
+                          ],
+                        ),
+                      ),
+                      Text(
+                        "Allocated categories",
+                        textScaleFactor: 1.3,
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       if (remaining != 0)
                         Row(
@@ -636,6 +666,9 @@ class _SimpleDateRangeEditorState extends State<SimpleDateRangeEditor> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
+              SizedBox(
+                width: 16,
+              ),
               ChoiceChip(
                 selected: _range == custom.range,
                 onSelected: (_) async {

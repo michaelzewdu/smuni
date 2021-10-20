@@ -43,43 +43,47 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         body: BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
           builder: (context, state) {
             if (state is ExpensesLoadSuccess) {
-              return ExpenseListView(
-                items: state.items,
-                allDateRanges: state.dateRangeFilters.values,
-                displayedRange: state.range,
-                onEdit: (id) => Navigator.pushNamed(
-                  context,
-                  ExpenseEditPage.routeName,
-                  arguments: state.items[id],
-                ),
-                onDelete: (id) async {
-                  final item = state.items[id]!;
-                  final confirm = await showDialog<bool?>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Confirm deletion'),
-                      content: Text(
-                        'Are you sure you want to delete entry ${item.name}?',
+              return SingleChildScrollView(
+                child: ExpenseListView(
+                  items: state.items,
+                  allDateRanges: state.dateRangeFilters.values,
+                  displayedRange: state.range,
+                  onEdit: (id) => Navigator.pushNamed(
+                    context,
+                    ExpenseEditPage.routeName,
+                    arguments: state.items[id],
+                  ),
+                  onDelete: (id) async {
+                    final item = state.items[id]!;
+                    final confirm = await showDialog<bool?>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Confirm deletion'),
+                        content: Text(
+                          'Are you sure you want to delete entry ${item.name}?',
+                        ),
+                        actions: <Widget>[
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Confirm'),
+                          ),
+                        ],
                       ),
-                      actions: <Widget>[
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Confirm'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirm != null && confirm) {
-                    context.read<ExpenseListPageBloc>().add(DeleteExpense(id));
-                  }
-                },
-                loadRange: (range) => context
-                    .read<ExpenseListPageBloc>()
-                    .add(LoadExpenses(range)),
+                    );
+                    if (confirm != null && confirm) {
+                      context
+                          .read<ExpenseListPageBloc>()
+                          .add(DeleteExpense(id));
+                    }
+                  },
+                  loadRange: (range) => context
+                      .read<ExpenseListPageBloc>()
+                      .add(LoadExpenses(range)),
+                ),
               );
             }
             return Center(child: CircularProgressIndicator.adaptive());

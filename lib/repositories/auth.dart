@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:jwt_decode/jwt_decode.dart';
-
 import 'package:smuni/providers/cache/cache.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
@@ -93,4 +92,46 @@ class AuthTokenRepository {
 
     return repo;
   }
+}
+
+class FakeAuthTokenRepository implements AuthTokenRepository {
+  @override
+  String _accessToken;
+
+  @override
+  String _refreshToken;
+
+  @override
+  String _username;
+
+  @override
+  String get username => _username;
+
+  @override
+  set username(String username) {
+    _username = username;
+  }
+
+  @override
+  SmuniApiClient client;
+
+  @override
+  AuthTokenCache cache;
+
+  @override
+  Future<void> _refreshAccessToken() async {}
+
+  FakeAuthTokenRepository({
+    required this.client,
+    required this.cache,
+    required String username,
+    required String accessToken,
+    required String refreshToken,
+  })  : _username = username,
+        _refreshToken = refreshToken,
+        _accessToken = accessToken;
+
+  @override
+  // TODO: implement accessToken
+  Future<String> get accessToken async => _accessToken;
 }

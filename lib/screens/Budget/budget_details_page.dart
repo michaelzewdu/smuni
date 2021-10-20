@@ -266,35 +266,6 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                             ])),
                           ],
                         ),
-                        /*
-                        Text(
-                          '-15,000 Br',
-                          textScaleFactor: 3,
-                          style: TextStyle(backgroundColor: Colors.white),
-                        ),
-                        Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
-                            child: RichText(
-                                text: TextSpan(children: [
-                              TextSpan(
-                                  text: 'Off ',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w200,
-                                      fontSize: 16)),
-                              TextSpan(
-                                  text: '5000.00 Br',
-                                  style: TextStyle(fontSize: 16))
-                            ])))
-
-                        Text(state.item.name),
-                        Text("frequency: ${state.item.frequency}"),
-                        Text("startTime: ${state.item.startTime}"),
-                        Text("endTime: ${state.item.endTime}"),
-                        Text("id: ${state.item.id}"),
-                        Text("createdAt: ${state.item.createdAt}"),
-                        Text("updatedAt: ${state.item.updatedAt}"),
-
-                         */
                       ],
                     ),
                   ),
@@ -673,7 +644,9 @@ class _BudgetDetailsPageState2 extends State<BudgetDetailsPage> {
     BuildContext context,
     LoadSuccess<String, Budget> state,
   ) =>
-      Scaffold(body: _budgetDetails(context, state));
+      Scaffold(
+        body: _budgetDetails(context, state),
+      );
 
   Widget _budgetDetails(
     BuildContext context,
@@ -724,7 +697,7 @@ class _BudgetDetailsPageState2 extends State<BudgetDetailsPage> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 60, 0, 0),
                   child: Row(
-                    // mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _totalUsed != null
                           ? Column(
@@ -820,6 +793,84 @@ class _BudgetDetailsPageState2 extends State<BudgetDetailsPage> {
                                                 })),
                                     ),
                                   ),
+                                  // span = endTime - startTime
+                                  // noOfCyclesPast = (( now - startTime) / recurrenceInterval).truncate();
+                                  // startOfCurrentCycle = (noOfCyclesPast * recurrenceInterval) + startTime;
+                                  // endOfCurrentCycle = startOfCurrentCycle + span;
+                                  if (state.item.frequency is Recurring)
+                                    Builder(builder: (context) {
+                                      Duration span = state.item.endTime
+                                          .difference(state.item.startTime);
+                                      int recurrenceIntervalSeconds =
+                                          (state.item.frequency as Recurring)
+                                              .recurringIntervalSecs;
+                                      // print('recurrenceIntervalSeconds: $recurrenceIntervalSeconds');
+                                      int untilNow = DateTime.now()
+                                          .difference(state.item.startTime)
+                                          .inSeconds;
+                                      // print('UntilNow: $untilNow');
+                                      int numberOfRecurringCyclesPassed =
+                                          (untilNow / recurrenceIntervalSeconds)
+                                              .ceil();
+                                      // print('numberOfRecurringCyclesPasssed: $numberOfRecurringCyclesPassed');
+                                      DateTime budgetEndDate =
+                                          (state.item.startTime.add(Duration(
+                                              seconds:
+                                                  numberOfRecurringCyclesPassed *
+                                                      recurrenceIntervalSeconds)));
+                                      // print('budgetEndDate: ${budgetEndDate.toString()}');
+                                      Duration remainingDays = budgetEndDate
+                                          .difference(DateTime.now());
+                                      // print('remaining days: ${remainingDays.toString()}');
+                                      if (remainingDays.inHours < 1) {
+                                        return Text(
+                                            '${remainingDays.inMinutes} minutes left till new budget',
+                                            style: TextStyle(
+                                                color: Colors.yellow));
+                                      } else if (remainingDays.inDays < 1) {
+                                        return Text(
+                                            '${remainingDays.inHours} hours left till new budget',
+                                            style: TextStyle(
+                                                color: Colors.yellow));
+                                      } else {
+                                        return Text(
+                                            '${remainingDays.inDays} days left till new budget',
+                                            style:
+                                                TextStyle(color: Colors.white));
+                                      }
+                                    }),
+                                  //DateTime budgetEndDate=
+
+                                  if (state.item.frequency is OneTime)
+                                    Builder(builder: (context) {
+                                      Duration remainingDays = state
+                                          .item.endTime
+                                          .difference(DateTime.now());
+                                      if (remainingDays.inDays > 0 &&
+                                          !remainingDays.isNegative) {
+                                        return Text(
+                                          '${remainingDays.inDays.toString()} days to budget end',
+                                          style: TextStyle(color: Colors.white),
+                                        );
+                                      } else if (remainingDays.isNegative) {
+                                        return Text(
+                                            'Budget ended ${remainingDays.inDays * -1} days ago');
+                                      } else if (remainingDays.inHours > 0 &&
+                                          !remainingDays.isNegative) {
+                                        return Text(
+                                            '${remainingDays.inHours} hours left',
+                                            style:
+                                                TextStyle(color: Colors.white));
+                                      } else if (remainingDays.inMinutes > 0 &&
+                                          !remainingDays.isNegative) {
+                                        return Text(
+                                            '${remainingDays.inMinutes} minutes left',
+                                            style: TextStyle(
+                                                color: Colors.yellow));
+                                      } else {
+                                        return Text('');
+                                      }
+                                    }),
                                   _showAllBudgetExpenses
                                       ? TextButton(
                                           onPressed: () => setState(() =>
@@ -1238,7 +1289,7 @@ class _BudgetDetailsPageState2 extends State<BudgetDetailsPage> {
                                   ['Used', "${used / 100}", used > allocated],
                                   [
                                     'Remaining',
-                                    "${(allocated - used!) / 100}",
+                                    "${(allocated - used) / 100}",
                                     used > allocated
                                   ],
                                   ['Allocated', "${allocated / 100}", false],
@@ -1658,7 +1709,7 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
     );
   }
 }
-/* 
+/*
 class SlidingAnimatedRoute extends CupertinoPageRoute {
   SlidingAnimatedRoute({
     required Widget Function(BuildContext) builder,

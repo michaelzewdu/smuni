@@ -269,7 +269,7 @@ class _MyAppState extends State<MyApp> {
       }),
     );
 
-    final response = await _client.signInEmail(defaultUser.email!, "password");
+    // final response = await _client.signInEmail(defaultUser.email!, "password");
 
     /*  await SqliteUserCache(db)
         .setItem(response.user.username, User.from(response.user));
@@ -294,12 +294,12 @@ class _MyAppState extends State<MyApp> {
 
     return Pair(
       db,
-      await AuthTokenRepository.fromValues(
+      FakeAuthTokenRepository(
           client: _client,
           cache: AuthTokenCache(db),
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          loggedInUsername: defaultUser.username),
+          accessToken: "response.accessToken",
+          refreshToken: "response.refreshToken",
+          username: defaultUser.username),
     );
   }
 
@@ -417,7 +417,7 @@ class _MyAppState extends State<MyApp> {
                         }),
                       ),
                     );
-                    ;
+                    
                   },
                 )),
       );
