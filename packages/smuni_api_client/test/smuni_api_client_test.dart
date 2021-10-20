@@ -366,6 +366,7 @@ void main() {
     final frequency = OneTime();
     final startTime = DateTime.now();
     final endTime = startTime.add(Duration(days: 7));
+    final archive = true;
 
     test("succeeds", () async {
       final categoryAllocations = {
@@ -384,6 +385,7 @@ void main() {
             startTime: startTime,
             endTime: endTime,
             categoryAllocations: categoryAllocations,
+            archive: archive,
           ));
       expect(response.name, equals(name));
       expect(response.allocatedAmount, equals(allocatedAmount));
@@ -392,6 +394,7 @@ void main() {
           equals(startTime.millisecondsSinceEpoch));
       expect(response.endTime.millisecondsSinceEpoch,
           equals(endTime.millisecondsSinceEpoch));
+      expect(response.archivedAt, isNotNull);
     });
     test("throws when not found", () {
       expect(
@@ -540,6 +543,7 @@ void main() {
 
     final name = "Simping";
     final tags = ["vice"];
+    final archive = true;
 
     test("succeeds", () async {
       final parentId = testUser.categories[0].id;
@@ -553,10 +557,12 @@ void main() {
             name: name,
             tags: tags,
             parentId: parentId,
+            archive: archive,
           ));
       expect(response.name, equals(name));
       expect(response.tags, equals(tags));
       expect(response.parentId, equals(parentId));
+      expect(response.archivedAt, isNotNull);
     });
     test("throws when not found", () {
       expect(
@@ -657,6 +663,7 @@ void main() {
 
     final name = "Business Hymns CD 1";
     final amount = MonetaryAmount(currency: "ETB", amount: 100 * 100);
+    final timestamp = DateTime.now();
 
     test("succeeds", () async {
       final budgetId = testUser.budgets[0].id;
@@ -670,12 +677,15 @@ void main() {
             amount: amount,
             budgetId: budgetId,
             categoryId: categoryId,
+            timestamp: timestamp,
           ));
       expect(response.id, isNotEmpty);
       expect(response.name, equals(name));
       expect(response.amount, equals(amount));
       expect(response.budgetId, equals(budgetId));
       expect(response.categoryId, equals(categoryId));
+      expect(response.timestamp.millisecondsSinceEpoch,
+          equals(timestamp.millisecondsSinceEpoch));
     });
     test("throws if budget not found", () {
       final categoryId = testUser.categories[0].id;
@@ -688,6 +698,7 @@ void main() {
               amount: amount,
               budgetId: "614193c7f2ea51b47f5896be",
               categoryId: categoryId,
+              timestamp: timestamp,
             )),
         throwsEndpointError(
           404,
@@ -706,6 +717,7 @@ void main() {
               amount: amount,
               budgetId: budgetId,
               categoryId: "614193c7f2ea51b47f5896be",
+              timestamp: timestamp,
             )),
         throwsEndpointError(
           404,
@@ -727,6 +739,7 @@ void main() {
 
     final name = "Business Hymns CD 1";
     final amount = MonetaryAmount(currency: "ETB", amount: 100 * 100);
+    final timestamp = DateTime.now().subtract(Duration(days: 1));
 
     test("succeeds", () async {
       var response = await client.updateExpense(
@@ -737,6 +750,7 @@ void main() {
             lastSeenVersion: testUser.expenses[0].version,
             name: name,
             amount: amount,
+            timestamp: timestamp,
           ));
       expect(response.name, equals(name));
       expect(response.amount, equals(amount));
@@ -866,6 +880,7 @@ Future<SignInResponse> setupTestUser(SmuniApiClient client) async {
         categoryId: category02.id,
         budgetId: budget01.id,
         amount: MonetaryAmount(currency: "ETB", amount: 400 * 100),
+        timestamp: DateTime.now(),
       ),
     );
     await client.createExpense(
@@ -876,6 +891,7 @@ Future<SignInResponse> setupTestUser(SmuniApiClient client) async {
         categoryId: category01.id,
         budgetId: budget01.id,
         amount: MonetaryAmount(currency: "ETB", amount: 200 * 100),
+        timestamp: DateTime.now(),
       ),
     );
   }

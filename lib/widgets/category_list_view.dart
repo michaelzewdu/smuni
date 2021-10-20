@@ -6,21 +6,26 @@ class CategoryListView extends StatelessWidget {
   final CategoriesLoadSuccess state;
   final void Function(String)? onSelect;
   final Set<String> disabledItems;
+  final bool markArchived;
   const CategoryListView({
     Key? key,
     required this.state,
     this.onSelect,
     this.disabledItems = const {},
+    this.markArchived = true,
   }) : super(key: key);
 
   Widget _listTile(BuildContext context, Category item) {
-    final isDisabled = disabledItems.contains(item.id);
+    final isMarked = item.isArchived == markArchived;
+    final isDisabled = disabledItems.contains(item.id) || isMarked;
     return ListTile(
       dense: isDisabled,
-      title: Text(
-        item.name,
-        style: TextStyle(fontSize: 18),
-      ),
+      trailing: isMarked
+          ? item.isArchived
+              ? const Text("Archived")
+              : const Text("Active")
+          : null,
+      title: Text(item.name),
       subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
       onTap: () => !isDisabled ? onSelect?.call(item.id) : null,
     );
@@ -63,6 +68,7 @@ class CategoryListView extends StatelessWidget {
 
     return topNodes.isNotEmpty
         ? ListView.builder(
+            shrinkWrap: true,
             itemCount: topNodes.length,
             itemBuilder: (context, index) =>
                 _catDisplay(context, topNodes[index].item),

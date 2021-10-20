@@ -3,6 +3,7 @@ import 'dart:async';
 export 'sqlite.dart';
 
 abstract class Cache<Identifier, Item> {
+  Future<void> clear();
   Future<Item?> getItem(Identifier id);
   Future<Map<Identifier, Item>> getItems();
   Future<void> setItem(Identifier id, Item item);
@@ -10,8 +11,8 @@ abstract class Cache<Identifier, Item> {
   // Stream<List<Identifier>> get changedItems;
 }
 
-class HashMapCache<Identifier, Item> extends Cache<Identifier, Item> {
-  final Map<Identifier, Item> _items = {};
+class MapCache<Identifier, Item> extends Cache<Identifier, Item> {
+  final _items = <Identifier, Item>{};
 
   @override
   Future<Item?> getItem(Identifier id) async {
@@ -31,5 +32,10 @@ class HashMapCache<Identifier, Item> extends Cache<Identifier, Item> {
   @override
   Future<Map<Identifier, Item>> getItems() async {
     return _items;
+  }
+
+  @override
+  Future<void> clear() async {
+    _items.clear();
   }
 }

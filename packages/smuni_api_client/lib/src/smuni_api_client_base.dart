@@ -412,6 +412,7 @@ class UpdateBudgetInput {
   final Frequency? frequency;
   final MonetaryAmount? allocatedAmount;
   final Map<String, int>? categoryAllocations;
+  final bool? archive;
 
   const UpdateBudgetInput({
     required this.lastSeenVersion,
@@ -421,6 +422,7 @@ class UpdateBudgetInput {
     this.frequency,
     this.allocatedAmount,
     this.categoryAllocations,
+    this.archive,
   });
 
   UpdateBudgetInput.fromDiff({
@@ -433,6 +435,7 @@ class UpdateBudgetInput {
         frequency = ifNotEqualTo(update.frequency, old.frequency),
         allocatedAmount =
             ifNotEqualTo(update.allocatedAmount, old.allocatedAmount),
+        archive = update.archivedAt != null && old.archivedAt == null,
         categoryAllocations = mapIfNotEqualTo(
             update.categoryAllocations, old.categoryAllocations);
 
@@ -443,6 +446,7 @@ class UpdateBudgetInput {
         "frequency": frequency?.toJson(),
         "allocatedAmount": allocatedAmount?.toJson(),
         "categoryAllocations": categoryAllocations,
+        "archive": archive,
         "lastSeenVersion": lastSeenVersion,
       };
 
@@ -452,6 +456,7 @@ class UpdateBudgetInput {
       endTime == null &&
       frequency == null &&
       allocatedAmount == null &&
+      archive == null &&
       categoryAllocations == null;
 }
 
@@ -478,12 +483,14 @@ class UpdateCategoryInput {
   final String? name;
   final List<String>? tags;
   final String? parentId;
+  final bool? archive;
 
   const UpdateCategoryInput({
     required this.lastSeenVersion,
     this.name,
     this.tags,
     this.parentId,
+    this.archive,
   });
 
   UpdateCategoryInput.fromDiff({
@@ -492,16 +499,19 @@ class UpdateCategoryInput {
   })  : lastSeenVersion = old.version,
         name = ifNotEqualTo(update.name, old.name),
         parentId = ifNotEqualTo(update.parentId, old.parentId),
+        archive = update.archivedAt != null && old.archivedAt == null,
         tags = setINotEqualTo(update.tags.toSet(), old.tags.toSet())?.toList();
 
   Map<String, dynamic> toJson() => {
         "name": name,
         "tags": tags,
         "parentCategory": parentId,
+        "archive": archive,
         "lastSeenVersion": lastSeenVersion,
       };
 
-  bool get isEmpty => name == null && tags == null && parentId == null;
+  bool get isEmpty =>
+      name == null && tags == null && parentId == null && archive == null;
 }
 
 class CreateExpenseInput {
@@ -509,12 +519,14 @@ class CreateExpenseInput {
   final String budgetId;
   final String categoryId;
   final MonetaryAmount amount;
+  final DateTime? timestamp;
 
   const CreateExpenseInput({
     required this.name,
     required this.budgetId,
     required this.categoryId,
     required this.amount,
+    this.timestamp,
   });
 
   Map<String, dynamic> toJson() => {
@@ -522,6 +534,7 @@ class CreateExpenseInput {
         "amount": amount.toJson(),
         "budgetId": budgetId,
         "categoryId": categoryId,
+        "timestamp": timestamp?.millisecondsSinceEpoch
       };
 }
 
@@ -529,26 +542,30 @@ class UpdateExpenseInput {
   final int lastSeenVersion;
   final String? name;
   final MonetaryAmount? amount;
+  final DateTime? timestamp;
 
   const UpdateExpenseInput({
     required this.lastSeenVersion,
     this.name,
     this.amount,
+    this.timestamp,
   });
   UpdateExpenseInput.fromDiff({
     required Expense update,
     required Expense old,
   })  : lastSeenVersion = old.version,
         name = ifNotEqualTo(update.name, old.name),
+        timestamp = ifNotEqualTo(update.timestamp, old.timestamp),
         amount = ifNotEqualTo(update.amount, old.amount);
 
   Map<String, dynamic> toJson() => {
         "name": name,
         "amount": amount?.toJson(),
+        "timestamp": timestamp?.millisecondsSinceEpoch,
         "lastSeenVersion": lastSeenVersion,
       };
 
-  bool get isEmpty => name == null && amount == null;
+  bool get isEmpty => name == null && amount == null && timestamp == null;
 }
 
 class EndpointError {

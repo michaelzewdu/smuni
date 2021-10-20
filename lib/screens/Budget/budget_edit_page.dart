@@ -9,6 +9,7 @@ import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/category_selector.dart';
 import 'package:smuni/widgets/money_editor.dart';
+import 'package:smuni/widgets/widgets.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
 import '../../constants.dart';
@@ -85,7 +86,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
   late var _endTime = widget.item.endTime;
   late var _isOneTime = widget.item.frequency is OneTime;
   late var _frequency = widget.item.frequency;
-  late final _categoryAllocation = {...widget.item.categoryAllocations};
+  late final _categoryAllocations = <String, int>{
+    ...widget.item.categoryAllocations
+  };
 
   String? _selectedCategory;
   bool _awaitingSave = false;
@@ -108,8 +111,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                 duration: Duration(seconds: 1),
               ),
             );
+          } else {
+            throw Exception("Unhandled type");
           }
-          throw Exception("Unhandled type");
         },
         child: Scaffold(
           appBar: AppBar(
@@ -123,8 +127,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     ElevatedButton(
                       child: const Text("Save"),
                       onPressed: () {
-                        final allocated = _categoryAllocation.isNotEmpty
-                            ? _categoryAllocation.values.reduce((a, b) => a + b)
+                        final allocated = _categoryAllocations.isNotEmpty
+                            ? _categoryAllocations.values
+                                .reduce((a, b) => a + b)
                             : 0;
                         final remaining = _amount.amount - allocated;
 
@@ -147,7 +152,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                                     endTime: _endTime,
                                     frequency: _frequency,
                                     allocatedAmount: _amount,
-                                    categoryAllocations: _categoryAllocation,
+                                    categoryAllocations: _categoryAllocations,
                                   )),
                                 );
                           } else {
@@ -163,7 +168,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                                           startTime: _startTime,
                                           endTime: _endTime,
                                           categoryAllocation:
-                                              _categoryAllocation,
+                                              _categoryAllocations,
                                         ),
                                         old: widget.item,
                                       )),
@@ -237,8 +242,8 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                         ),
                 ),
                 Builder(builder: (context) {
-                  final allocated = _categoryAllocation.isNotEmpty
-                      ? _categoryAllocation.values.reduce((a, b) => a + b)
+                  final allocated = _categoryAllocations.isNotEmpty
+                      ? _categoryAllocations.values.reduce((a, b) => a + b)
                       : 0;
                   final remaining = _amount.amount - allocated;
                   return Column(
@@ -297,7 +302,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                                       await _allocateCategoryModal();
                                   if (allocation != null) {
                                     setState(() =>
-                                        _categoryAllocation[allocation.a] =
+                                        _categoryAllocations[allocation.a] =
                                             allocation.b.amount);
                                   }
                                 }
@@ -319,33 +324,38 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     builder: (context, catListState) {
                       if (catListState is CategoriesLoadSuccess) {
                         // ignore: prefer_collection_literals
-                        Set<String> nodes = LinkedHashSet();
-                        // ignore: prefer_collection_literals
                         Set<String> rootNodes = LinkedHashSet();
-                        for (final id in _categoryAllocation.keys) {
-                          final node = catListState.ancestryGraph[id];
-                          if (node == null) throw Exception("unexpected null");
-                          var curNode = node;
-                          while (true) {
-                            nodes.add(curNode.item);
-                            if (curNode.parent != null) {
-                              curNode = curNode.parent!;
-                            } else {
-                              rootNodes.add(curNode.item);
-                              break;
-                            }
-                          }
+
+                        // FIXME: move this calculation elsewhere
+                        final ancestryTree =
+                            CategoryRepository.calcAncestryTree(
+                          _categoryAllocations.keys.toSet(),
+                          catListState.items,
+                        );
+                        for (final node in ancestryTree.values
+                            .where((e) => e.parent == null)) {
+                          rootNodes.add(node.item);
                         }
+
                         return rootNodes.isNotEmpty
-                            ? ListView.builder(
-                                itemCount: rootNodes.length,
-                                itemBuilder: (BuildContext context, int index) {
-                                  final item = rootNodes.elementAt(index);
-                                  return _catTree(
-                                      context, catListState, nodes, item);
-                                },
+                            ? Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: ListView.builder(
+                                  itemCount: rootNodes.length,
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
+                                    final item = rootNodes.elementAt(index);
+                                    return _catTree(
+                                      context,
+                                      catListState.items,
+                                      ancestryTree,
+                                      item,
+                                    );
+                                  },
+                                ),
                               )
-                            : _categoryAllocation.isEmpty
+                            : _categoryAllocations.isEmpty
                                 ? Center(child: const Text("No categories."))
                                 : throw Exception("parents are missing");
                       }
@@ -435,83 +445,146 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
 
   Widget _catTree(
     BuildContext context,
-    CategoriesLoadSuccess catListState,
-    Set<String> nodesToShow,
+    Map<String, Category> items,
+    Map<String, TreeNode<String>> nodes,
     String id,
   ) {
-    final item = catListState.items[id];
-    final itemNode = catListState.ancestryGraph[id];
+    final item = items[id];
+    final itemNode = nodes[id];
     if (item == null) return Text("Error: Category under id $id not found");
     if (itemNode == null) {
       return Text("Error: Category under id $id not found in ancestryGraph");
     }
 
-    final children = itemNode.children.where((e) => nodesToShow.contains(e));
-
-    final allocatedAmount = _categoryAllocation[id];
+    final allocatedAmount = _categoryAllocations[id];
     return Column(
       children: [
         allocatedAmount != null
-            ? Builder(builder: (context) {
-                return ListTile(
-                  title: Text(item.name),
-                  subtitle:
-                      Text(item.tags.map((e) => "#$e").toList().join(" ")),
-                  trailing: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.5,
-                    child: Column(
-                      children: [
-                        Text("${allocatedAmount / 100}"),
-                        LinearProgressIndicator(
-                          value: allocatedAmount / _amount.amount,
-                        )
-                      ],
-                    ),
+            ? ListTile(
+                title: Text(item.name),
+                subtitle: item.tags.isNotEmpty || item.isArchived
+                    ? Row(children: [
+                        if (item.isArchived)
+                          Text("Archived", style: TextStyle(color: Colors.red)),
+                        if (item.isArchived && item.tags.isNotEmpty)
+                          const DotSeparator(),
+                        if (item.tags.isNotEmpty)
+                          Text(item.tags.map((e) => "#$e").toList().join(" ")),
+                      ])
+                    : null,
+                trailing: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.5,
+                  child: Column(
+                    children: [
+                      Text("${allocatedAmount / 100}"),
+                      LinearProgressIndicator(
+                        value: allocatedAmount / _amount.amount,
+                      )
+                    ],
                   ),
-                  onTap: () => setState(() {
-                    if (_selectedCategory == id) {
-                      _selectedCategory = null;
-                    } else {
-                      _selectedCategory = id;
-                    }
-                  }),
-                );
-              })
+                ),
+                onTap: () => setState(() {
+                  if (_selectedCategory == id) {
+                    _selectedCategory = null;
+                  } else {
+                    _selectedCategory = id;
+                  }
+                }),
+              )
             : Row(
                 children: [
                   Text(item.name),
                 ],
               ),
-        if (children.isNotEmpty || _selectedCategory == id)
+        if (_selectedCategory == id)
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(),
+              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(25)),
+            ),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton.icon(
+                    onPressed: () async {
+                      final allocation = await _allocateCategoryModal(id);
+                      if (allocation != null) {
+                        if (allocation.a != id) {
+                          final confirm = await showDialog<bool?>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text("Confirm Category Swap"),
+                              content: Text(
+                                "Are you sure you want to replace category ${item.name} with ${items[allocation.a]!.name}?"
+                                "\nExpenses attached to the initial category, ${item.name}, under this budget will be left intact",
+                              ),
+                              actions: <Widget>[
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: Text("Cancel"),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: Text("Swap"),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == null || !confirm) return;
+                        }
+                        setState(() {
+                          _categoryAllocations.remove(id);
+                          _categoryAllocations[allocation.a] =
+                              allocation.b.amount;
+                          _selectedCategory = null;
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.edit),
+                    label: const Text("Reallocate"),
+                  ),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final confirm = await showDialog<bool?>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text("Confirm Deallocation"),
+                          content: Text(
+                              "Are you sure you want to remove category ${item.name} from the budget?"
+                              "\nExpenses attached to the Category under this budget will be left intact"),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: Text("Cancel"),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: Text("Deallocate"),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm != null && confirm) {
+                        setState(() {
+                          _categoryAllocations.remove(id);
+                          _selectedCategory = null;
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.delete),
+                    label: const Text("Deallocated"),
+                  ),
+                ]),
+          ),
+        if (itemNode.children.isNotEmpty)
           Padding(
             padding:
                 EdgeInsets.only(left: MediaQuery.of(context).size.width * 0.05),
             child: Column(
               children: [
-                if (_selectedCategory == id)
-                  Container(
-                    decoration: BoxDecoration(
-                        border: Border.all(),
-                        borderRadius:
-                            BorderRadius.vertical(bottom: Radius.circular(15))),
-                    child: Column(children: [
-                      ListTile(
-                        title: const Text("Deallocated"),
-                        leading: Icon(Icons.delete),
-                        onTap: () => setState(() {
-                          _categoryAllocation.remove(id);
-                          _selectedCategory = null;
-                        }),
-                      ),
-                    ]),
-                  ),
                 ...itemNode.children.map(
-                  (e) => _catTree(
-                    context,
-                    catListState,
-                    nodesToShow,
-                    e,
-                  ),
+                  (e) => _catTree(context, items, nodes, e),
                 ),
               ],
             ),
@@ -520,28 +593,45 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
     );
   }
 
-  Future<Pair<String, MonetaryAmount>?> _allocateCategoryModal() async {
-    final allocated = _categoryAllocation.isNotEmpty
-        ? _categoryAllocation.values.reduce((a, b) => a + b)
+  Future<Pair<String, MonetaryAmount>?> _allocateCategoryModal([
+    String? forCategoryId,
+  ]) async {
+    var allocated = _categoryAllocations.isNotEmpty
+        ? _categoryAllocations.values.reduce((a, b) => a + b)
         : 0;
-    final unused = _amount.amount - allocated;
+    var unused = _amount.amount - allocated;
 
     final selectorKey = GlobalKey<FormFieldState<String>>();
-    var categoryId = "";
+
+    String? categoryId = forCategoryId;
+    final disabledItems = _categoryAllocations.keys.toSet();
     MonetaryAmount categoryAmount = MonetaryAmount(currency: "ETB", amount: 0);
+
+    if (categoryId != null) {
+      final amount = _categoryAllocations[categoryId];
+      if (amount != null) {
+        categoryAmount = MonetaryAmount(
+          currency: "ETB",
+          amount: amount,
+        );
+        allocated -= amount;
+        unused += amount;
+      }
+      disabledItems.remove(categoryId);
+    }
     return showModalBottomSheet<Pair<String, MonetaryAmount>>(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (builder, setState) => Column(children: [
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Column(
+          children: [
             ElevatedButton(
-              onPressed: categoryId.isNotEmpty
+              onPressed: categoryId != null
                   ? () {
                       final selector = selectorKey.currentState;
                       if (selector != null && selector.validate()) {
                         selector.save();
                         Navigator.pop(
-                            context, Pair(categoryId, categoryAmount));
+                            context, Pair(categoryId!, categoryAmount));
                       }
                     }
                   : null,
@@ -572,28 +662,37 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
               },
               autovalidateMode: AutovalidateMode.onUserInteraction,
             ),
-            BlocProvider(
-              create: (context) =>
-                  CategoryListPageBloc(context.read<CategoryRepository>()),
-              child: Expanded(
-                child: CategoryFormSelector(
-                  key: selectorKey,
-                  disabledItems: _categoryAllocation.keys.toSet(),
-                  isSelecting: true,
-                  onChanged: (value) {
-                    setState(() => categoryId = value!);
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return "Category not selected";
-                    }
-                  },
+            Expanded(
+              child: BlocProvider(
+                create: (context) =>
+                    CategoryListPageBloc(context.read<CategoryRepository>()),
+                child: BlocBuilder<CategoryListPageBloc,
+                    CategoryListPageBlocState>(
+                  builder: (context, catListState) => catListState
+                          is CategoriesLoadSuccess
+                      ? CategoryFormSelector(
+                          key: selectorKey,
+                          disabledItems: _categoryAllocations.keys.toSet()
+                            ..remove(categoryId),
+                          initialValue: categoryId,
+                          isSelecting: categoryId == null,
+                          onChanged: (value) =>
+                              setState(() => categoryId = value!),
+                          validator: (value) {
+                            if (value == null) {
+                              return "Category not selected";
+                            } else if (catListState.items[value]!.isArchived) {
+                              return "Category is archived.";
+                            }
+                          },
+                        )
+                      : const CircularProgressIndicator(),
                 ),
               ),
             ),
-          ]),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

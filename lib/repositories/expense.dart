@@ -79,7 +79,10 @@ class ApiExpenseRepository extends Repository<String, Expense,
   Future<Map<String, Expense>> getItems() => cache.getItems();
 
   @override
-  Future<void> removeItem(String id) async {
+  Future<void> removeItem(
+    String id, [
+    bool bypassChangedItemNotification = false,
+  ]) async {
     final token = await tokenRepo.accessToken;
     await client.deleteExpense(
       id,
@@ -87,7 +90,7 @@ class ApiExpenseRepository extends Repository<String, Expense,
       token,
     );
     await cache.removeItem(id);
-    _changedItemsController.add({id});
+    if (!bypassChangedItemNotification) _changedItemsController.add({id});
   }
 
   @override
@@ -119,7 +122,7 @@ class ApiExpenseRepository extends Repository<String, Expense,
                   : ofCategories != null
                       ? (e) => ofCategories.contains(e.categoryId)
                       : (e) => true)
-          .map((e) => e.createdAt),
+          .map((e) => e.timestamp),
     );
   }
 
@@ -132,18 +135,29 @@ class ApiExpenseRepository extends Repository<String, Expense,
     return items.values.where(
       ofBudgets != null && ofCategories != null
           ? (e) =>
-              range.containsTimestamp(e.createdAt) &&
+              range.containsTimestamp(e.timestamp) &&
               ofBudgets.contains(e.budgetId) &&
               ofCategories.contains(e.categoryId)
           : ofBudgets != null
               ? (e) =>
-                  range.containsTimestamp(e.createdAt) &&
+                  range.containsTimestamp(e.timestamp) &&
                   ofBudgets.contains(e.budgetId)
               : ofCategories != null
                   ? (e) =>
-                      range.containsTimestamp(e.createdAt) &&
+                      range.containsTimestamp(e.timestamp) &&
                       ofCategories.contains(e.categoryId)
-                  : (e) => range.containsTimestamp(e.createdAt),
+                  : (e) => range.containsTimestamp(e.timestamp),
     );
+  }
+
+  @override
+  Future<void> refreshCache(Map<String, Expense> items) async {
+    await cache.clear();
+    Set<String> ids = {};
+    for (final p in items.entries) {
+      ids.add(p.key);
+      await cache.setItem(p.key, p.value);
+    }
+    _changedItemsController.add(ids);
   }
 }

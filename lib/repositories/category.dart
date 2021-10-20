@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:smuni/models/models.dart';
 import 'package:smuni/providers/cache/cache.dart';
@@ -83,7 +82,10 @@ class ApiCategoryRepository extends Repository<String, Category,
   Future<Map<String, Category>> getItems() => cache.getItems();
 
   @override
-  Future<void> removeItem(String id) async {
+  Future<void> removeItem(
+    String id, [
+    bool bypassChangedItemNotification = false,
+  ]) async {
     final token = await tokenRepo.accessToken;
     await client.deleteCategory(
       id,
@@ -91,7 +93,7 @@ class ApiCategoryRepository extends Repository<String, Category,
       token,
     );
     await cache.removeItem(id);
-    _changedItemsController.add({id});
+    if (!bypassChangedItemNotification) _changedItemsController.add({id});
   }
 
   @override
@@ -99,21 +101,22 @@ class ApiCategoryRepository extends Repository<String, Category,
     return UpdateCategoryInput.fromDiff(update: update, old: old);
   }
 
-  Future<Map<String, TreeNode<String>>>? _ancestryGraph;
-  Future<Map<String, TreeNode<String>>> get ancestryGraph =>
-      _ancestryGraph ??= _calcAncestryTree();
+  static Map<String, TreeNode<String>> calcAncestryTree(
+    /// The set of items we're interested in
+    Set<String> forItems,
 
-  // FIXME: fix this func
-  Future<Map<String, TreeNode<String>>> _calcAncestryTree() async {
-    Map<String, TreeNode<String>> nodes = HashMap();
-    final items = await getItems();
+    /// The set of all items, must include all items in [`forItems`].
+    Map<String, Category> allItems,
+  ) {
+    final nodes = <String, TreeNode<String>>{};
 
     TreeNode<String> getTreeNode(Category category) {
       var node = nodes[category.id];
       if (node == null) {
         TreeNode<String>? parentNode;
         if (category.parentId != null) {
-          final parent = items[category.parentId];
+          /// look up parents in the allItems set
+          final parent = allItems[category.parentId];
           if (parent == null) {
             throw Exception("parent not found at id: $category.parentId");
           }
@@ -126,12 +129,21 @@ class ApiCategoryRepository extends Repository<String, Category,
       return node;
     }
 
-    for (final category in items.values) {
-      if (!nodes.containsKey(category.id)) {
-        getTreeNode(category);
+    for (final id in forItems) {
+      if (!nodes.containsKey(id)) {
+        getTreeNode(allItems[id]!);
       }
     }
     return nodes;
+  }
+
+  Future<Map<String, TreeNode<String>>>? _ancestryGraph;
+  Future<Map<String, TreeNode<String>>> get ancestryGraph =>
+      _ancestryGraph ??= _calcAncestryTree();
+
+  Future<Map<String, TreeNode<String>>> _calcAncestryTree() async {
+    final items = await getItems();
+    return calcAncestryTree(items.keys.toSet(), items);
   }
 
   /// The returned list includes the given id.
@@ -164,4 +176,16 @@ class ApiCategoryRepository extends Repository<String, Category,
         parentId: item.parentId,
         tags: item.tags,
       );
+
+  @override
+  Future<void> refreshCache(Map<String, Category> items) async {
+    await cache.clear();
+    Set<String> ids = {};
+    for (final p in items.entries) {
+      ids.add(p.key);
+      await cache.setItem(p.key, p.value);
+    }
+    _changedItemsController.add(ids);
+    _ancestryGraph = null;
+  }
 }

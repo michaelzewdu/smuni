@@ -152,7 +152,7 @@ const List<String> monthNames = [
 
 Map<DateRange, DateRangeFilter> generateDateRangesFilters(
     Iterable<DateTime> timestamps) {
-  Map<DateRange, DateRangeFilter> filters = {};
+  final filters = <DateRange, DateRangeFilter>{};
   for (final timestamp in timestamps) {
     final dayRange = DateRange.dayRange(timestamp);
     if (filters.containsKey(dayRange)) {
@@ -209,6 +209,15 @@ FutureOr<void> Function(Event, Emitter<State>)
 abstract class OperationException implements Exception {}
 
 class TimeoutException implements OperationException {}
+
+class RefreshException implements OperationException {
+  final OperationException inner;
+
+  RefreshException(this.inner);
+
+  @override
+  String toString() => "${runtimeType.toString()} { inner: $inner }";
+}
 
 class ConnectionException extends OperationException {
   final SocketException inner;

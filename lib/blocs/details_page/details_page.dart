@@ -82,7 +82,7 @@ class DetailsPageBloc<Identifier, Item> extends Bloc<
       streamToEmitterAdapterStatusAware(_handleLoadItem),
     );
     on<DeleteItem<Identifier, Item>>(
-      streamToEmitterAdapterStatusAware(_handleDeleteItem),
+      streamToEmitterAdapterStatusAware(handleDeleteItem),
     );
 
     repo.changedItems.listen((ids) {
@@ -104,7 +104,8 @@ class DetailsPageBloc<Identifier, Item> extends Bloc<
   }
 
   Stream<DetailsPageState<Identifier, Item>> _handleLoadItem(
-      LoadItem<Identifier, Item> event) async* {
+    LoadItem<Identifier, Item> event,
+  ) async* {
     yield LoadingItem(event.id);
     try {
       final item = await repo.getItem(event.id);
@@ -118,8 +119,9 @@ class DetailsPageBloc<Identifier, Item> extends Bloc<
     }
   }
 
-  Stream<DetailsPageState<Identifier, Item>> _handleDeleteItem(
-      DeleteItem<Identifier, Item> event) async* {
+  Stream<DetailsPageState<Identifier, Item>> handleDeleteItem(
+    DeleteItem<Identifier, Item> event,
+  ) async* {
     try {
       final current = state;
 

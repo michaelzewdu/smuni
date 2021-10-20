@@ -49,6 +49,7 @@ class ExpenseEditPage extends StatefulWidget {
           createdAt: now,
           updatedAt: now,
           name: "",
+          timestamp: now,
           categoryId: args.categoryId,
           budgetId: args.budgetId,
           amount: MonetaryAmount(currency: "ETB", amount: 0),
@@ -70,6 +71,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
 
   late var _amount = widget.item.amount;
   late var _name = widget.item.name;
+  late DateTime _timestamp = widget.item.timestamp;
 
   bool _awaitingSave = false;
 
@@ -111,10 +113,12 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                           if (widget.isCreating) {
                             context.read<ExpenseEditPageBloc>().add(
                                   CreateExpense(CreateExpenseInput(
-                                      name: _name,
-                                      budgetId: widget.item.budgetId,
-                                      categoryId: widget.item.categoryId,
-                                      amount: _amount)),
+                                    name: _name,
+                                    budgetId: widget.item.budgetId,
+                                    categoryId: widget.item.categoryId,
+                                    amount: _amount,
+                                    timestamp: _timestamp,
+                                  )),
                                 );
                           } else {
                             context.read<ExpenseEditPageBloc>().add(
@@ -171,6 +175,40 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                   initialValue: _amount,
                   onSaved: (v) => setState(() => _amount = v!),
                 ),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal:8.0),
+                    decoration: BoxDecoration(
+                        border: Border.all(),
+                        borderRadius: BorderRadius.circular(15)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text("Time: "),
+                        Text(
+                          humanReadableDayRelationName(
+                            _timestamp,
+                            DateTime.now(),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            final selectedDate = await showDatePicker(
+                              context: context,
+                              initialDate: _timestamp,
+                              firstDate: DateTime.fromMillisecondsSinceEpoch(0),
+                              lastDate: DateTime.now(),
+                            );
+                            if (selectedDate != null) {
+                              setState(() => _timestamp = selectedDate);
+                            }
+                          },
+                          icon: Icon(Icons.edit),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 Text("id: ${widget.item.id}"),
                 Text("createdAt: ${widget.item.createdAt}"),
                 Text("updatedAt: ${widget.item.updatedAt}"),
@@ -181,4 +219,32 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
           ),
         ),
       );
+}
+
+String humanReadableDayRelationName(
+  DateTime time,
+  DateTime relativeTo,
+) {
+  final diff = time.difference(relativeTo);
+  if (diff.inDays < -7) {
+    return '${monthNames[time.month]} ${time.day} ${time.year}';
+  }
+  if (diff.inDays <= -2) return '${diff.inDays.abs()} days ago';
+  if (relativeTo.day - 1 == time.day) return 'Yesterday';
+  return 'Today';
+}
+
+String humanReadableTimeRelationName(
+  DateTime time,
+  DateTime relativeTo,
+) {
+  final diff = time.difference(relativeTo);
+  if (diff.inDays < -7) {
+    return '${monthNames[time.month]} ${time.day} ${time.year}';
+  }
+  if (diff.inDays > -2) return '${diff.inDays.abs()} days ago';
+  if (diff.inDays < -1 && relativeTo.day - 1 == time.day) return 'Yesterday';
+  if (diff.inHours < -1) return '${diff.inHours.abs()} hours ago';
+  if (diff.inMinutes < -1) return '${diff.inMinutes.abs()} minutes ago';
+  return 'Now';
 }

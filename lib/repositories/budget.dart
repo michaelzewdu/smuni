@@ -79,7 +79,10 @@ class ApiBudgetRepository
   Future<Map<String, Budget>> getItems() => cache.getItems();
 
   @override
-  Future<void> removeItem(String id) async {
+  Future<void> removeItem(
+    String id, [
+    bool bypassChangedItemNotification = false,
+  ]) async {
     final token = await tokenRepo.accessToken;
     await client.deleteBudget(
       id,
@@ -87,7 +90,7 @@ class ApiBudgetRepository
       token,
     );
     await cache.removeItem(id);
-    _changedItemsController.add({id});
+    if (!bypassChangedItemNotification) _changedItemsController.add({id});
   }
 
   @override
@@ -104,4 +107,15 @@ class ApiBudgetRepository
         allocatedAmount: item.allocatedAmount,
         categoryAllocations: item.categoryAllocations,
       );
+
+  @override
+  Future<void> refreshCache(Map<String, Budget> items) async {
+    await cache.clear();
+    Set<String> ids = {};
+    for (final p in items.entries) {
+      ids.add(p.key);
+      await cache.setItem(p.key, p.value);
+    }
+    _changedItemsController.add(ids);
+  }
 }

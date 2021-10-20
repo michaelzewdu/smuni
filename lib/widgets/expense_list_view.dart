@@ -2,9 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:smuni/blocs/details_page.dart';
 import 'package:smuni/models/models.dart';
-import 'package:smuni/screens/Expense/expense_edit_page.dart';
 import 'package:smuni/utilities.dart';
 
 import '../constants.dart';

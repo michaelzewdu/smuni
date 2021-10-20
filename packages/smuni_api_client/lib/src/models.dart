@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 class User {
   final String id;
   final DateTime createdAt;
@@ -76,6 +74,9 @@ class User {
         pictureURL: pictureURL ?? other.pictureURL,
         mainBudget: mainBudget ?? other.mainBudget,
       );
+
+  @override
+  String toString() => "${runtimeType.toString()} ${toJson().toString()}";
 }
 
 class UserDenorm extends User {
@@ -272,6 +273,9 @@ class MonetaryAmount {
 
   @override
   int get hashCode => amount ^ currency.hashCode;
+
+  @override
+  String toString() => "${runtimeType.toString()} ${toJson().toString()}";
 }
 
 class Budget {
@@ -279,17 +283,22 @@ class Budget {
   final DateTime createdAt;
   final DateTime updatedAt;
   final int version;
+  final DateTime? archivedAt;
   final String name;
   final DateTime startTime;
   final DateTime endTime;
   final MonetaryAmount allocatedAmount;
   final Frequency frequency;
   final Map<String, int> categoryAllocations;
+
+  bool get isArchived => archivedAt != null;
+
   Budget({
     required this.id,
     required this.createdAt,
     required this.updatedAt,
     this.version = 0,
+    this.archivedAt,
     required this.name,
     required this.startTime,
     required this.endTime,
@@ -302,6 +311,7 @@ class Budget {
         "_id": id,
         "createdAt": createdAt.toIso8601String(),
         "updatedAt": updatedAt.toIso8601String(),
+        "archivedAt": archivedAt?.toIso8601String(),
         "version": version,
         "name": name,
         "startTime": startTime.toUtc().toString(),
@@ -315,6 +325,8 @@ class Budget {
         id: checkedConvert(json, "_id", (v) => v as String),
         createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
         updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
+        archivedAt: checkedConvert(
+            json, "archivedAt", (v) => v != null ? DateTime.parse(v) : null),
         version: checkedConvert(json, "version", (v) => v as int),
         name: checkedConvert(json, "name", (v) => v as String),
         startTime: checkedConvert(json, "startTime", (v) => DateTime.parse(v)),
@@ -339,6 +351,7 @@ class Budget {
     String? id,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? archivedAt,
     int? version,
     String? name,
     DateTime? startTime,
@@ -352,6 +365,7 @@ class Budget {
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
         version: version ?? other.version,
+        archivedAt: archivedAt ?? other.archivedAt,
         name: name ?? other.name,
         startTime: startTime ?? other.startTime,
         endTime: endTime ?? other.endTime,
@@ -359,6 +373,9 @@ class Budget {
         frequency: frequency ?? other.frequency,
         categoryAllocations: categoryAllocation ?? other.categoryAllocations,
       );
+
+  @override
+  String toString() => "${runtimeType.toString()} ${toJson().toString()}";
 }
 
 class Category {
@@ -366,14 +383,19 @@ class Category {
   final DateTime createdAt;
   final DateTime updatedAt;
   final int version;
+  final DateTime? archivedAt;
   final String name;
   final String? parentId;
   final List<String> tags;
+
+  bool get isArchived => archivedAt != null;
+
   Category({
     required this.id,
     required this.createdAt,
     required this.updatedAt,
     this.version = 0,
+    this.archivedAt,
     required this.name,
     this.parentId,
     required this.tags,
@@ -383,6 +405,7 @@ class Category {
         "_id": id,
         "createdAt": createdAt.toIso8601String(),
         "updatedAt": updatedAt.toIso8601String(),
+        "archivedAt": archivedAt?.toIso8601String(),
         "version": version,
         "name": name,
         "parentId": parentId,
@@ -393,13 +416,10 @@ class Category {
         id: checkedConvert(json, "_id", (v) => v as String),
         createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
         updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
+        archivedAt: checkedConvert(
+            json, "archivedAt", (v) => v != null ? DateTime.parse(v) : null),
         version: checkedConvert(json, "version", (v) => v as int),
-        parentId: checkedConvert(
-            json,
-            "parentCategory",
-            (v) => v == null
-                ? null
-                : checkedConvert(v, "_id", (v) => v as String)),
+        parentId: checkedConvert(json, "parentId", (v) => v as String?),
         name: checkedConvert(json, "name", (v) => v as String),
         tags: checkedConvert(
             json,
@@ -414,6 +434,7 @@ class Category {
     String? id,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? archivedAt,
     int? version,
     String? name,
     String? parentId,
@@ -424,10 +445,14 @@ class Category {
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
         version: version ?? other.version,
+        archivedAt: archivedAt ?? other.archivedAt,
         name: name ?? other.name,
         parentId: parentId ?? other.parentId,
         tags: tags ?? other.tags,
       );
+
+  @override
+  String toString() => "${runtimeType.toString()} ${toJson().toString()}";
 }
 
 class Expense {
@@ -436,6 +461,7 @@ class Expense {
   final DateTime updatedAt;
   final int version;
   final String name;
+  final DateTime timestamp;
   final MonetaryAmount amount;
   final String categoryId;
   final String budgetId;
@@ -445,6 +471,7 @@ class Expense {
     required this.updatedAt,
     this.version = 0,
     required this.name,
+    required this.timestamp,
     required this.categoryId,
     required this.budgetId,
     required this.amount,
@@ -455,6 +482,7 @@ class Expense {
         "createdAt": createdAt.toIso8601String(),
         "updatedAt": updatedAt.toIso8601String(),
         "version": version,
+        "timestamp": timestamp.toIso8601String(),
         "name": name,
         "categoryId": categoryId,
         "budgetId": budgetId,
@@ -466,6 +494,7 @@ class Expense {
         createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
         updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
         version: checkedConvert(json, "version", (v) => v as int),
+        timestamp: checkedConvert(json, "timestamp", (v) => DateTime.parse(v)),
         name: checkedConvert(json, "name", (v) => v as String),
         categoryId: checkedConvert(json, "categoryId", (v) => v as String),
         budgetId: checkedConvert(json, "budgetId", (v) => v as String),
@@ -479,6 +508,7 @@ class Expense {
     DateTime? createdAt,
     DateTime? updatedAt,
     int? version,
+    DateTime? timestamp,
     String? name,
     String? categoryId,
     String? budgetId,
@@ -488,12 +518,16 @@ class Expense {
         id: id ?? other.id,
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
+        timestamp: updatedAt ?? other.timestamp,
         version: version ?? other.version,
         name: name ?? other.name,
         categoryId: categoryId ?? other.categoryId,
         budgetId: budgetId ?? other.budgetId,
         amount: amount ?? other.amount,
       );
+
+  @override
+  String toString() => "${runtimeType.toString()} ${toJson().toString()}";
 }
 
 T enumFromString<T>(Iterable<T> values, String value) {
@@ -536,6 +570,6 @@ Map<String, T> checkedConvertMap<T>(
   T Function(String, dynamic) extract,
   // {bool checkForNull = true}
 ) =>
-    HashMap.fromEntries(
+    Map.fromEntries(
       json.entries.map((e) => MapEntry(e.key, extract(e.key, e.value))),
     );

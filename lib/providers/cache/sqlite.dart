@@ -1,7 +1,6 @@
 // TODO: optimize me
 
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 
 import 'package:smuni/models/models.dart';
@@ -35,6 +34,7 @@ create table budgets (
   frequencyKind text not null,
   frequencyRecurringIntervalSecs integer,
   categoryAllocations text not null,
+  archivedAt integer,
   version integer not null,
   createdAt integer not null,
   updatedAt integer not null)
@@ -46,6 +46,7 @@ create table categories (
   name text not null,
   parentId text,
   tags text not null,
+  archivedAt integer,
   version integer not null,
   createdAt integer not null,
   updatedAt integer not null)
@@ -55,6 +56,7 @@ create table categories (
 create table expenses ( 
   _id text primary key,
   name text not null,
+  timestamp integer not null,
   amountCurrency text not null,
   amountValue integer not null,
   categoryId text not null,
@@ -150,7 +152,7 @@ abstract class SqliteCache<Identifier, Item> extends Cache<Identifier, Item> {
       tableName,
       columns: columns,
     );
-    return HashMap.fromEntries(
+    return Map.fromEntries(
       maps.map((e) => MapEntry(e[primaryColumnName] as Identifier, fromMap(e))),
     );
   }
@@ -169,6 +171,11 @@ abstract class SqliteCache<Identifier, Item> extends Cache<Identifier, Item> {
       map,
       conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
     );
+  }
+
+  @override
+  Future<void> clear() async {
+    await db.delete(tableName);
   }
 }
 
@@ -194,7 +201,7 @@ class SqliteUserCache extends SqliteCache<String, User> {
             ..update("createdAt", (t) => u.createdAt.millisecondsSinceEpoch)
             ..update("updatedAt", (t) => u.updatedAt.millisecondsSinceEpoch),
           fromMap: (m) => User.fromJson(
-            HashMap.from(m)
+            Map.from(m)
               ..update(
                   "createdAt",
                   (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
@@ -218,6 +225,7 @@ class SqliteBudgetCache extends SqliteCache<String, Budget> {
             "createdAt",
             "updatedAt",
             "version",
+            "archivedAt",
             "name",
             "startTime",
             "endTime",
@@ -232,6 +240,7 @@ class SqliteBudgetCache extends SqliteCache<String, Budget> {
             ..update("updatedAt", (t) => o.updatedAt.millisecondsSinceEpoch)
             ..update("startTime", (t) => o.startTime.millisecondsSinceEpoch)
             ..update("endTime", (t) => o.endTime.millisecondsSinceEpoch)
+            ..update("archivedAt", (t) => o.archivedAt?.millisecondsSinceEpoch)
             ..update("categoryAllocations", (t) => jsonEncode(t))
             ..["allocatedAmountCurrency"] = o.allocatedAmount.currency
             ..["allocatedAmountValue"] = o.allocatedAmount.amount
@@ -242,7 +251,7 @@ class SqliteBudgetCache extends SqliteCache<String, Budget> {
             ..remove("allocatedAmount")
             ..remove("frequency"),
           fromMap: (m) => Budget.fromJson(
-            HashMap.from(m)
+            Map.from(m)
               ..update(
                   "createdAt",
                   (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
@@ -259,6 +268,12 @@ class SqliteBudgetCache extends SqliteCache<String, Budget> {
                   "endTime",
                   (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
                       .toIso8601String())
+              ..update(
+                  "archivedAt",
+                  (t) => t != null
+                      ? DateTime.fromMillisecondsSinceEpoch(t as int)
+                          .toIso8601String()
+                      : null)
               ..update("categoryAllocations", (t) => jsonDecode(t))
               ..["allocatedAmount"] = {
                 "currency": m["allocatedAmountCurrency"],
@@ -283,6 +298,7 @@ class SqliteCategoryCache extends SqliteCache<String, Category> {
             "createdAt",
             "updatedAt",
             "version",
+            "archivedAt",
             "name",
             "parentId",
             "tags",
@@ -290,13 +306,14 @@ class SqliteCategoryCache extends SqliteCache<String, Category> {
           toMap: (o) => o.toJson()
             ..update("createdAt", (t) => o.createdAt.millisecondsSinceEpoch)
             ..update("updatedAt", (t) => o.updatedAt.millisecondsSinceEpoch)
+            ..update("archivedAt", (t) => o.archivedAt?.millisecondsSinceEpoch)
             ..update("tags", (t) => o.tags.join(","))
             // ..["allocatedAmountCurrency"] = o.allocatedAmount.currency
             // ..["allocatedAmountValue"] = o.allocatedAmount.amount
             ..remove("allocatedAmount")
             ..remove("categories"),
           fromMap: (m) => Category.fromJson(
-            HashMap.from(m)
+            Map.from(m)
               ..update(
                   "createdAt",
                   (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
@@ -305,7 +322,14 @@ class SqliteCategoryCache extends SqliteCache<String, Category> {
                   "updatedAt",
                   (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
                       .toIso8601String())
-              ..update("tags", (t) => (t as String).split(","))
+              ..update(
+                  "archivedAt",
+                  (t) => t != null
+                      ? DateTime.fromMillisecondsSinceEpoch(t as int)
+                          .toIso8601String()
+                      : null)
+              ..update(
+                  "tags", (t) => (t as String).isNotEmpty ? t.split(",") : [])
               ..["parentCategory"] = m["parentId"] == null
                   ? null
                   : {
@@ -327,6 +351,7 @@ class SqliteExpenseCache extends SqliteCache<String, Expense> {
             "updatedAt",
             "version",
             "name",
+            "timestamp",
             "categoryId",
             "budgetId",
             "amountCurrency",
@@ -335,17 +360,22 @@ class SqliteExpenseCache extends SqliteCache<String, Expense> {
           toMap: (o) => o.toJson()
             ..update("createdAt", (t) => o.createdAt.millisecondsSinceEpoch)
             ..update("updatedAt", (t) => o.updatedAt.millisecondsSinceEpoch)
+            ..update("timestamp", (t) => o.timestamp.millisecondsSinceEpoch)
             ..["amountCurrency"] = o.amount.currency
             ..["amountValue"] = o.amount.amount
             ..remove("amount"),
           fromMap: (m) => Expense.fromJson(
-            HashMap.from(m)
+            Map.from(m)
               ..update(
                   "createdAt",
                   (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
                       .toIso8601String())
               ..update(
                   "updatedAt",
+                  (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
+                      .toIso8601String())
+              ..update(
+                  "timestamp",
                   (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
                       .toIso8601String())
               ..["amount"] = {

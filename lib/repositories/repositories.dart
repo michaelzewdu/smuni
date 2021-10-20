@@ -1,7 +1,6 @@
 export 'auth.dart';
 
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:smuni/models/models.dart';
 import 'package:smuni/providers/cache/cache.dart';
@@ -19,10 +18,16 @@ abstract class Repository<Identifier, Item, CreateInput, UpdateInput> {
   Future<Map<Identifier, Item>> getItems();
   Future<Item> createItem(CreateInput input, [Identifier? id]);
   Future<Item> updateItem(Identifier id, UpdateInput input);
-  Future<void> removeItem(Identifier id);
+  Future<void> removeItem(
+    Identifier id, [
+    bool bypassChangedItemNotification = false,
+  ]);
+
   Stream<Set<Identifier>> get changedItems;
+
   UpdateInput updateFromDiff(Item update, Item old);
   CreateInput createFromItem(Item item);
+  Future<void> refreshCache(Map<Identifier, Item> items);
 }
 
 typedef UserRepository = ApiUserRepository;
@@ -48,9 +53,12 @@ class SimpleRepository<Identifier, Item>
   @override
   Future<Map<Identifier, Item>> getItems() => cache.getItems();
   @override
-  Future<void> removeItem(Identifier id) async {
+  Future<void> removeItem(
+    Identifier id, [
+    bool bypassChangedItemNotification = false,
+  ]) async {
     await cache.removeItem(id);
-    _changedItemsController.add({id});
+    if (!bypassChangedItemNotification) _changedItemsController.add({id});
   }
 
   @override
@@ -75,6 +83,17 @@ class SimpleRepository<Identifier, Item>
 
   @override
   Item createFromItem(Item item) => item;
+
+  @override
+  Future<void> refreshCache(Map<Identifier, Item> items) async {
+    await cache.clear();
+    Set<Identifier> ids = {};
+    for (final p in items.entries) {
+      ids.add(p.key);
+      await cache.setItem(p.key, p.value);
+    }
+    _changedItemsController.add(ids);
+  }
 }
 
 class SimpleUserRepository extends SimpleRepository<String, User> {
@@ -111,7 +130,7 @@ class SimpleCategoryRepository extends SimpleRepository<String, Category> {
 
   // FIXME: fix this func
   Future<Map<String, TreeNode<String>>> _calcAncestryTree() async {
-    Map<String, TreeNode<String>> nodes = HashMap();
+    final nodes = <String, TreeNode<String>>{};
     final items = await getItems();
 
     TreeNode<String> getTreeNode(Category category) {
@@ -182,7 +201,7 @@ class SimpleExpenseRepository extends SimpleRepository<String, Expense> {
                   : ofCategories != null
                       ? (e) => ofCategories.contains(e.categoryId)
                       : (e) => true)
-          .map((e) => e.createdAt),
+          .map((e) => e.timestamp),
     );
   }
 
@@ -192,18 +211,18 @@ class SimpleExpenseRepository extends SimpleRepository<String, Expense> {
     return items.values.where(
       ofBudgets != null && ofCategories != null
           ? (e) =>
-              range.containsTimestamp(e.createdAt) &&
+              range.containsTimestamp(e.timestamp) &&
               ofBudgets.contains(e.budgetId) &&
               ofCategories.contains(e.categoryId)
           : ofBudgets != null
               ? (e) =>
-                  range.containsTimestamp(e.createdAt) &&
+                  range.containsTimestamp(e.timestamp) &&
                   ofBudgets.contains(e.budgetId)
               : ofCategories != null
                   ? (e) =>
-                      range.containsTimestamp(e.createdAt) &&
+                      range.containsTimestamp(e.timestamp) &&
                       ofCategories.contains(e.categoryId)
-                  : (e) => range.containsTimestamp(e.createdAt),
+                  : (e) => range.containsTimestamp(e.timestamp),
     );
   }
 }
@@ -222,22 +241,19 @@ class CacheRefresher {
   final SmuniApiClient client;
   final AuthTokenRepository tokenRepo;
 
-  final Cache<String, User> userCache;
-  final Cache<String, Budget> budgetCache;
-  final Cache<String, Category> categoryCache;
-  final Cache<String, Expense> expenseCache;
+  final ApiUserRepository userRepo;
+  final ApiBudgetRepository budgetRepo;
+  final ApiCategoryRepository categoryRepo;
+  final ApiExpenseRepository expenseRepo;
 
   CacheRefresher(
     this.client,
     this.tokenRepo, {
-    required ApiUserRepository userRepo,
-    required ApiBudgetRepository budgetRepo,
-    required ApiCategoryRepository categoryRepo,
-    required ApiExpenseRepository expenseRepo,
-  })  : userCache = userRepo.cache,
-        budgetCache = budgetRepo.cache,
-        categoryCache = categoryRepo.cache,
-        expenseCache = expenseRepo.cache;
+    required this.userRepo,
+    required this.budgetRepo,
+    required this.categoryRepo,
+    required this.expenseRepo,
+  });
 
   Future<void> refreshCache() async {
     final user = await client.getUser(
@@ -248,18 +264,15 @@ class CacheRefresher {
   }
 
   Future<void> refreshFromUser(UserDenorm user) async {
-    await userCache.setItem(user.username, User.from(user));
-
-    for (final budget in user.budgets) {
-      await budgetCache.setItem(budget.id, budget);
-    }
-
-    for (final category in user.categories) {
-      await categoryCache.setItem(category.id, category);
-    }
-
-    for (final expense in user.expenses) {
-      await expenseCache.setItem(expense.id, expense);
-    }
+    await userRepo.refreshCache({user.username: User.from(user)});
+    await budgetRepo.refreshCache(
+      {for (final item in user.budgets) item.id: item},
+    );
+    await categoryRepo.refreshCache(
+      {for (final item in user.categories) item.id: item},
+    );
+    await expenseRepo.refreshCache(
+      {for (final item in user.expenses) item.id: item},
+    );
   }
 }

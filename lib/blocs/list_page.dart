@@ -1,5 +1,4 @@
 /* import 'dart:async';
-import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
 
@@ -151,7 +150,7 @@ class ExpenseListPageBloc
       ofBudgets: budgetFilter,
     );
     yield ItemsLoadSuccess(
-      HashMap.fromIterable(
+      Map.fromIterable(
         items,
         key: (i) => i.id,
         value: (i) => i,

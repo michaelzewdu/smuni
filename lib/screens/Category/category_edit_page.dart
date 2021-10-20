@@ -57,7 +57,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
   final _formKey = GlobalKey<FormState>();
 
   late var _name = widget.item.name;
-  late var _parentId = widget.item.parentId;
+  late String? _parentId = widget.item.parentId;
   late var _isSubcategory = widget.item.parentId != null;
 
   bool _awaitingSave = false;
@@ -80,8 +80,9 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                 duration: Duration(seconds: 1),
               ),
             );
+          } else {
+            throw Exception("Unhandled type");
           }
-          throw Exception("Unhandled type");
         },
         child: Scaffold(
           appBar: AppBar(
@@ -162,7 +163,10 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                         context.read<CategoryRepository>()),
                     child: Expanded(
                       child: CategoryFormSelector(
+                        isSelecting: _parentId == null,
                         caption: Text("Parent category"),
+                        disabledItems:
+                            !widget.isCreating ? {widget.item.id} : null,
                         initialValue: _parentId == null ? null : _parentId!,
                         onChanged: (value) {
                           setState(() {

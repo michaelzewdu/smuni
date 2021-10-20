@@ -22,6 +22,7 @@ class ApiUserRepository
   ApiUserRepository(this.cache, this.client, this.tokenRepo);
 
   @override
+  // ignore: avoid_renaming_method_parameters
   Future<User?> getItem(String username) async {
     var user = await cache.getItem(username);
     if (user != null) return user;
@@ -64,7 +65,10 @@ class ApiUserRepository
   }
 
   @override
-  Future<void> removeItem(String id) {
+  Future<void> removeItem(
+    String id, [
+    bool bypassChangedItemNotification = false,
+  ]) {
     // TODO: implement removeItem
     throw UnimplementedError();
   }
@@ -78,5 +82,16 @@ class ApiUserRepository
   CreateUserInput createFromItem(User item) {
     // TODO: implement removeItem
     throw UnimplementedError();
+  }
+
+  @override
+  Future<void> refreshCache(Map<String, User> items) async {
+    await cache.clear();
+    Set<String> ids = {};
+    for (final p in items.entries) {
+      ids.add(p.key);
+      await cache.setItem(p.key, p.value);
+    }
+    _changedItemsController.add(ids);
   }
 }

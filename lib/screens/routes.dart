@@ -19,12 +19,12 @@ import 'settings_page.dart';
 class Routes {
   static Route myOnGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case SmuniHomeScreen.routeName:
-        return SmuniHomeScreen.route();
       case MenusPage.routeName:
         return MenusPage.route();
       case BudgetListPage.routeName:
         return BudgetListPage.route();
+      case BudgetListPage.routeNameArchivedOnly:
+        return BudgetListPage.routeArchivedOnly();
       case BudgetDetailsPage.routeName:
         return BudgetDetailsPage.route(settings.arguments as String);
       case BudgetEditPage.routeName:
@@ -45,6 +45,8 @@ class Routes {
             : ExpenseEditPage.route(settings.arguments as Expense);
       case CategoryListPage.routeName:
         return CategoryListPage.route();
+      case CategoryListPage.routeNameArchivedOnly:
+        return CategoryListPage.routeArchivedOnly();
       case CategoryDetailsPage.routeName:
         return CategoryDetailsPage.route(settings.arguments as String);
       case CategoryEditPage.routeName:

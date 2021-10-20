@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/blocs/budget_list_page.dart';
+import 'package:smuni/blocs/refresh.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
@@ -17,19 +18,34 @@ import 'settings_page.dart';
 class SmuniHomeScreen extends StatefulWidget {
   SmuniHomeScreen({Key? key}) : super(key: key);
 
-  static const String routeName = '/homeScreen';
+  static const String routeName = '/';
 
-  static Route route() {
-    return MaterialPageRoute(
+  static Route route() => MaterialPageRoute(
         builder: (context) => SmuniHomeScreen(),
-        settings: RouteSettings(name: routeName));
-  }
+        settings: RouteSettings(name: routeName),
+      );
 
   @override
   State<SmuniHomeScreen> createState() => _SmuniHomeScreenState();
 }
 
 class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
+  @override
+  Widget build(BuildContext context) =>
+      BlocBuilder<RefresherBloc, RefresherBlocState>(
+        builder: (context, state) =>
+            state is Refreshed ? DefaultHomeScreen() : RefreshScreen(),
+      );
+}
+
+class DefaultHomeScreen extends StatefulWidget {
+  DefaultHomeScreen({Key? key}) : super(key: key);
+
+  @override
+  _DefaultHomeScreenState createState() => _DefaultHomeScreenState();
+}
+
+class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
   int _selectedPage = 0;
   @override
   Widget build(context) => Scaffold(
@@ -155,7 +171,6 @@ class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
                                 },
                               ),
                             );
-                        ;
                         setState(() => awaitingOp = true);
                       }
                     }
@@ -192,49 +207,53 @@ class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
   }
 }
 
-class HorizontalCards extends StatelessWidget {
-  HorizontalCards({
-    Key? key,
-  }) : super(key: key);
+class RefreshScreen extends StatefulWidget {
+  const RefreshScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Card(
-        shadowColor: Colors.green,
-        elevation: 3,
-        child: SizedBox(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8.0, 8, 100, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'CBE Wallet',
-                  style: TextStyle(fontWeight: FontWeight.w400),
-                ),
-                SizedBox(
-                  height: 8,
-                ),
-                Text(
-                  '12,900 Br',
-                  textScaleFactor: 1.6,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  'spent 5,000 Birr',
-                  style: TextStyle(fontWeight: FontWeight.w300),
-                )
-                //Text('Spent 5000birr'),
-              ],
-            ),
+  State<RefreshScreen> createState() => _RefreshScreenState();
+}
+
+class _RefreshScreenState extends State<RefreshScreen> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(context) => BlocConsumer<RefresherBloc, RefresherBlocState>(
+        listener: (context, state) {
+          if (state is Refreshed) {
+            Navigator.pushReplacementNamed(
+              context,
+              SmuniHomeScreen.routeName,
+            );
+          }
+        },
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text("Kamasio")),
+          body: Center(
+            child: state is RefreshFailed
+                ? Column(
+                    children: [
+                      state.exception.inner is ConnectionException
+                          ? Text("Refresh failed: connection error")
+                          : Text("Refresh failed: unhandled error"),
+                      const Text("Please try again"),
+                      ElevatedButton(
+                        onPressed: () =>
+                            context.read<RefresherBloc>().add(Refresh()),
+                        child: const Text("Refresh"),
+                      )
+                    ],
+                  )
+                : state is Refreshing
+                    ? Column(children: const [
+                        Text("Loading..."),
+                        CircularProgressIndicator()
+                      ])
+                    : const CircularProgressIndicator(),
           ),
         ),
-      ),
-    );
-  }
+      );
 }

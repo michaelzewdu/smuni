@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:smuni/providers/cache/cache.dart';
 import 'package:smuni/models/models.dart';
 
+@TestOn('vm')
 void main() {
   // Init ffi loader if needed.
 
@@ -52,6 +53,7 @@ void main() {
         categoryId: "13m409yh29m",
         budgetId: "wnd9pucgyfwp8943yp",
         amount: MonetaryAmount(currency: "ETB", amount: 40000),
+        timestamp: DateTime.now(),
       ),
     ],
   );
