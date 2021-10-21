@@ -430,8 +430,14 @@ class UpdateBudgetInput {
     required Budget old,
   })  : lastSeenVersion = old.version,
         name = ifNotEqualTo(update.name, old.name),
-        startTime = ifNotEqualTo(update.startTime, old.startTime),
-        endTime = ifNotEqualTo(update.endTime, old.endTime),
+        startTime =
+            (update.startTime != old.startTime || update.endTime != old.endTime)
+                ? update.startTime
+                : old.startTime,
+        endTime =
+            (update.startTime != old.startTime || update.endTime != old.endTime)
+                ? update.endTime
+                : old.endTime,
         frequency = ifNotEqualTo(update.frequency, old.frequency),
         allocatedAmount =
             ifNotEqualTo(update.allocatedAmount, old.allocatedAmount),

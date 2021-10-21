@@ -374,8 +374,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
     final now = DateTime.now();
     final weekRange = DateRange.weekRange(now);
     final twoWeekRange = DateRange(
-        startTime: weekRange.startTime,
-        endTime: weekRange.endTime + Duration(days: 7).inMilliseconds);
+      startTime: weekRange.startTime,
+      endTime: weekRange.endTime + Duration(days: 7).inMilliseconds,
+    );
     return SimpleDateRangeFormEditor(
       initialValue: DateRange.usingDates(start: _startTime, end: _endTime),
       rangesToShow: [
@@ -388,16 +389,14 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
           FilterLevel.month,
         ),
       ],
-      onSaved: (range) {
-        setState(() {
-          _startTime = range!.start;
-          _endTime = range.end;
-          _frequency = Recurring(range.duration.inSeconds);
-        });
-      },
       validator: (range) {
-        if (range == null) return "Name can't be empty";
+        if (range == null) return "Day range not selected";
       },
+      onSaved: (range) => setState(() {
+        _startTime = range!.start;
+        _endTime = range.end;
+        _frequency = Recurring(range.duration.inSeconds);
+      }),
     );
   }
 
@@ -424,7 +423,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
         DateRangeFilter("Next 7 Days", next7Days, FilterLevel.week),
         DateRangeFilter("Next 14 Days", next14Days, FilterLevel.week),
         DateRangeFilter(
-          "This Month Month",
+          "This Month",
           DateRange.monthRange(now),
           FilterLevel.month,
         ),
@@ -434,12 +433,14 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
           FilterLevel.month,
         ),
       ],
-      onSaved: (range) {
-        setState(() {
-          _startTime = range!.start;
-          _endTime = range.end;
-        });
+      validator: (range) {
+        if (range == null) return "Day range not selected";
       },
+      onSaved: (range) => setState(() {
+        _startTime = range!.start;
+        _endTime = range.end;
+        _frequency = OneTime();
+      }),
     );
   }
 
@@ -753,74 +754,76 @@ class SimpleDateRangeEditor extends StatefulWidget {
 class _SimpleDateRangeEditorState extends State<SimpleDateRangeEditor> {
   // late bool _isOneTime = widget.initialFrequency is OneTime;
   late DateRange _range = widget.initialValue;
-  late DateRangeFilter custom =
-      DateRangeFilter("Custom", widget.initialValue, FilterLevel.custom);
+  late DateRangeFilter custom = DateRangeFilter(
+    "Custom",
+    widget.initialValue,
+    FilterLevel.custom,
+  );
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (widget.caption != null) widget.caption!,
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              SizedBox(
-                width: 16,
-              ),
-              ChoiceChip(
-                selected: _range == custom.range,
-                onSelected: (_) async {
-                  final range = await showDateRangePicker(
-                    context: context,
-                    helpText: "Custom Budget Day Range",
-                    fieldStartLabelText: "Start Date",
-                    fieldEndLabelText: "End Date",
-                    initialEntryMode: DatePickerEntryMode.input,
-                    initialDateRange: custom.range.toFlutter(),
-                    firstDate: DateTime.fromMillisecondsSinceEpoch(0),
-                    lastDate:
-                        DateTime.fromMillisecondsSinceEpoch(8640000000000000),
-                    // TODO: localization
-                  );
-                  if (range != null) {
-                    setState(() {
-                      custom = DateRangeFilter(
-                        "Custom",
-                        DateRange.fromFlutter(range),
-                        FilterLevel.custom,
-                      );
-                      _range = DateRange.fromFlutter(range);
-                    });
-                  }
-                },
-                label: Row(children: const [
-                  Icon(Icons.arrow_downward),
-                  Text("Custom")
-                ]),
-              ),
-              ...widget.rangesToShow.map(
-                (e) => Padding(
-                  padding: const EdgeInsets.all(2.0),
-                  child: ChoiceChip(
-                    selected: _range == e.range,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _range = e.range;
-                        });
-                      }
-                    },
-                    label: Text(e.name),
+  Widget build(context) => Column(
+        children: [
+          if (widget.caption != null) widget.caption!,
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            // TODO: auto scroll to selected chip
+            // controller: ScrollController(),
+            child: Row(
+              children: [
+                SizedBox(width: 16),
+                ChoiceChip(
+                  selected: !widget.rangesToShow.any((e) => e.range == _range),
+                  onSelected: (_) async {
+                    final range = await showDateRangePicker(
+                      context: context,
+                      helpText: "Custom Budget Day Range",
+                      fieldStartLabelText: "Start Date",
+                      fieldEndLabelText: "End Date",
+                      initialEntryMode: DatePickerEntryMode.input,
+                      initialDateRange: custom.range.toFlutter(),
+                      firstDate: DateTime.fromMillisecondsSinceEpoch(0),
+                      lastDate:
+                          DateTime.fromMillisecondsSinceEpoch(8640000000000000),
+                    );
+                    if (range != null) {
+                      setState(() {
+                        custom = DateRangeFilter(
+                          "Custom",
+                          DateRange.fromFlutter(range),
+                          FilterLevel.custom,
+                        );
+                        _range = DateRange.fromFlutter(range);
+                        widget.onChanged?.call(_range);
+                      });
+                    }
+                  },
+                  label: Row(children: const [
+                    Icon(Icons.arrow_downward),
+                    Text("Custom")
+                  ]),
+                ),
+                ...widget.rangesToShow.map(
+                  (e) => Padding(
+                    padding: const EdgeInsets.all(2.0),
+                    child: ChoiceChip(
+                      selected: _range == e.range,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _range = e.range;
+                            widget.onChanged?.call(_range);
+                          });
+                        }
+                      },
+                      label: Text(e.name),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 
   /*  Widget selectorTextField() => TextFormField(
         controller: dateController,

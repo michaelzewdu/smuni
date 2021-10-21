@@ -6,14 +6,14 @@
 
 - [ ] Search feature for the list pages
 - [ ] Optional add category button on CategoryListView
-- [ ] Date Picker bug on budget edit
+- [x] Date Picker bug on budget edit
 - [ ] Budget switch is buggy
-- [ ] Item archival
+- [x] Item archival
 - [ ] Expense name suggestions
   
-- [ ] Decide on how to tackle deletion
+- [x] Decide on how to tackle deletion
 - [ ] Decide on how to aggregate budget usage in the category tree
-- [ ] Get rid of CacheRefresher
+- [-] Get rid of CacheRefresher
 
 ## Design doc
 
@@ -23,24 +23,21 @@
 - Budget: planned expense
 - Debt payoff plan: special type of budget
 
-
 ### Screens
 
 - [ ] Sign up
 - [ ] Login
-- [ ] Home
+- [x] Home
 - [ ] Settings
-- [ ] Budgets List
-- [ ] Budget Details
-- [ ] Budget Edit
-- [ ] Budget Add
-- [ ] Expenses List
-- [ ] Expense Details
-- [ ] Expense Edit 
-- [ ] Expense Add
-- [ ] Categories list
-- [ ] Category details and subcategory
-- [ ] Category Add
+- [x] Budgets List
+- [x] Budget Details
+- [x] Budget Add/Edit
+- [x] Expenses List
+- [x] Expense Details
+- [x] Expense Add/Edit
+- [x] Categort list
+- [x] Category details
+- [x] Category Add/Edit
 - [ ] Dept payoff plans list
 - [ ] Dept payoff plans details
 - [ ] Dept payoff plans add 

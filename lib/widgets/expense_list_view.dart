@@ -208,85 +208,76 @@ class _ExpenseListViewState extends State<ExpenseListView> {
               ),
             );
 
-  Widget _expenseListView(BuildContext context) => SingleChildScrollView(
-        child: Builder(builder: (context) {
-          final keys = widget.items.keys.toList();
-          return ExpansionPanelList(
-            dividerColor: Colors.transparent,
-            expandedHeaderPadding: const EdgeInsets.symmetric(vertical: 2),
-            animationDuration: Duration(milliseconds: 400),
-            expansionCallback: (int index, bool isExpanded) {
-              setState(() {
-                final tappedId = widget.items[keys[index]]!.id;
-                if (tappedId != _selectedItem) {
-                  _selectedItem = tappedId;
-                } else {
-                  _selectedItem = null;
-                }
-              });
-            },
-            children: keys
-                .map((k) => widget.items[k]!)
-                .map<ExpansionPanel>((item) => ExpansionPanel(
-                      canTapOnHeader: true,
-                      headerBuilder: (BuildContext context, bool isExpanded) =>
-                          ListTile(
-                        title: Text(
-                          item.name,
-                          textScaleFactor: 1.25,
-                        ),
-                        dense: widget.dense,
-                        trailing: Text(
-                          "${item.amount.currency} ${item.amount.amount / 100}",
-                        ),
-                        subtitle: Text(
-                          '${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}',
-                        ),
+  Widget _expenseListView(BuildContext context) {
+    final keys = widget.items.keys.toList();
+    return ExpansionPanelList(
+      dividerColor: Colors.transparent,
+      expandedHeaderPadding: const EdgeInsets.symmetric(vertical: 2),
+      animationDuration: Duration(milliseconds: 400),
+      expansionCallback: (int index, bool isExpanded) {
+        setState(() {
+          final tappedId = widget.items[keys[index]]!.id;
+          if (tappedId != _selectedItem) {
+            _selectedItem = tappedId;
+          } else {
+            _selectedItem = null;
+          }
+        });
+      },
+      children: keys
+          .map((k) => widget.items[k]!)
+          .map<ExpansionPanel>((item) => ExpansionPanel(
+                canTapOnHeader: true,
+                headerBuilder: (BuildContext context, bool isExpanded) =>
+                    ListTile(
+                  title: Text(
+                    item.name,
+                    textScaleFactor: 1.25,
+                  ),
+                  dense: widget.dense,
+                  trailing: Text(
+                    "${item.amount.currency} ${item.amount.amount / 100}",
+                  ),
+                  subtitle: Text(
+                    '${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}',
+                  ),
+                ),
+                body: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(6.0),
+                            child: Text(
+                                '${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}'),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(6.0),
+                            child: Text('TODO: show budget and category here'),
+                          )
+                        ],
                       ),
-                      body: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(6.0),
-                                  child: Text(
-                                      '${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}'),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(6.0),
-                                  child: Text(
-                                      'TODO: show budget and category here'),
-                                )
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                Center(
-                                  ///The buttons below are copied from Yoph's expense page and the delete button
-                                  ///uses the Expense details bloc(Which doesn't actually delete anything)
-                                  child: IconButton(
-                                      onPressed: () =>
-                                          widget.onEdit?.call(item.id),
-                                      icon: Icon(Icons.edit)),
-                                ),
-                                // FIXME: The delete button below doesn't actually delete
-
-                                IconButton(
-                                    onPressed: () =>
-                                        widget.onDelete?.call(item.id),
-                                    icon: Icon(Icons.delete))
-                              ],
-                            )
-                          ],
-                        ),
-                      ),
-                      isExpanded: item.id == _selectedItem,
-                    ))
-                .toList(),
-          );
-        }),
-      );
+                      Column(
+                        children: [
+                          Center(
+                            child: IconButton(
+                                onPressed: () => widget.onEdit?.call(item.id),
+                                icon: Icon(Icons.edit)),
+                          ),
+                          IconButton(
+                              onPressed: () => widget.onDelete?.call(item.id),
+                              icon: Icon(Icons.delete))
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+                isExpanded: item.id == _selectedItem,
+              ))
+          .toList(),
+    );
+  }
 }
