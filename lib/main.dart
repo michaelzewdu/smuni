@@ -4,16 +4,19 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:smuni_api_client/smuni_api_client.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 import 'package:smuni_api_client/smuni_api_client.dart';
 
 import 'bloc_observer.dart';
 import 'blocs/blocs.dart';
+import 'blocs/refresh.dart';
 import 'constants.dart';
 import 'models/models.dart';
 import 'providers/cache/cache.dart';
 import 'repositories/repositories.dart';
+import 'screens/home_screen.dart';
 import 'screens/routes.dart';
 import 'blocs/refresh.dart';
 import 'screens/home_screen.dart';
@@ -49,7 +52,7 @@ class _MyAppState extends State<MyApp> {
       version: 1,
       onCreate: (db, version) => db.transaction((txn) async {
         await migrateV1(txn);
-        /* await SqliteUserCache(db)
+        await SqliteUserCache(db)
             .setItem(defaultUser.id, User.from(defaultUser));
         {
           final cache = SqliteBudgetCache(db);
@@ -68,11 +71,11 @@ class _MyAppState extends State<MyApp> {
           for (var item in defaultUser.expenses) {
             await cache.setItem(item.id, item);
           }
-        } */
+        }
       }),
     );
 
-    final response = await _client.signInEmail(defaultUser.email!, "password");
+    /* final response = await _client.signInEmail(defaultUser.email!, "password");
 
     await SqliteUserCache(db)
         .setItem(response.user.username, User.from(response.user));
@@ -95,6 +98,7 @@ class _MyAppState extends State<MyApp> {
       }
     }
 
+
     return Pair(
       db,
       await AuthTokenRepository.fromValues(
@@ -105,6 +109,16 @@ class _MyAppState extends State<MyApp> {
         loggedInUsername: defaultUser.username,
       ),
     );
+    
+     */
+    return Pair(
+        db,
+        FakeAuthTokenRepository(
+            client: _client,
+            cache: AuthTokenCache(db),
+            username: defaultUser.username,
+            accessToken: 'supersunday',
+            refreshToken: 'imightgetafadedin2014'));
   }
 
   @override

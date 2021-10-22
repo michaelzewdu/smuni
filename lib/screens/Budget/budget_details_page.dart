@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/blocs/details_page/budget_details_page.dart';
 import 'package:smuni/blocs/expense_list_page.dart';
@@ -631,7 +630,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                           // ignore: prefer_collection_literals
                           Set<String> rootNodes = LinkedHashSet();
 
-                          // FIXME: move this calculation elsewhere
+                          // FIXME: move this calculation
                           final ancestryTree =
                               CategoryRepository.calcAncestryTree(
                             state.item.categoryAllocations.keys.toSet(),
@@ -664,7 +663,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                   ? SliverFillRemaining(
                                       child: Center(
                                           child: const Text("No categories.")))
-                                  : throw Exception("parents are missing");
+                                  //: throw Exception("parents are missing");
+                                  : Text('No Categories');
                         }
                         return const SliverFillRemaining(
                             child: Center(

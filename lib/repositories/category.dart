@@ -112,13 +112,14 @@ class ApiCategoryRepository extends Repository<String, Category,
 
     TreeNode<String> getTreeNode(Category category) {
       var node = nodes[category.id];
+
       if (node == null) {
         TreeNode<String>? parentNode;
         if (category.parentId != null) {
           /// look up parents in the allItems set
           final parent = allItems[category.parentId];
           if (parent == null) {
-            throw Exception("parent not found at id: $category.parentId");
+            throw Exception("parent not found at id: ${category.parentId}");
           }
           parentNode = getTreeNode(parent);
           parentNode.children.add(category.id);
@@ -130,7 +131,7 @@ class ApiCategoryRepository extends Repository<String, Category,
     }
 
     for (final id in forItems) {
-      if (!nodes.containsKey(id)) {
+      if (!nodes.containsKey(id) && allItems.containsKey(id)) {
         getTreeNode(allItems[id]!);
       }
     }

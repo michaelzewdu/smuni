@@ -111,9 +111,8 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                 duration: Duration(seconds: 1),
               ),
             );
-          } else {
-            throw Exception("Unhandled type");
           }
+          throw Exception("Unhandled type");
         },
         child: Scaffold(
           appBar: AppBar(
@@ -324,6 +323,8 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     builder: (context, catListState) {
                       if (catListState is CategoriesLoadSuccess) {
                         // ignore: prefer_collection_literals
+                        Set<String> nodes = LinkedHashSet();
+                        // ignore: prefer_collection_literals
                         Set<String> rootNodes = LinkedHashSet();
 
                         // FIXME: move this calculation elsewhere
@@ -336,7 +337,6 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                             .where((e) => e.parent == null)) {
                           rootNodes.add(node.item);
                         }
-
                         return rootNodes.isNotEmpty
                             ? Padding(
                                 padding:
