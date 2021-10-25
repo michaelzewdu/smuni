@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/edit_page/expense_edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
@@ -153,38 +152,45 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
             key: _formKey,
             child: Column(
               children: <Widget>[
-                TextFormField(
-                  initialValue: _name,
-                  onSaved: (value) {
-                    setState(() {
-                      _name = value!;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Name can't be empty";
-                    }
-                  },
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    hintText: "Name",
-                    helperText: "Name",
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: TextFormField(
+                    initialValue: _name,
+                    onSaved: (value) {
+                      setState(() {
+                        _name = value!;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Name can't be empty";
+                      }
+                    },
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      hintText: "Name",
+                      helperText: "Name",
+                    ),
                   ),
                 ),
-                MoneyFormEditor(
-                  initialValue: _amount,
-                  onSaved: (v) => setState(() => _amount = v!),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12.0),
+                  child: MoneyFormEditor(
+                    initialValue: _amount,
+                    onSaved: (v) => setState(() => _amount = v!),
+                  ),
                 ),
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal:8.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     decoration: BoxDecoration(
                         border: Border.all(),
                         borderRadius: BorderRadius.circular(15)),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text("Time: "),
+                        const Text("Day: "),
                         Text(
                           humanReadableDayRelationName(
                             _timestamp,
@@ -209,11 +215,14 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                     ),
                   ),
                 ),
+                /*
                 Text("id: ${widget.item.id}"),
                 Text("createdAt: ${widget.item.createdAt}"),
                 Text("updatedAt: ${widget.item.updatedAt}"),
                 Text("budget: ${widget.item.budgetId}"),
                 Text("category: ${widget.item.categoryId}"),
+
+                 */
               ],
             ),
           ),

@@ -118,12 +118,13 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text("Main budget not selected:"),
+                          child: Text("Main budget not selected or created.."),
                         ),
                         ElevatedButton(
                           onPressed: () =>
-                              _showMainBudgetSelectorModal(context, userState),
-                          child: const Text("Select Main Budget"),
+                              // _showMainBudgetSelectorModal(context, userState),
+                              Navigator.pushNamed(context, '/budgetEdit'),
+                          child: const Text("Add a new budget"),
                         )
                       ],
                     ),

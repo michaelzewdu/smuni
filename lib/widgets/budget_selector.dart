@@ -98,11 +98,11 @@ class _BudgetSelectorState extends State<BudgetSelector> {
               textScaleFactor: 1.2,
             ),
             Text(
-              "Started On: ${item.startTime.day} ${monthNames[item.startTime.month - 1]} ${item.startTime.year}",
+              "Started On: ${item.startTime.day} ${monthNames[item.startTime.month]} ${item.startTime.year}",
               textScaleFactor: 1.2,
             ),
             Text(
-              "End Date: ${item.endTime.day} ${monthNames[item.endTime.month - 1]} ${item.endTime.year}",
+              "End Date: ${item.endTime.day} ${monthNames[item.endTime.month]} ${item.endTime.year}",
               textScaleFactor: 1.2,
             ),
             item.frequency.kind == FrequencyKind.recurring

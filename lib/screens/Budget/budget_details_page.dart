@@ -1057,22 +1057,100 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
                   padding: const EdgeInsets.only(
                     top: 60,
                   ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.1,
-                        child: Center(
-                          child: IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: Icon(
-                              Icons.chevron_left_outlined,
-                              color: Colors.white,
-                            ),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      ...<List<dynamic>>[
+                                        [
+                                          'Used',
+                                          "${used / 100}",
+                                          used > allocated
+                                        ],
+                                        [
+                                          'Remaining',
+                                          "${(allocated - used) / 100}",
+                                          used > allocated
+                                        ],
+                                        [
+                                          'Allocated',
+                                          "${allocated / 100}",
+                                          false
+                                        ],
+                                      ].map(
+                                        ((e) => DefaultTextStyle(
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(3.0),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(e[0]),
+                                                    DefaultTextStyle(
+                                                      style: const TextStyle(
+                                                        fontSize: 16,
+                                                      ),
+                                                      child: Row(
+                                                        children: [
+                                                          Text(
+                                                            "$currency ",
+                                                            style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w200),
+                                                          ),
+                                                          Text(
+                                                            e[1],
+                                                            style: TextStyle(
+                                                              backgroundColor: e[
+                                                                      2]
+                                                                  ? Colors
+                                                                      .red[700]
+                                                                  : null,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            )),
+                                      )
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Column(
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          // crossAxisAlignment: CrossAxisAlignment.start?,
                           children: [
                             Text(
                               category.name,
@@ -1081,115 +1159,35 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
                                   fontSize: 24,
                                   color: Colors.white),
                             ),
-                            Row(
-                              children: [
-                                Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    ...<List<dynamic>>[
-                                      [
-                                        'Used',
-                                        "${used / 100}",
-                                        used > allocated
-                                      ],
-                                      [
-                                        'Remaining',
-                                        "${(allocated - used) / 100}",
-                                        used > allocated
-                                      ],
-                                      [
-                                        'Allocated',
-                                        "${allocated / 100}",
-                                        false
-                                      ],
-                                    ].map(
-                                      ((e) => DefaultTextStyle(
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(e[0]),
-                                                DefaultTextStyle(
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                  ),
-                                                  child: Row(
-                                                    children: [
-                                                      Text(
-                                                        "$currency ",
-                                                        style: TextStyle(
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .w200),
-                                                      ),
-                                                      Text(
-                                                        e[1],
-                                                        style: TextStyle(
-                                                          backgroundColor: e[2]
-                                                              ? Colors.red[700]
-                                                              : null,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          )),
-                                    )
-                                  ],
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    // crossAxisAlignment: CrossAxisAlignment.start?,
-                                    children: [
-                                      Expanded(
-                                        child: Center(
-                                          child: DefaultTextStyle(
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 44,
-                                              ),
-                                              child: allocated == 0
-                                                  ? Text("0%")
-                                                  : Builder(builder: (context) {
-                                                      final percentage =
-                                                          ((used / allocated) *
-                                                                  100)
-                                                              .truncate();
-                                                      return FittedBox(
-                                                        child: Text(
-                                                          "$percentage%",
-                                                          style:
-                                                              percentage >= 100
-                                                                  ? TextStyle(
-                                                                      backgroundColor:
-                                                                          Colors
-                                                                              .red[700],
-                                                                    )
-                                                                  : null,
-                                                        ),
-                                                      );
-                                                    })),
-                                        ),
-                                      ),
-                                    ],
+                            Center(
+                              child: DefaultTextStyle(
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 44,
                                   ),
-                                )
-                              ],
+                                  child: allocated == 0
+                                      ? Text("0%")
+                                      : Builder(builder: (context) {
+                                          final percentage =
+                                              ((used / allocated) * 100)
+                                                  .truncate();
+                                          return FittedBox(
+                                            child: Text(
+                                              "$percentage%",
+                                              style: percentage >= 100
+                                                  ? TextStyle(
+                                                      backgroundColor:
+                                                          Colors.red[700],
+                                                    )
+                                                  : null,
+                                            ),
+                                          );
+                                        })),
                             ),
                           ],
-                        ),
-                      ),
-                    ],
+                        )
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1214,19 +1212,6 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
                   if (expensesState is ExpensesLoadSuccess) {
                     return Column(
                       children: [
-                        if (!category.isArchived)
-                          Center(
-                              child: ElevatedButton(
-                            child: const Text("Add Expense"),
-                            onPressed: () => Navigator.pushNamed(
-                              context,
-                              ExpenseEditPage.routeName,
-                              arguments: ExpenseEditPageNewArgs(
-                                budgetId: budget.id,
-                                categoryId: category.id,
-                              ),
-                            ),
-                          )),
                         ExpenseListView(
                             dense: true,
                             items: expensesState.items,
@@ -1251,6 +1236,19 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
           ),
         ],
       ),
+      floatingActionButton: Visibility(
+          child: FloatingActionButton.extended(
+              onPressed: () => Navigator.pushNamed(
+                    context,
+                    ExpenseEditPage.routeName,
+                    arguments: ExpenseEditPageNewArgs(
+                      budgetId: budget.id,
+                      categoryId: category.id,
+                    ),
+                  ),
+              label: Text('Add new expense'),
+              icon: Icon(Icons.add)),
+          visible: !category.isArchived ? true : false),
     );
   }
 }
