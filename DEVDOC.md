@@ -10,6 +10,7 @@
 - [ ] Budget switch is buggy
 - [x] Item archival
 - [ ] Expense name suggestions
+- [ ] Pull to refresh 
   
 - [x] Decide on how to tackle deletion
 - [ ] Decide on how to aggregate budget usage in the category tree

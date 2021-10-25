@@ -48,6 +48,8 @@ class BudgetListPage extends StatefulWidget {
   State<StatefulWidget> createState() => _BudgetListPageState();
 }
 
+enum BudgetActionsMenuItem { archived }
+
 class _BudgetListPageState extends State<BudgetListPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -55,19 +57,28 @@ class _BudgetListPageState extends State<BudgetListPage> {
           title: widget.showingArchivedOnly
               ? const Text("Archived Budgets")
               : const Text("Budgets"),
+          actions: [
+            PopupMenuButton<BudgetActionsMenuItem>(
+                onSelected: (BudgetActionsMenuItem menuItem) {
+                  if (menuItem == BudgetActionsMenuItem.archived) {
+                    Navigator.pushNamed(
+                        context, BudgetListPage.routeNameArchivedOnly);
+                  }
+                },
+                itemBuilder: (context) =>
+                    <PopupMenuEntry<BudgetActionsMenuItem>>[
+                      const PopupMenuItem(
+                        value: BudgetActionsMenuItem.archived,
+                        child: Text('Archived budgets'),
+                      )
+                    ])
+          ],
         ),
         body: BlocBuilder<BudgetListPageBloc, BudgetListPageBlocState>(
           builder: (context, state) {
             if (state is BudgetsLoadSuccess) {
               return Column(
                 children: [
-                  if (!widget.showingArchivedOnly)
-                    ListTile(
-                      title: Text("Archived budgets"),
-                      dense: true,
-                      onTap: () => Navigator.pushNamed(
-                          context, BudgetListPage.routeNameArchivedOnly),
-                    ),
                   BudgetListView(
                     state: state,
                     onSelect: (id) => Navigator.pushNamed(
