@@ -106,50 +106,6 @@ class ApiExpenseRepository extends Repository<String, Expense,
         amount: item.amount,
       );
 
-  Future<Map<DateRange, DateRangeFilter>> getDateRangeFilters({
-    Set<String>? ofBudgets,
-    Set<String>? ofCategories,
-  }) async {
-    final items = await getItems();
-    return generateDateRangesFilters(
-      items.values
-          .where(ofBudgets != null && ofCategories != null
-              ? (e) =>
-                  ofBudgets.contains(e.budgetId) &&
-                  ofCategories.contains(e.categoryId)
-              : ofBudgets != null
-                  ? (e) => ofBudgets.contains(e.budgetId)
-                  : ofCategories != null
-                      ? (e) => ofCategories.contains(e.categoryId)
-                      : (e) => true)
-          .map((e) => e.timestamp),
-    );
-  }
-
-  Future<Iterable<Expense>> getItemsInRange(
-    DateRange range, {
-    Set<String>? ofBudgets,
-    Set<String>? ofCategories,
-  }) async {
-    final items = await getItems();
-    return items.values.where(
-      ofBudgets != null && ofCategories != null
-          ? (e) =>
-              range.containsTimestamp(e.timestamp) &&
-              ofBudgets.contains(e.budgetId) &&
-              ofCategories.contains(e.categoryId)
-          : ofBudgets != null
-              ? (e) =>
-                  range.containsTimestamp(e.timestamp) &&
-                  ofBudgets.contains(e.budgetId)
-              : ofCategories != null
-                  ? (e) =>
-                      range.containsTimestamp(e.timestamp) &&
-                      ofCategories.contains(e.categoryId)
-                  : (e) => range.containsTimestamp(e.timestamp),
-    );
-  }
-
   @override
   Future<void> refreshCache(Map<String, Expense> items) async {
     await cache.clear();

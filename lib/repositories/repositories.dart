@@ -32,8 +32,176 @@ abstract class Repository<Identifier, Item, CreateInput, UpdateInput> {
 
 typedef UserRepository = ApiUserRepository;
 typedef BudgetRepository = ApiBudgetRepository;
-typedef CategoryRepository = ApiCategoryRepository;
+typedef CategoryRepository
+    = CategoryRepositoryExt<CreateCategoryInput, UpdateCategoryInput>;
 typedef ExpenseRepository = ApiExpenseRepository;
+
+extension ExpenseRepositoryExt<CreateInput, UpdateInput>
+    on Repository<String, Expense, CreateInput, UpdateInput> {
+  Future<Map<DateRange, DateRangeFilter>> getDateRangeFilters({
+    Set<String>? ofBudgets,
+    Set<String>? ofCategories,
+  }) async {
+    final items = await getItems();
+    return generateDateRangesFilters(
+      items.values
+          .where(ofBudgets != null && ofCategories != null
+              ? (e) =>
+                  ofBudgets.contains(e.budgetId) &&
+                  ofCategories.contains(e.categoryId)
+              : ofBudgets != null
+                  ? (e) => ofBudgets.contains(e.budgetId)
+                  : ofCategories != null
+                      ? (e) => ofCategories.contains(e.categoryId)
+                      : (e) => true)
+          .map((e) => e.timestamp),
+    );
+  }
+
+  Future<Iterable<Expense>> getItemsInRange(
+    DateRange range, {
+    Set<String>? ofBudgets,
+    Set<String>? ofCategories,
+  }) async {
+    final items = await getItems();
+    return items.values.where(
+      ofBudgets != null && ofCategories != null
+          ? (e) =>
+              range.containsTimestamp(e.timestamp) &&
+              ofBudgets.contains(e.budgetId) &&
+              ofCategories.contains(e.categoryId)
+          : ofBudgets != null
+              ? (e) =>
+                  range.containsTimestamp(e.timestamp) &&
+                  ofBudgets.contains(e.budgetId)
+              : ofCategories != null
+                  ? (e) =>
+                      range.containsTimestamp(e.timestamp) &&
+                      ofCategories.contains(e.categoryId)
+                  : (e) => range.containsTimestamp(e.timestamp),
+    );
+  }
+}
+
+class CategoryRepositoryExt<CreateInput, UpdateInput>
+    extends Repository<String, Category, CreateInput, UpdateInput> {
+  final Repository<String, Category, CreateInput, UpdateInput> repo;
+
+  CategoryRepositoryExt(this.repo);
+
+  @override
+  Stream<Set<String>> get changedItems => repo.changedItems;
+
+  @override
+  CreateInput createFromItem(Category item) => repo.createFromItem(item);
+
+  @override
+  Future<Category> createItem(CreateInput input, [String? id]) {
+    _ancestryGraph = null;
+    return repo.createItem(input, id);
+  }
+
+  @override
+  Future<Category?> getItem(String id) => repo.getItem(id);
+
+  @override
+  Future<Map<String, Category>> getItems() => repo.getItems();
+
+  @override
+  Future<void> refreshCache(Map<String, Category> items) {
+    _ancestryGraph = null;
+    return repo.refreshCache(items);
+  }
+
+  @override
+  Future<void> removeItem(String id,
+          [bool bypassChangedItemNotification = false]) =>
+      repo.removeItem(id, bypassChangedItemNotification);
+
+  @override
+  UpdateInput updateFromDiff(Category update, Category old) =>
+      repo.updateFromDiff(update, old);
+
+  @override
+  Future<Category> updateItem(String id, UpdateInput input) {
+    _ancestryGraph = null;
+    return repo.updateItem(id, input);
+  }
+
+  static Map<String, TreeNode<String>> calcAncestryTree(
+    /// The set of items we're interested in
+    Set<String> forItems,
+
+    /// The set of all items, must include all items in [`forItems`].
+    Map<String, Category> allItems,
+  ) {
+    final nodes = <String, TreeNode<String>>{};
+
+    TreeNode<String> getTreeNode(Category category) {
+      var node = nodes[category.id];
+
+      if (node == null) {
+        TreeNode<String>? parentNode;
+        if (category.parentId != null) {
+          /// look up parents in the allItems set
+          final parent = allItems[category.parentId];
+          if (parent == null) {
+            throw Exception("parent not found at id: ${category.parentId}");
+          }
+          parentNode = getTreeNode(parent);
+          parentNode.children.add(category.id);
+        }
+        node = TreeNode(category.id, children: [], parent: parentNode);
+        nodes[category.id] = node;
+      }
+      return node;
+    }
+
+    for (final id in forItems) {
+      if (!nodes.containsKey(id)) {
+        final item = allItems[id];
+        if (item == null) {
+          throw Exception("integrity error, no category found under id $id");
+        }
+        getTreeNode(item);
+      }
+    }
+    return nodes;
+  }
+
+  Future<Map<String, TreeNode<String>>>? _ancestryGraph;
+  Future<Map<String, TreeNode<String>>> get ancestryGraph =>
+      _ancestryGraph ??= _calcAncestryTree();
+
+  Future<Map<String, TreeNode<String>>> _calcAncestryTree() async {
+    final items = await getItems();
+    return calcAncestryTree(items.keys.toSet(), items);
+  }
+
+  /// The returned list includes the given id.
+  /// Returns null if no category found under id.
+  Future<List<String>?> getCategoryDescendantsTree(String forId) async {
+    final graph = await ancestryGraph;
+    final rootNode = graph[forId];
+    if (rootNode == null) return null;
+
+    List<String> descendants = [forId];
+    void appendChildren(TreeNode<String> node) {
+      descendants.addAll(node.children);
+      for (final child in node.children) {
+        final childNode = graph[child];
+        if (childNode == null) {
+          throw Exception("childNode not found in ancestryGraph at id: $child");
+        }
+        appendChildren(childNode);
+      }
+    }
+
+    appendChildren(rootNode);
+
+    return descendants;
+  }
+}
 
 class SimpleRepository<Identifier, Item>
     extends Repository<Identifier, Item, Item, Item> {
@@ -241,10 +409,10 @@ class CacheRefresher {
   final SmuniApiClient client;
   final AuthTokenRepository tokenRepo;
 
-  final ApiUserRepository userRepo;
-  final ApiBudgetRepository budgetRepo;
-  final ApiCategoryRepository categoryRepo;
-  final ApiExpenseRepository expenseRepo;
+  final Repository<String, User, dynamic, dynamic> userRepo;
+  final Repository<String, Budget, dynamic, dynamic> budgetRepo;
+  final Repository<String, Category, dynamic, dynamic> categoryRepo;
+  final Repository<String, Expense, dynamic, dynamic> expenseRepo;
 
   CacheRefresher(
     this.client,

@@ -666,8 +666,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                   ? SliverFillRemaining(
                                       child: Center(
                                           child: const Text("No categories.")))
-                                  //: throw Exception("parents are missing");
-                                  : Text('No Categories');
+                                  : throw Exception(
+                                      "error: parents are missing");
                         }
                         return const SliverFillRemaining(
                             child: Center(
