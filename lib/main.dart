@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:smuni/repositories/category.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
@@ -16,8 +17,6 @@ import 'providers/cache/cache.dart';
 import 'repositories/repositories.dart';
 import 'screens/home_screen.dart';
 import 'screens/routes.dart';
-import 'blocs/refresh.dart';
-import 'screens/home_screen.dart';
 import 'utilities.dart';
 
 void main() => runApp(MyApp());
@@ -33,7 +32,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late Future<Pair<sqflite.Database, AuthTokenRepository>> _initAsyncFuture;
-  final _client = SmuniApiClient("http://192.168.8.106:3000");
+  final _client =
+      SmuniApiClient("https://smuni-rest-api-staging.herokuapp.com");
 
   Future<Pair<sqflite.Database, AuthTokenRepository>> _initAsync() async {
     var databasesPath = await sqflite.getDatabasesPath();
@@ -50,7 +50,7 @@ class _MyAppState extends State<MyApp> {
       version: 1,
       onCreate: (db, version) => db.transaction((txn) async {
         await migrateV1(txn);
-        await SqliteUserCache(db)
+        /* await SqliteUserCache(db)
             .setItem(defaultUser.id, User.from(defaultUser));
         {
           final cache = SqliteBudgetCache(db);
@@ -69,11 +69,11 @@ class _MyAppState extends State<MyApp> {
           for (var item in defaultUser.expenses) {
             await cache.setItem(item.id, item);
           }
-        }
+        } */
       }),
     );
 
-    /* final response = await _client.signInEmail(defaultUser.email!, "password");
+    final response = await _client.signInEmail(defaultUser.email!, "password");
 
     await SqliteUserCache(db)
         .setItem(response.user.username, User.from(response.user));
@@ -96,7 +96,6 @@ class _MyAppState extends State<MyApp> {
       }
     }
 
-
     return Pair(
       db,
       await AuthTokenRepository.fromValues(
@@ -107,16 +106,16 @@ class _MyAppState extends State<MyApp> {
         loggedInUsername: defaultUser.username,
       ),
     );
-    
-     */
-    return Pair(
-        db,
-        FakeAuthTokenRepository(
-            client: _client,
-            cache: AuthTokenCache(db),
-            username: defaultUser.username,
-            accessToken: 'supersunday',
-            refreshToken: 'imightgetafadedin2014'));
+
+    /* return Pair(
+      db,
+      FakeAuthTokenRepository(
+          client: _client,
+          cache: AuthTokenCache(db),
+          username: defaultUser.username,
+          accessToken: 'supersunday',
+          refreshToken: 'imightgetafadedin2014'),
+    ); */
   }
 
   @override
@@ -167,9 +166,11 @@ class _MyAppState extends State<MyApp> {
                         ),
                         RepositoryProvider(
                           create: (context) => CategoryRepository(
-                            SqliteCategoryCache(db),
-                            context.read<SmuniApiClient>(),
-                            context.read<AuthTokenRepository>(),
+                            ApiCategoryRepository(
+                              SqliteCategoryCache(db),
+                              context.read<SmuniApiClient>(),
+                              context.read<AuthTokenRepository>(),
+                            ),
                           ),
                         ),
                         RepositoryProvider(
@@ -272,12 +273,10 @@ final UserDenorm defaultUser = UserDenorm(
       allocatedAmount: MonetaryAmount(currency: "ETB", amount: 15000 * 100),
       frequency: Recurring(2592000),
       categoryAllocations: {
-        "fpoq3cum4cpu43241u34": 1000 * 100,
-        "mucpxo2ur3p98u32proxi34": 300 * 100,
         "614193c7f2ea51b47f5896b8": 1000 * 100,
-        "614193c7f2ea51b47f5896b9": 500 * 100,
-        "w3ioeunvfnasdlkjfnalk": 6000 * 100,
-        "dnfvoijwemkzopsiejrklasldk": 5000 * 100
+        "614193c7f2ea51b47f5896b9": 1500 * 100,
+        "616966d7ff32b0373dd0ec2f": 3000 * 100,
+        "616966cfff32b0373dd0ec2e": 1500 * 100
       },
     ),
     Budget(
@@ -291,9 +290,9 @@ final UserDenorm defaultUser = UserDenorm(
       allocatedAmount: MonetaryAmount(currency: "ETB", amount: 2000 * 100),
       frequency: OneTime(),
       categoryAllocations: {
-        "jfaksdpofjasodf": 500 * 100,
-        "jfasodifjasodjffasdasd": 500 * 100,
-        "614193c7f2ea51b47f5896b9": 500 * 100
+        "616966bcff32b0373dd0ec2c": 500 * 100,
+        "616966c8ff32b0373dd0ec2d": 500 * 100,
+        "616966cfff32b0373dd0ec2e": 500 * 100
       },
     ),
   ],

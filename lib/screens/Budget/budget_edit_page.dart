@@ -111,8 +111,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                 duration: Duration(seconds: 1),
               ),
             );
+          } else {
+            throw Exception("Unhandled type");
           }
-          throw Exception("Unhandled type");
         },
         child: Scaffold(
           appBar: AppBar(
