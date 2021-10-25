@@ -538,6 +538,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
             ),
             actions: widget.actionsListBuilder(context, state),
           ),
+          /*
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -552,6 +553,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
               ),
             ),
           ),
+
+           */
           _showAllBudgetExpenses
               ? SliverToBoxAdapter(
                   child: BlocProvider(

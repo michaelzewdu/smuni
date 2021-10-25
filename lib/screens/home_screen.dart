@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/blocs/budget_list_page.dart';
 import 'package:smuni/blocs/refresh.dart';
@@ -117,7 +116,10 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                   child: Form(
                     child: Column(
                       children: [
-                        Text("Main budget not selected:"),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text("Main budget not selected:"),
+                        ),
                         ElevatedButton(
                           onPressed: () =>
                               _showMainBudgetSelectorModal(context, userState),
@@ -145,64 +147,71 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (builder, setState) => Scaffold(
-          body: Column(children: [
-            ElevatedButton(
-              onPressed: !awaitingOp && budgetId.isNotEmpty
-                  ? () {
-                      final selector = selectorKey.currentState;
-                      if (selector != null && selector.validate()) {
-                        selector.save();
-                        context.read<UserBloc>().add(
-                              UpdateUser(
-                                User.from(state.item, mainBudget: budgetId),
-                                onSuccess: () {
-                                  setState(() => awaitingOp = false);
-                                  this.setState(() => {});
-                                  Navigator.pop(context);
-                                },
-                                onError: (err) {
-                                  setState(() => awaitingOp = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: err is ConnectionException
-                                          ? Text('Connection Failed')
-                                          : Text('Unknown Error Occured'),
-                                      behavior: SnackBarBehavior.floating,
+          body: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  BlocProvider(
+                    create: (context) =>
+                        BudgetListPageBloc(context.read<BudgetRepository>()),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.4,
+                      child: BudgetFormSelector(
+                        key: selectorKey,
+                        isSelecting: true,
+                        onChanged: (value) {
+                          setState(() {
+                            budgetId = value!;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return "No budget selected";
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: !awaitingOp && budgetId.isNotEmpty
+                        ? () {
+                            final selector = selectorKey.currentState;
+                            if (selector != null && selector.validate()) {
+                              selector.save();
+                              context.read<UserBloc>().add(
+                                    UpdateUser(
+                                      User.from(state.item,
+                                          mainBudget: budgetId),
+                                      onSuccess: () {
+                                        setState(() => awaitingOp = false);
+                                        this.setState(() => {});
+                                        Navigator.pop(context);
+                                      },
+                                      onError: (err) {
+                                        setState(() => awaitingOp = false);
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: err is ConnectionException
+                                                ? Text('Connection Failed')
+                                                : Text('Unknown Error Occured'),
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      },
                                     ),
                                   );
-                                },
-                              ),
-                            );
-                        setState(() => awaitingOp = true);
-                      }
-                    }
-                  : null,
-              child: awaitingOp
-                  ? const CircularProgressIndicator()
-                  : const Text("Save Selection"),
-            ),
-            BlocProvider(
-              create: (context) =>
-                  BudgetListPageBloc(context.read<BudgetRepository>()),
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.4,
-                child: BudgetFormSelector(
-                  key: selectorKey,
-                  isSelecting: true,
-                  onChanged: (value) {
-                    setState(() {
-                      budgetId = value!;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return "No budget selected";
-                    }
-                  },
-                ),
-              ),
-            ),
-          ]),
+                              setState(() => awaitingOp = true);
+                            }
+                          }
+                        : null,
+                    child: awaitingOp
+                        ? const CircularProgressIndicator()
+                        : const Text("Save Selection"),
+                  ),
+                ]),
+          ),
         ),
       ),
     );

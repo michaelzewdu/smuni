@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/budget_list_page.dart';
+import 'package:smuni/models/models.dart';
+import 'package:smuni/utilities.dart';
 
 import 'budget_list_view.dart';
 
@@ -78,17 +80,49 @@ class _BudgetSelectorState extends State<BudgetSelector> {
       final item = itemsState.items[_selectedBudgetId];
       if (item != null) {
         return Column(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Text("Name: ${item.name}"),
-            Text("id: ${item.id}"),
-            Text("createdAt: ${item.createdAt}"),
-            Text("updatedAt: ${item.updatedAt}"),
-            Text(
-              "allocatedAmount: ETB ${item.allocatedAmount.amount / 100}",
+            SizedBox(
+              height: 8,
             ),
-            Text("startTime: ${item.startTime}"),
-            Text("endTime: ${item.endTime}"),
-            Text("frequency: ${item.frequency.toJson()}"),
+            Text(
+              " ${item.name}",
+              textScaleFactor: 2,
+            ),
+            SizedBox(height: 50),
+            // Text("id: ${item.id}"),
+            //Text("createdAt: ${item.createdAt}"),
+            //Text("updatedAt: ${item.updatedAt}"),
+            Text(
+              "AllocatedAmount: ETB ${item.allocatedAmount.amount / 100}",
+              textScaleFactor: 1.2,
+            ),
+            Text(
+              "Started On: ${item.startTime.day} ${monthNames[item.startTime.month - 1]} ${item.startTime.year}",
+              textScaleFactor: 1.2,
+            ),
+            Text(
+              "End Date: ${item.endTime.day} ${monthNames[item.endTime.month - 1]} ${item.endTime.year}",
+              textScaleFactor: 1.2,
+            ),
+            item.frequency.kind == FrequencyKind.recurring
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Frequency: Recurring',
+                        textScaleFactor: 1.2,
+                      ),
+                      Text(
+                        'Recurring Intervals: ${(((item.frequency as Recurring).recurringIntervalSecs) ~/ 86400)} days',
+                        textScaleFactor: 1.2,
+                      )
+                    ],
+                  )
+                : Text(
+                    'Frequency: OneTime',
+                    textScaleFactor: 1.2,
+                  ),
           ],
         );
       } else {
@@ -112,22 +146,28 @@ class _BudgetSelectorState extends State<BudgetSelector> {
   Widget build(BuildContext context) => Column(
         children: [
           // the top bar
-          Row(children: [
-            Expanded(
-              child: widget.caption ??
-                  const Text(
-                    "Budget",
-                  ),
-            ),
-            TextButton(
-              child: _isSelecting ? const Text("Cancel") : const Text("Select"),
-              onPressed: () {
-                setState(() {
-                  _isSelecting = !_isSelecting;
-                });
-              },
-            )
-          ]),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(children: [
+              Expanded(
+                child: widget.caption ??
+                    const Text(
+                      "Available Budgets",
+                      textScaleFactor: 1.5,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+              ),
+              if (!_isSelecting)
+                TextButton(
+                  child: const Text("Go Back"),
+                  onPressed: () {
+                    setState(() {
+                      _isSelecting = !_isSelecting;
+                    });
+                  },
+                )
+            ]),
+          ),
           BlocBuilder<BudgetListPageBloc, BudgetListPageBlocState>(
               builder: (context, itemsState) {
             if (itemsState is BudgetsLoadSuccess) {
@@ -141,7 +181,7 @@ class _BudgetSelectorState extends State<BudgetSelector> {
                 child: Text("Loading budgets..."),
               );
             }
-            throw Exception("Unhandeled state");
+            throw Exception("Unhandled state");
           })
         ],
       );

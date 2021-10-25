@@ -22,9 +22,11 @@ class BudgetListView extends StatelessWidget {
               return ListTile(
                 title: Text(
                   item.name,
+                  textScaleFactor: 1.3,
                 ),
                 trailing: Text(
                   "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
+                  textScaleFactor: 1.3,
                 ),
                 onTap: () => onSelect?.call(item.id),
               );

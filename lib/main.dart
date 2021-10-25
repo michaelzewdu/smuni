@@ -7,8 +7,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
-import 'package:smuni_api_client/smuni_api_client.dart';
-
 import 'bloc_observer.dart';
 import 'blocs/blocs.dart';
 import 'blocs/refresh.dart';
