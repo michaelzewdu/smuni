@@ -158,7 +158,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                   // Text("category: ${state.unmodified.categoryId}"),
                   CheckboxListTile(
                     value: _isSubcategory,
-                    title: const Text("Is Subcategory"),
+                    title: const Text("Is a Subcategory"),
                     onChanged: (value) =>
                         setState(() => _isSubcategory = value!),
                   ),

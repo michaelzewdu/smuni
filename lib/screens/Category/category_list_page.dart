@@ -79,18 +79,14 @@ class _CategoryListPageState extends State<CategoryListPage> {
         body: BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
           builder: (context, state) {
             if (state is CategoriesLoadSuccess) {
-              return Column(
-                children: [
-                  CategoryListView(
-                    state: state,
-                    markArchived: !widget.showingArchivedOnly,
-                    onSelect: (id) => Navigator.pushNamed(
-                      context,
-                      CategoryDetailsPage.routeName,
-                      arguments: id,
-                    ),
-                  ),
-                ],
+              return CategoryListView(
+                state: state,
+                markArchived: !widget.showingArchivedOnly,
+                onSelect: (id) => Navigator.pushNamed(
+                  context,
+                  CategoryDetailsPage.routeName,
+                  arguments: id,
+                ),
               );
             }
             return Center(child: CircularProgressIndicator.adaptive());

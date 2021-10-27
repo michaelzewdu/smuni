@@ -287,8 +287,12 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                                     context: context,
                                     builder: (context) => SimpleDialog(
                                           children: [
-                                            Text(
-                                                "Zero-based budgeting (ZBB) is a method of budgeting in which all categories must be justified for each new period.")
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                  "Zero-based budgeting (ZBB) is a method of budgeting in which all categories must be justified for each new period."),
+                                            )
                                           ],
                                         )),
                                 icon: Icon(Icons.info_outline))
