@@ -58,20 +58,21 @@ class _BudgetListPageState extends State<BudgetListPage> {
               ? const Text("Archived Budgets")
               : const Text("Budgets"),
           actions: [
-            PopupMenuButton<BudgetActionsMenuItem>(
-                onSelected: (BudgetActionsMenuItem menuItem) {
-                  if (menuItem == BudgetActionsMenuItem.archived) {
-                    Navigator.pushNamed(
-                        context, BudgetListPage.routeNameArchivedOnly);
-                  }
-                },
-                itemBuilder: (context) =>
-                    <PopupMenuEntry<BudgetActionsMenuItem>>[
-                      const PopupMenuItem(
-                        value: BudgetActionsMenuItem.archived,
-                        child: Text('Archived budgets'),
-                      )
-                    ])
+            if (!widget.showingArchivedOnly)
+              PopupMenuButton<BudgetActionsMenuItem>(
+                  onSelected: (BudgetActionsMenuItem menuItem) {
+                    if (menuItem == BudgetActionsMenuItem.archived) {
+                      Navigator.pushNamed(
+                          context, BudgetListPage.routeNameArchivedOnly);
+                    }
+                  },
+                  itemBuilder: (context) =>
+                      <PopupMenuEntry<BudgetActionsMenuItem>>[
+                        const PopupMenuItem(
+                          value: BudgetActionsMenuItem.archived,
+                          child: Text('Archived budgets'),
+                        )
+                      ])
           ],
         ),
         body: BlocBuilder<BudgetListPageBloc, BudgetListPageBlocState>(

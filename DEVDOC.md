@@ -11,6 +11,7 @@
 - [x] Item archival
 - [ ] Expense name suggestions
 - [ ] Pull to refresh 
+- [ ] Text wrap(We can use the softWrap and overWrap parameters)
   
 - [x] Decide on how to tackle deletion
 - [ ] Decide on how to aggregate budget usage in the category tree

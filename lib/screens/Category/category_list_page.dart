@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/category_list_view.dart';
@@ -52,6 +51,8 @@ class CategoryListPage extends StatefulWidget {
   State<StatefulWidget> createState() => _CategoryListPageState();
 }
 
+enum CategoryListActions { archived }
+
 class _CategoryListPageState extends State<CategoryListPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -59,19 +60,27 @@ class _CategoryListPageState extends State<CategoryListPage> {
           title: widget.showingArchivedOnly
               ? const Text("Archived Categories")
               : const Text("Categories"),
+          actions: [
+            if (!widget.showingArchivedOnly)
+              PopupMenuButton<CategoryListActions>(
+                  onSelected: (CategoryListActions action) {
+                    if (action == CategoryListActions.archived) {
+                      Navigator.pushNamed(
+                          context, CategoryListPage.routeNameArchivedOnly);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                        const PopupMenuItem(
+                            value: CategoryListActions.archived,
+                            child: Text('Archived categories'))
+                      ])
+          ],
         ),
         body: BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
           builder: (context, state) {
             if (state is CategoriesLoadSuccess) {
               return Column(
                 children: [
-                  if (!widget.showingArchivedOnly)
-                    ListTile(
-                      title: Text("Archived categories"),
-                      dense: true,
-                      onTap: () => Navigator.pushNamed(
-                          context, CategoryListPage.routeNameArchivedOnly),
-                    ),
                   CategoryListView(
                     state: state,
                     markArchived: !widget.showingArchivedOnly,
