@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/blocs/edit_page/category_edit_page.dart';
 import 'package:smuni/models/models.dart';
@@ -132,56 +131,63 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
           ),
           body: Form(
             key: _formKey,
-            child: Column(
-              children: <Widget>[
-                TextFormField(
-                  initialValue: _name,
-                  onSaved: (value) => setState(() => _name = value!),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Name can't be empty";
-                    }
-                  },
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    hintText: "Name",
-                    helperText: "Name",
-                  ),
-                ),
-                Text("id: ${widget.item.id}"),
-                Text("createdAt: ${widget.item.createdAt}"),
-                Text("updatedAt: ${widget.item.updatedAt}"),
-                // Text("category: ${state.unmodified.categoryId}"),
-                CheckboxListTile(
-                  value: _isSubcategory,
-                  title: const Text("Is Subcategory"),
-                  onChanged: (value) => setState(() => _isSubcategory = value!),
-                ),
-                if (_isSubcategory)
-                  BlocProvider(
-                    create: (context) => CategoryListPageBloc(
-                        context.read<CategoryRepository>()),
-                    child: Expanded(
-                      child: CategoryFormSelector(
-                        isSelecting: _parentId == null,
-                        caption: Text("Parent category"),
-                        disabledItems:
-                            !widget.isCreating ? {widget.item.id} : null,
-                        initialValue: _parentId == null ? null : _parentId!,
-                        onChanged: (value) {
-                          setState(() {
-                            _parentId = value!;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return "Parent category not selected";
-                          }
-                        },
-                      ),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                children: <Widget>[
+                  TextFormField(
+                    initialValue: _name,
+                    onSaved: (value) => setState(() => _name = value!),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Name can't be empty";
+                      }
+                    },
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(8))),
+                      hintText: "Name",
+                      helperText: "Name",
                     ),
                   ),
-              ],
+                  /*
+                  Text("createdAt: ${widget.item.createdAt}"),
+                  Text("updatedAt: ${widget.item.updatedAt}"),
+
+                   */
+                  // Text("category: ${state.unmodified.categoryId}"),
+                  CheckboxListTile(
+                    value: _isSubcategory,
+                    title: const Text("Is Subcategory"),
+                    onChanged: (value) =>
+                        setState(() => _isSubcategory = value!),
+                  ),
+                  if (_isSubcategory)
+                    BlocProvider(
+                      create: (context) => CategoryListPageBloc(
+                          context.read<CategoryRepository>()),
+                      child: Expanded(
+                        child: CategoryFormSelector(
+                          isSelecting: _parentId == null,
+                          caption: Text("Parent category"),
+                          disabledItems:
+                              !widget.isCreating ? {widget.item.id} : null,
+                          initialValue: _parentId == null ? null : _parentId!,
+                          onChanged: (value) {
+                            setState(() {
+                              _parentId = value!;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null) {
+                              return "Parent category not selected";
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

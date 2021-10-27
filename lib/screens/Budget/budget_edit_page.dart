@@ -262,7 +262,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                               textScaleFactor: 1.2,
                               style: remaining == 0
                                   ? TextStyle(color: Colors.green)
-                                  : TextStyle(color: Colors.red),
+                                  : TextStyle(color: Colors.amber[800]),
                             )
                           ],
                         ),
@@ -280,7 +280,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                               remaining > 0
                                   ? "Unallocated amount remains."
                                   : "Allocation over budget.",
-                              style: TextStyle(color: Colors.red),
+                              style: TextStyle(color: Colors.amber[800]),
                             ),
                             IconButton(
                                 onPressed: () => showDialog(
@@ -288,7 +288,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                                     builder: (context) => SimpleDialog(
                                           children: [
                                             Text(
-                                                "TODO: explain zero based budgeting")
+                                                "Zero-based budgeting (ZBB) is a method of budgeting in which all categories must be justified for each new period.")
                                           ],
                                         )),
                                 icon: Icon(Icons.info_outline))
@@ -464,6 +464,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
         allocatedAmount != null
             ? ListTile(
                 title: Text(item.name),
+                //title: Text('hereeee'),
                 subtitle: item.tags.isNotEmpty || item.isArchived
                     ? Row(children: [
                         if (item.isArchived)
@@ -479,9 +480,10 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                   child: Column(
                     children: [
                       Text("${allocatedAmount / 100}"),
-                      LinearProgressIndicator(
-                        value: allocatedAmount / _amount.amount,
-                      )
+                      if (_amount.amount != 0)
+                        LinearProgressIndicator(
+                          value: allocatedAmount / _amount.amount,
+                        )
                     ],
                   ),
                 ),

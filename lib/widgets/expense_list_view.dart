@@ -239,7 +239,7 @@ class _ExpenseListViewState extends State<ExpenseListView> {
                     "${item.amount.currency} ${item.amount.amount / 100}",
                   ),
                   subtitle: Text(
-                    '${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}',
+                    '${monthNames[item.timestamp.month]} ${item.timestamp.day} ${item.timestamp.year}',
                   ),
                 ),
                 body: Padding(
@@ -252,7 +252,7 @@ class _ExpenseListViewState extends State<ExpenseListView> {
                           Padding(
                             padding: const EdgeInsets.all(6.0),
                             child: Text(
-                                '${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}'),
+                                'Expense added on: ${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}'),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(6.0),
