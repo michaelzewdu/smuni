@@ -1,4 +1,5 @@
-import 'package:smuni/blocs/refresh.dart';
+import 'package:smuni/blocs/auth.dart';
+import 'package:smuni/blocs/sync.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
@@ -39,13 +40,22 @@ typedef BudgetNotFound = ItemNotFound<String, Budget>;
 typedef LoadingBudget = LoadingItem<String, Budget>;
 // BLOC
 
-class BudgetDetailsPageBloc extends DetailsPageBloc<String, Budget> {
-  RefresherBloc refresherBloc;
+class BudgetDetailsPageBloc extends DetailsPageBloc<String, Budget,
+    CreateBudgetInput, UpdateBudgetInput> {
+  final SyncBloc syncBloc;
+  final ExpenseRepository expenseRepo;
+  final OfflineExpenseRepository offlineExpenseRepo;
+
   BudgetDetailsPageBloc(
-    this.refresherBloc,
-    Repository<String, Budget, CreateBudgetInput, UpdateBudgetInput> repo,
+    ApiRepository<String, Budget, CreateBudgetInput, UpdateBudgetInput> repo,
+    OfflineRepository<String, Budget, CreateBudgetInput, UpdateBudgetInput>
+        offlineRepo,
+    AuthBloc authBloc,
+    this.expenseRepo,
+    this.offlineExpenseRepo,
+    this.syncBloc,
     String id,
-  ) : super(repo, id) {
+  ) : super(repo, offlineRepo, authBloc, id) {
     on<ArchiveBudget>(
       streamToEmitterAdapterStatusAware(_handleArchiveBudget),
     );
@@ -54,92 +64,131 @@ class BudgetDetailsPageBloc extends DetailsPageBloc<String, Budget> {
     );
   }
 
-  // FIXME: our abstractions are breaking down
+  // FIXME: OUR ABSTRACTIONS ARE BREAKING DOWN!
   @override
   Stream<DetailsPageState<String, Budget>> handleDeleteItem(
     DeleteItem<String, Budget> event,
   ) async* {
-    try {
-      final current = state;
+    final current = state;
 
-      var totalWait = Duration();
-      while (current is LoadingItem) {
-        if (totalWait > Duration(seconds: 3)) throw TimeoutException();
-        await Future.delayed(const Duration(milliseconds: 500));
-        totalWait += const Duration(milliseconds: 500);
-      }
-
-      if (current is BudgetLoadSuccess) {
-        await repo.removeItem(current.id, true);
-        yield ItemNotFound(current.id);
-      } else if (current is ItemNotFound) {
-        throw Exception("impossible event");
-      }
-    } on SocketException catch (err) {
-      throw ConnectionException(err);
+    var totalWait = Duration();
+    while (current is LoadingItem) {
+      if (totalWait > Duration(seconds: 3)) throw TimeoutException();
+      await Future.delayed(const Duration(milliseconds: 500));
+      totalWait += const Duration(milliseconds: 500);
     }
 
-    try {
-      await refresherBloc.refresher.refreshCache();
-    } on SocketException catch (err) {
-      // if refresh failed, tell the refresher bloc it need to refresh
-      refresherBloc.add(Refresh());
-      // and report the refresh error to whoever event added the event
-      throw RefreshException(ConnectionException(err));
+    if (current is BudgetLoadSuccess) {
+      try {
+        final auth = authBloc.authSuccesState();
+        await repo.removeItem(current.id, auth.username, auth.authToken, true);
+        yield ItemNotFound(current.id);
+
+        // refresh stuff since category deletion will acffect a host of items
+        try {
+          await syncBloc.refresher.refreshCache(auth.username, auth.authToken);
+        } on SocketException catch (err) {
+          // if sync failed, tell the sync bloc it need to sync
+          syncBloc.add(Sync());
+          // and report the sync error to whoever event added the event
+          throw SyncException(ConnectionException(err));
+        }
+      } catch (err) {
+        if (err is SocketException || err is UnauthenticatedException) {
+          // do it offline if not connected or authenticated
+
+          for (final expense in await expenseRepo
+              .getItemsInRange(DateRange(), ofBudgets: {current.id})) {
+            await offlineExpenseRepo.removeItemOffline(expense.id);
+          }
+
+          await offlineRepo.removeItemOffline(current.id);
+
+          yield ItemNotFound(current.id);
+        } else {
+          rethrow;
+        }
+      }
+    } else if (current is ItemNotFound) {
+      throw Exception("impossible event");
     }
   }
 
   Stream<BudgetDetailsPageState> _handleArchiveBudget(
     ArchiveBudget event,
   ) async* {
-    try {
-      final current = state;
+    final current = state;
 
-      var totalWait = Duration();
-      while (current is LoadingItem) {
-        if (totalWait > Duration(seconds: 3)) throw TimeoutException();
-        await Future.delayed(const Duration(milliseconds: 500));
-        totalWait += const Duration(milliseconds: 500);
-      }
-      if (current is BudgetLoadSuccess) {
+    var totalWait = Duration();
+    while (current is LoadingItem) {
+      if (totalWait > Duration(seconds: 3)) throw TimeoutException();
+      await Future.delayed(const Duration(milliseconds: 500));
+      totalWait += const Duration(milliseconds: 500);
+    }
+    if (current is BudgetLoadSuccess) {
+      final update = UpdateBudgetInput(
+        lastSeenVersion: current.item.version,
+        archive: true,
+      );
+      try {
+        final auth = authBloc.authSuccesState();
         final item = await repo.updateItem(
-            current.id,
-            UpdateBudgetInput(
-                lastSeenVersion: current.item.version, archive: true));
+          current.id,
+          update,
+          auth.username,
+          auth.authToken,
+        );
         yield BudgetLoadSuccess(current.id, item);
-      } else if (current is ItemNotFound) {
-        throw Exception("impossible event");
+      } catch (err) {
+        // do it offline if not connected or authenticated
+        if (err is SocketException || err is UnauthenticatedException) {
+          final item = await offlineRepo.updateItemOffline(current.id, update);
+          yield BudgetLoadSuccess(current.id, item);
+        } else {
+          rethrow;
+        }
       }
-    } on SocketException catch (err) {
-      throw ConnectionException(err);
+    } else if (current is ItemNotFound) {
+      throw Exception("impossible event");
     }
   }
 
   Stream<BudgetDetailsPageState> _handleUnarchiveBudget(
     UnarchiveBudget event,
   ) async* {
-    try {
-      final current = state;
+    final current = state;
 
-      var totalWait = Duration();
-      while (current is LoadingItem) {
-        if (totalWait > Duration(seconds: 3)) throw TimeoutException();
-        await Future.delayed(const Duration(milliseconds: 500));
-        totalWait += const Duration(milliseconds: 500);
-      }
-
-      if (current is BudgetLoadSuccess) {
+    var totalWait = Duration();
+    while (current is LoadingItem) {
+      if (totalWait > Duration(seconds: 3)) throw TimeoutException();
+      await Future.delayed(const Duration(milliseconds: 500));
+      totalWait += const Duration(milliseconds: 500);
+    }
+    if (current is BudgetLoadSuccess) {
+      final update = UpdateBudgetInput(
+        lastSeenVersion: current.item.version,
+        archive: false,
+      );
+      try {
+        final auth = authBloc.authSuccesState();
         final item = await repo.updateItem(
           current.id,
-          UpdateBudgetInput(
-              lastSeenVersion: current.item.version, archive: false),
+          update,
+          auth.username,
+          auth.authToken,
         );
         yield BudgetLoadSuccess(current.id, item);
-      } else if (current is ItemNotFound) {
-        throw Exception("impossible event");
+      } catch (err) {
+        if (err is SocketException || err is UnauthenticatedException) {
+          // do it offline if not connected or authenticated
+          final item = await offlineRepo.updateItemOffline(current.id, update);
+          yield BudgetLoadSuccess(current.id, item);
+        } else {
+          rethrow;
+        }
       }
-    } on SocketException catch (err) {
-      throw ConnectionException(err);
+    } else if (current is ItemNotFound) {
+      throw Exception("impossible event");
     }
   }
 }

@@ -71,25 +71,31 @@ class CategoriesLoadSuccess extends CategoryListPageBlocState {
 
 class CategoryListPageBloc
     extends Bloc<CategoriesListBlocEvent, CategoryListPageBlocState> {
-  CategoryRepository repo;
+  final CategoryRepository repo;
+  final OfflineCategoryRepository offlineRepo;
+
   CategoryListPageBloc(
-    this.repo, [
+    this.repo,
+    this.offlineRepo, [
     LoadCategoriesFilter initialFilter = const LoadCategoriesFilter(),
   ]) : super(CategoriesLoading(filterUsed: initialFilter)) {
     on<LoadCategories>(streamToEmitterAdapter(_handleLoadCategories));
     // on<DeleteCategory>(streamToEmitterAdapter(_handleDeleteCategory));
 
-    repo.changedItems.listen((ids) {
-      final current = state;
-      if (current is CategoriesLoading) {
-        add(LoadCategories(filter: current.filterUsed));
-      } else if (current is CategoriesLoadSuccess) {
-        add(LoadCategories(filter: current.filterUsed));
-      } else {
-        throw Exception("unhandled type");
-      }
-    });
+    repo.changedItems.listen(_changeItemsListener);
+    offlineRepo.changedItems.listen(_changeItemsListener);
     add(LoadCategories(filter: initialFilter));
+  }
+
+  void _changeItemsListener(Set<String> ids) {
+    final current = state;
+    if (current is CategoriesLoading) {
+      add(LoadCategories(filter: current.filterUsed));
+    } else if (current is CategoriesLoadSuccess) {
+      add(LoadCategories(filter: current.filterUsed));
+    } else {
+      throw Exception("unhandled type");
+    }
   }
 
 /*   Stream<CategoryListPageBlocState> _handleDeleteCategory(
@@ -113,10 +119,9 @@ class CategoryListPageBloc
     LoadCategories event,
   ) async* {
     yield CategoriesLoading(filterUsed: event.filter);
-    print("second");
     final allItems = await repo.getItems();
 
-    final filteredAncestryGraph = CategoryRepository.calcAncestryTree(
+    final filteredAncestryGraph = CategoryRepositoryExt.calcAncestryTree(
       allItems.values
           .where(
             event.filter.includeActive && event.filter.includeArchvied

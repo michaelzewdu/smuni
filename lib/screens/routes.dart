@@ -1,24 +1,27 @@
-// FIXME: most of these won't be need to be routed after the nav bar update
-
 import 'package:flutter/widgets.dart';
 
 import 'package:smuni/models/models.dart';
 
+import 'splash.dart';
 import 'Budget/budget_details_page.dart';
 import 'Budget/budget_edit_page.dart';
 import 'Budget/budget_list_page.dart';
 import 'Category/category_details_page.dart';
 import 'Category/category_edit_page.dart';
 import 'Category/category_list_page.dart';
-import 'Expense/expense_details_page.dart';
 import 'Expense/expense_edit_page.dart';
 import 'Expense/expense_list_page.dart';
+import 'auth/sign_in_page.dart';
 import 'home_screen.dart';
 import 'settings_page.dart';
 
 class Routes {
   static Route myOnGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case SmuniHomeScreen.routeName:
+        return SmuniHomeScreen.route();
+      case SignInPage.routeName:
+        return SignInPage.route();
       case MenusPage.routeName:
         return MenusPage.route();
       case BudgetListPage.routeName:
@@ -33,8 +36,8 @@ class Routes {
             : BudgetEditPage.route(settings.arguments as Budget);
       case ExpenseListPage.routeName:
         return ExpenseListPage.route();
-      case ExpenseDetailsPage.routeName:
-        return ExpenseDetailsPage.route(settings.arguments as String);
+      case SplashPage.routeName:
+        return SplashPage.route();
       case ExpenseEditPage.routeName:
         if (settings.arguments == null) {
           throw Exception("Was expecting arguments found for route");
@@ -54,7 +57,7 @@ class Routes {
             ? CategoryEditPage.routeNew()
             : CategoryEditPage.route(settings.arguments as Category);
       default:
-        return SmuniHomeScreen.route();
+        return SplashPage.route();
     }
   }
 }

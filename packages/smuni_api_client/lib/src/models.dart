@@ -283,7 +283,8 @@ class Budget {
   final DateTime createdAt;
   final DateTime updatedAt;
   final int version;
-  final DateTime? archivedAt;
+  final bool isServerVersion;
+  DateTime? archivedAt;
   final String name;
   final DateTime startTime;
   final DateTime endTime;
@@ -299,6 +300,7 @@ class Budget {
     required this.updatedAt,
     this.version = 0,
     this.archivedAt,
+    this.isServerVersion = true,
     required this.name,
     required this.startTime,
     required this.endTime,
@@ -313,6 +315,7 @@ class Budget {
         "updatedAt": updatedAt.toIso8601String(),
         "archivedAt": archivedAt?.toIso8601String(),
         "version": version,
+        "isServerVersion": isServerVersion,
         "name": name,
         "startTime": startTime.toUtc().toString(),
         "endTime": endTime.toUtc().toString(),
@@ -328,6 +331,8 @@ class Budget {
         archivedAt: checkedConvert(
             json, "archivedAt", (v) => v != null ? DateTime.parse(v) : null),
         version: checkedConvert(json, "version", (v) => v as int),
+        isServerVersion:
+            checkedConvert(json, "isServerVersion", (v) => v as bool? ?? true),
         name: checkedConvert(json, "name", (v) => v as String),
         startTime: checkedConvert(json, "startTime", (v) => DateTime.parse(v)),
         endTime: checkedConvert(json, "endTime", (v) => DateTime.parse(v)),
@@ -353,25 +358,27 @@ class Budget {
     DateTime? updatedAt,
     DateTime? archivedAt,
     int? version,
+    bool? isServerVersion,
     String? name,
     DateTime? startTime,
     DateTime? endTime,
     MonetaryAmount? allocatedAmount,
     Frequency? frequency,
-    Map<String, int>? categoryAllocation,
+    Map<String, int>? categoryAllocations,
   }) =>
       Budget(
         id: id ?? other.id,
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
         version: version ?? other.version,
+        isServerVersion: isServerVersion ?? other.isServerVersion,
         archivedAt: archivedAt ?? other.archivedAt,
         name: name ?? other.name,
         startTime: startTime ?? other.startTime,
         endTime: endTime ?? other.endTime,
         allocatedAmount: allocatedAmount ?? other.allocatedAmount,
         frequency: frequency ?? other.frequency,
-        categoryAllocations: categoryAllocation ?? other.categoryAllocations,
+        categoryAllocations: categoryAllocations ?? other.categoryAllocations,
       );
 
   @override
@@ -383,9 +390,10 @@ class Category {
   final DateTime createdAt;
   final DateTime updatedAt;
   final int version;
-  final DateTime? archivedAt;
+  final bool isServerVersion;
+  DateTime? archivedAt;
   final String name;
-  final String? parentId;
+  String? parentId;
   final List<String> tags;
 
   bool get isArchived => archivedAt != null;
@@ -395,6 +403,7 @@ class Category {
     required this.createdAt,
     required this.updatedAt,
     this.version = 0,
+    this.isServerVersion = true,
     this.archivedAt,
     required this.name,
     this.parentId,
@@ -407,6 +416,7 @@ class Category {
         "updatedAt": updatedAt.toIso8601String(),
         "archivedAt": archivedAt?.toIso8601String(),
         "version": version,
+        "isServerVersion": isServerVersion,
         "name": name,
         "parentId": parentId,
         "tags": tags,
@@ -419,6 +429,8 @@ class Category {
         archivedAt: checkedConvert(
             json, "archivedAt", (v) => v != null ? DateTime.parse(v) : null),
         version: checkedConvert(json, "version", (v) => v as int),
+        isServerVersion:
+            checkedConvert(json, "isServerVersion", (v) => v as bool? ?? true),
         parentId: checkedConvert(json, "parentId", (v) => v as String?),
         name: checkedConvert(json, "name", (v) => v as String),
         tags: checkedConvert(
@@ -436,6 +448,7 @@ class Category {
     DateTime? updatedAt,
     DateTime? archivedAt,
     int? version,
+    bool? isServerVersion,
     String? name,
     String? parentId,
     List<String>? tags,
@@ -445,6 +458,7 @@ class Category {
         createdAt: createdAt ?? other.createdAt,
         updatedAt: updatedAt ?? other.updatedAt,
         version: version ?? other.version,
+        isServerVersion: isServerVersion ?? other.isServerVersion,
         archivedAt: archivedAt ?? other.archivedAt,
         name: name ?? other.name,
         parentId: parentId ?? other.parentId,
@@ -460,6 +474,7 @@ class Expense {
   final DateTime createdAt;
   final DateTime updatedAt;
   final int version;
+  final bool isServerVersion;
   final String name;
   final DateTime timestamp;
   final MonetaryAmount amount;
@@ -470,6 +485,7 @@ class Expense {
     required this.createdAt,
     required this.updatedAt,
     this.version = 0,
+    this.isServerVersion = false,
     required this.name,
     required this.timestamp,
     required this.categoryId,
@@ -482,6 +498,7 @@ class Expense {
         "createdAt": createdAt.toIso8601String(),
         "updatedAt": updatedAt.toIso8601String(),
         "version": version,
+        "isServerVersion": isServerVersion,
         "timestamp": timestamp.toIso8601String(),
         "name": name,
         "categoryId": categoryId,
@@ -494,6 +511,8 @@ class Expense {
         createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
         updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
         version: checkedConvert(json, "version", (v) => v as int),
+        isServerVersion:
+            checkedConvert(json, "isServerVersion", (v) => v as bool? ?? true),
         timestamp: checkedConvert(json, "timestamp", (v) => DateTime.parse(v)),
         name: checkedConvert(json, "name", (v) => v as String),
         categoryId: checkedConvert(json, "categoryId", (v) => v as String),
@@ -508,6 +527,7 @@ class Expense {
     DateTime? createdAt,
     DateTime? updatedAt,
     int? version,
+    bool? isServerVersion,
     DateTime? timestamp,
     String? name,
     String? categoryId,
@@ -520,6 +540,7 @@ class Expense {
         updatedAt: updatedAt ?? other.updatedAt,
         timestamp: updatedAt ?? other.timestamp,
         version: version ?? other.version,
+        isServerVersion: isServerVersion ?? other.isServerVersion,
         name: name ?? other.name,
         categoryId: categoryId ?? other.categoryId,
         budgetId: budgetId ?? other.budgetId,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/repositories/repositories.dart';
-import 'package:smuni/widgets/category_list_view.dart';
+import 'package:smuni/widgets/widgets.dart';
 
 import 'category_details_page.dart';
 import 'category_edit_page.dart';
@@ -24,6 +24,7 @@ class CategoryListPage extends StatefulWidget {
       builder: (context) => BlocProvider(
         create: (context) => CategoryListPageBloc(
           context.read<CategoryRepository>(),
+          context.read<OfflineCategoryRepository>(),
           const LoadCategoriesFilter(
             includeActive: false,
             includeArchvied: true,
@@ -38,8 +39,10 @@ class CategoryListPage extends StatefulWidget {
 
   static BlocProvider<CategoryListPageBloc> page() {
     return BlocProvider(
-      create: (context) =>
-          CategoryListPageBloc(context.read<CategoryRepository>()),
+      create: (context) => CategoryListPageBloc(
+        context.read<CategoryRepository>(),
+        context.read<OfflineCategoryRepository>(),
+      ),
       child: CategoryListPage(),
     );
   }
@@ -79,14 +82,27 @@ class _CategoryListPageState extends State<CategoryListPage> {
         body: BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
           builder: (context, state) {
             if (state is CategoriesLoadSuccess) {
-              return CategoryListView(
-                state: state,
-                markArchived: !widget.showingArchivedOnly,
-                onSelect: (id) => Navigator.pushNamed(
-                  context,
-                  CategoryDetailsPage.routeName,
-                  arguments: id,
-                ),
+              return Column(
+                children: [
+                  if (!widget.showingArchivedOnly)
+                    ListTile(
+                      title: Text("Archived categories"),
+                      dense: true,
+                      onTap: () => Navigator.pushNamed(
+                          context, CategoryListPage.routeNameArchivedOnly),
+                    ),
+                  Expanded(
+                    child: CategoryListView(
+                      state: state,
+                      markArchived: !widget.showingArchivedOnly,
+                      onSelect: (id) => Navigator.pushNamed(
+                        context,
+                        CategoryDetailsPage.routeName,
+                        arguments: id,
+                      ),
+                    ),
+                  ),
+                ],
               );
             }
             return Center(child: CircularProgressIndicator.adaptive());

@@ -30,6 +30,12 @@ class SmuniApiClient {
     return SignInResponse.fromJson(_json.decode(response.body));
   }
 
+  Future<SignInResponse> signInUsername(
+    String username,
+    String password,
+  ) =>
+      _signIn("username", username, password);
+
   Future<SignInResponse> signInEmail(
     String email,
     String password,
@@ -394,6 +400,16 @@ class CreateBudgetInput {
     required this.categoryAllocations,
   });
 
+  CreateBudgetInput.fromItem(Budget item)
+      : this(
+          name: item.name,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          frequency: item.frequency,
+          allocatedAmount: item.allocatedAmount,
+          categoryAllocations: item.categoryAllocations,
+        );
+
   Map<String, dynamic> toJson() => {
         "name": name,
         "startTime": startTime.millisecondsSinceEpoch,
@@ -477,6 +493,13 @@ class CreateCategoryInput {
     this.parentId,
   });
 
+  CreateCategoryInput.fromItem(Category item)
+      : this(
+          name: item.name,
+          parentId: item.parentId,
+          tags: item.tags,
+        );
+
   Map<String, dynamic> toJson() => {
         "name": name,
         "tags": tags,
@@ -504,7 +527,8 @@ class UpdateCategoryInput {
     required Category old,
   })  : lastSeenVersion = old.version,
         name = ifNotEqualTo(update.name, old.name),
-        parentId = ifNotEqualTo(update.parentId, old.parentId),
+        parentId =
+            update.parentId != old.parentId ? update.parentId ?? "" : null,
         archive = update.archivedAt != null && old.archivedAt == null,
         tags = setINotEqualTo(update.tags.toSet(), old.tags.toSet())?.toList();
 
@@ -534,6 +558,13 @@ class CreateExpenseInput {
     required this.amount,
     this.timestamp,
   });
+  CreateExpenseInput.fromItem(Expense item)
+      : this(
+          name: item.name,
+          budgetId: item.budgetId,
+          categoryId: item.categoryId,
+          amount: item.amount,
+        );
 
   Map<String, dynamic> toJson() => {
         "name": name,

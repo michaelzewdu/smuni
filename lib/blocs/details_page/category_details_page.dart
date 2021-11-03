@@ -1,4 +1,5 @@
-import 'package:smuni/blocs/refresh.dart';
+import 'package:smuni/blocs/auth.dart';
+import 'package:smuni/blocs/sync.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
@@ -39,13 +40,27 @@ typedef CategoryNotFound = ItemNotFound<String, Category>;
 typedef LoadingCategory = LoadingItem<String, Category>;
 // BLOC
 
-class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category> {
-  RefresherBloc refresherBloc;
+class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
+    CreateCategoryInput, UpdateCategoryInput> {
+  final SyncBloc syncBloc;
+  final ExpenseRepository expenseRepo;
+  final BudgetRepository budgetRepo;
+  final OfflineBudgetRepository offlineBudgetRepo;
+  final OfflineExpenseRepository offlineExpenseRepo;
+
   CategoryDetailsPageBloc(
-    this.refresherBloc,
     CategoryRepository repo,
+    OfflineRepository<String, Category, CreateCategoryInput,
+            UpdateCategoryInput>
+        offlineRepo,
+    AuthBloc authBloc,
+    this.budgetRepo,
+    this.offlineBudgetRepo,
+    this.expenseRepo,
+    this.offlineExpenseRepo,
+    this.syncBloc,
     String id,
-  ) : super(repo, id) {
+  ) : super(repo, offlineRepo, authBloc, id) {
     on<ArchiveCategory>(
       streamToEmitterAdapterStatusAware(_handleArchiveCategory),
     );
@@ -54,92 +69,158 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category> {
     );
   }
 
-  // FIXME: our abstractions are breaking down
+  // FIXME: OUR ABSTRACTIONS ARE BREAKING DOWN!
   @override
   Stream<DetailsPageState<String, Category>> handleDeleteItem(
     DeleteItem<String, Category> event,
   ) async* {
-    try {
-      final current = state;
+    final current = state;
 
-      var totalWait = Duration();
-      while (current is LoadingItem) {
-        if (totalWait > Duration(seconds: 3)) throw TimeoutException();
-        await Future.delayed(const Duration(milliseconds: 500));
-        totalWait += const Duration(milliseconds: 500);
-      }
-
-      if (current is CategoryLoadSuccess) {
-        await repo.removeItem(current.id, true);
-        yield ItemNotFound(current.id);
-      } else if (current is ItemNotFound) {
-        throw Exception("impossible event");
-      }
-    } on SocketException catch (err) {
-      throw ConnectionException(err);
+    var totalWait = Duration();
+    while (current is LoadingItem) {
+      if (totalWait > Duration(seconds: 3)) throw TimeoutException();
+      await Future.delayed(const Duration(milliseconds: 500));
+      totalWait += const Duration(milliseconds: 500);
     }
 
-    try {
-      await refresherBloc.refresher.refreshCache();
-    } on SocketException catch (err) {
-      // if refresh failed, tell the refresher bloc it need to refresh
-      refresherBloc.add(Refresh());
-      // and report the refresh error to whoever event added the event
-      throw RefreshException(ConnectionException(err));
+    if (current is CategoryLoadSuccess) {
+      try {
+        final auth = authBloc.authSuccesState();
+        await repo.removeItem(current.id, auth.username, auth.authToken, true);
+        yield ItemNotFound(current.id);
+
+        // refresh stuff since category deletion will acffect a host of items
+        try {
+          await syncBloc.refresher.refreshCache(auth.username, auth.authToken);
+        } on SocketException catch (err) {
+          // if refresh failed, tell the sync bloc it need to refresh
+          syncBloc.add(Sync());
+          // and report the sync error to whoever event added the event
+          throw SyncException(ConnectionException(err));
+        }
+      } catch (err) {
+        if (err is SocketException || err is UnauthenticatedException) {
+          // do it offline if not connected or authenticated
+
+          for (final expense in await expenseRepo
+              .getItemsInRange(DateRange(), ofCategories: {current.id})) {
+            await offlineExpenseRepo.removeItemOffline(expense.id);
+          }
+          for (final budget
+              in (await offlineBudgetRepo.getItemsOffline()).values) {
+            if (budget.categoryAllocations.containsKey(current.id)) {
+              await offlineBudgetRepo.updateItemOffline(
+                  budget.id,
+                  UpdateBudgetInput(
+                    lastSeenVersion: budget.version,
+                    categoryAllocations: {
+                      for (final allocation
+                          in budget.categoryAllocations.entries)
+                        if (allocation.key != current.id)
+                          allocation.key: allocation.value
+                    },
+                  ));
+            }
+          }
+
+          for (final category in (await offlineRepo.getItemsOffline()).values) {
+            if (category.parentId == current.id) {
+              await offlineRepo.updateItemOffline(
+                category.id,
+                UpdateCategoryInput(
+                  lastSeenVersion: category.version,
+                  parentId: current.item.parentId ?? "",
+                ),
+              );
+            }
+          }
+
+          await offlineRepo.removeItemOffline(current.id);
+          yield ItemNotFound(current.id);
+        } else {
+          rethrow;
+        }
+      }
+    } else if (current is ItemNotFound) {
+      throw Exception("impossible event");
     }
   }
 
   Stream<CategoryDetailsPageState> _handleArchiveCategory(
     ArchiveCategory event,
   ) async* {
-    try {
-      final current = state;
+    final current = state;
 
-      var totalWait = Duration();
-      while (current is LoadingItem) {
-        if (totalWait > Duration(seconds: 3)) throw TimeoutException();
-        await Future.delayed(const Duration(milliseconds: 500));
-        totalWait += const Duration(milliseconds: 500);
-      }
-      if (current is CategoryLoadSuccess) {
+    var totalWait = Duration();
+    while (current is LoadingItem) {
+      if (totalWait > Duration(seconds: 3)) throw TimeoutException();
+      await Future.delayed(const Duration(milliseconds: 500));
+      totalWait += const Duration(milliseconds: 500);
+    }
+    if (current is CategoryLoadSuccess) {
+      final update = UpdateCategoryInput(
+        lastSeenVersion: current.item.version,
+        archive: true,
+      );
+      try {
+        final auth = authBloc.authSuccesState();
         final item = await repo.updateItem(
-            current.id,
-            UpdateCategoryInput(
-                lastSeenVersion: current.item.version, archive: true));
+          current.id,
+          update,
+          auth.username,
+          auth.authToken,
+        );
         yield CategoryLoadSuccess(current.id, item);
-      } else if (current is ItemNotFound) {
-        throw Exception("impossible event");
+      } catch (err) {
+        // do it offline if not connected or authenticated
+        if (err is SocketException || err is UnauthenticatedException) {
+          final item = await offlineRepo.updateItemOffline(current.id, update);
+          yield CategoryLoadSuccess(current.id, item);
+        } else {
+          rethrow;
+        }
       }
-    } on SocketException catch (err) {
-      throw ConnectionException(err);
+    } else if (current is ItemNotFound) {
+      throw Exception("impossible event");
     }
   }
 
   Stream<CategoryDetailsPageState> _handleUnarchiveCategory(
     UnarchiveCategory event,
   ) async* {
-    try {
-      final current = state;
+    final current = state;
 
-      var totalWait = Duration();
-      while (current is LoadingItem) {
-        if (totalWait > Duration(seconds: 3)) throw TimeoutException();
-        await Future.delayed(const Duration(milliseconds: 500));
-        totalWait += const Duration(milliseconds: 500);
-      }
-
-      if (current is CategoryLoadSuccess) {
+    var totalWait = Duration();
+    while (current is LoadingItem) {
+      if (totalWait > Duration(seconds: 3)) throw TimeoutException();
+      await Future.delayed(const Duration(milliseconds: 500));
+      totalWait += const Duration(milliseconds: 500);
+    }
+    if (current is CategoryLoadSuccess) {
+      final update = UpdateCategoryInput(
+        lastSeenVersion: current.item.version,
+        archive: false,
+      );
+      try {
+        final auth = authBloc.authSuccesState();
         final item = await repo.updateItem(
           current.id,
-          UpdateCategoryInput(
-              lastSeenVersion: current.item.version, archive: false),
+          update,
+          auth.username,
+          auth.authToken,
         );
         yield CategoryLoadSuccess(current.id, item);
-      } else if (current is ItemNotFound) {
-        throw Exception("impossible event");
+      } catch (err) {
+        if (err is SocketException || err is UnauthenticatedException) {
+          // do it offline if not connected or authenticated
+          final item = await offlineRepo.updateItemOffline(current.id, update);
+          yield CategoryLoadSuccess(current.id, item);
+        } else {
+          rethrow;
+        }
       }
-    } on SocketException catch (err) {
-      throw ConnectionException(err);
+    } else if (current is ItemNotFound) {
+      throw Exception("impossible event");
     }
   }
 }

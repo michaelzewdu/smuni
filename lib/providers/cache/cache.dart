@@ -8,7 +8,14 @@ abstract class Cache<Identifier, Item> {
   Future<Map<Identifier, Item>> getItems();
   Future<void> setItem(Identifier id, Item item);
   Future<void> removeItem(Identifier id);
-  // Stream<List<Identifier>> get changedItems;
+}
+
+abstract class RemovedItemsCache<Identifier> {
+  Future<void> clear();
+  Future<bool> has(Identifier id);
+  Future<List<Identifier>> getItems();
+  Future<void> add(Identifier id);
+  Future<void> remove(Identifier id);
 }
 
 class MapCache<Identifier, Item> extends Cache<Identifier, Item> {
@@ -37,5 +44,34 @@ class MapCache<Identifier, Item> extends Cache<Identifier, Item> {
   @override
   Future<void> clear() async {
     _items.clear();
+  }
+}
+
+class SetRemovedItemsCache<Identifier> extends RemovedItemsCache<Identifier> {
+  final removedItems = <Identifier>{};
+
+  @override
+  Future<void> add(Identifier id) async {
+    removedItems.add(id);
+  }
+
+  @override
+  Future<void> clear() async {
+    removedItems.clear();
+  }
+
+  @override
+  Future<List<Identifier>> getItems() async {
+    return removedItems.toList();
+  }
+
+  @override
+  Future<bool> has(Identifier id) async {
+    return removedItems.contains(id);
+  }
+
+  @override
+  Future<void> remove(Identifier id) async {
+    removedItems.remove(id);
   }
 }

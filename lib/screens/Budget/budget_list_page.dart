@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smuni/blocs/budget_list_page.dart';
+
+import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/repositories/repositories.dart';
-import 'package:smuni/widgets/budget_list_view.dart';
+import 'package:smuni/widgets/widgets.dart';
 
 import 'budget_details_page.dart';
 import 'budget_edit_page.dart';
@@ -24,6 +25,7 @@ class BudgetListPage extends StatefulWidget {
       builder: (context) => BlocProvider(
         create: (context) => BudgetListPageBloc(
           context.read<BudgetRepository>(),
+          context.read<OfflineBudgetRepository>(),
           const LoadBudgetsFilter(includeActive: false, includeArchvied: true),
         ),
         child: BudgetListPage(
@@ -35,7 +37,10 @@ class BudgetListPage extends StatefulWidget {
 
   static BlocProvider<BudgetListPageBloc> page() {
     return BlocProvider(
-      create: (context) => BudgetListPageBloc(context.read<BudgetRepository>()),
+      create: (context) => BudgetListPageBloc(
+        context.read<BudgetRepository>(),
+        context.read<OfflineBudgetRepository>(),
+      ),
       child: BudgetListPage(),
     );
   }
@@ -80,12 +85,21 @@ class _BudgetListPageState extends State<BudgetListPage> {
             if (state is BudgetsLoadSuccess) {
               return Column(
                 children: [
-                  BudgetListView(
-                    state: state,
-                    onSelect: (id) => Navigator.pushNamed(
-                      context,
-                      BudgetDetailsPage.routeName,
-                      arguments: id,
+                  if (!widget.showingArchivedOnly)
+                    ListTile(
+                      title: Text("Archived budgets"),
+                      dense: true,
+                      onTap: () => Navigator.pushNamed(
+                          context, BudgetListPage.routeNameArchivedOnly),
+                    ),
+                  Expanded(
+                    child: BudgetListView(
+                      state: state,
+                      onSelect: (id) => Navigator.pushNamed(
+                        context,
+                        BudgetDetailsPage.routeName,
+                        arguments: id,
+                      ),
                     ),
                   ),
                 ],

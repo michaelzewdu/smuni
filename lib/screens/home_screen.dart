@@ -1,13 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:smuni/blocs/blocs.dart';
-import 'package:smuni/blocs/budget_list_page.dart';
-import 'package:smuni/blocs/refresh.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
-import 'package:smuni/widgets/budget_selector.dart';
+import 'package:smuni/widgets/widgets.dart';
+import 'package:smuni_api_client/smuni_api_client.dart';
 
 import 'Budget/budget_details_page.dart';
 import 'Budget/budget_list_page.dart';
@@ -18,11 +18,11 @@ import 'settings_page.dart';
 class SmuniHomeScreen extends StatefulWidget {
   SmuniHomeScreen({Key? key}) : super(key: key);
 
-  static const String routeName = '/';
+  static const String routeName = '/home';
 
   static Route route() => MaterialPageRoute(
-        builder: (context) => SmuniHomeScreen(),
         settings: RouteSettings(name: routeName),
+        builder: (context) => SmuniHomeScreen(),
       );
 
   @override
@@ -31,10 +31,13 @@ class SmuniHomeScreen extends StatefulWidget {
 
 class _SmuniHomeScreenState extends State<SmuniHomeScreen> {
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<RefresherBloc, RefresherBlocState>(
-        builder: (context, state) =>
-            state is Refreshed ? DefaultHomeScreen() : RefreshScreen(),
+  Widget build(BuildContext context) => BlocBuilder<AuthBloc, AuthBlocState>(
+        builder: (context, authState) => authState is AuthSuccess
+            ? BlocBuilder<SyncBloc, SyncBlocState>(
+                builder: (context, state) =>
+                    state is Synced ? DefaultHomeScreen() : SyncScreen(),
+              )
+            : DefaultHomeScreen(),
       );
 }
 
@@ -93,53 +96,106 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
         }),
       );
 
-  Widget _homePage() =>
-      BlocBuilder<UserBloc, UserBlocState>(builder: (context, userState) {
-        if (userState is UserLoadSuccess) {
-          if (userState.item.mainBudget != null) {
-            return BudgetDetailsPage.page(
-              userState.item.mainBudget!,
+  Widget _homePage() => BlocBuilder<AuthBloc, AuthBlocState>(
+        builder: (context, authState) => authState is AuthSuccess
+            ? BlocBuilder<UserBloc, UserBlocState>(
+                builder: (context, userState) {
+                  if (userState is UserLoadSuccess) {
+                    return _showHome(
+                      userState.item.mainBudget,
+                      (newMainBudget, {onSuccess, onError}) =>
+                          context.read<UserBloc>().add(
+                                UpdateUser(
+                                  User.from(
+                                    userState.item,
+                                    mainBudget: newMainBudget,
+                                  ),
+                                  onSuccess: onSuccess,
+                                  onError: onError,
+                                ),
+                              ),
+                    );
+                  } else if (userState is UserLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  throw Exception("unexpected state");
+                },
+              )
+            : BlocBuilder<PreferencesBloc, PreferencesBlocState>(
+                builder: (context, preferencesState) {
+                  if (preferencesState is PreferencesLoadSuccess) {
+                    return _showHome(
+                      preferencesState.preferences.mainBudget,
+                      (newMainBudget, {onSuccess, onError}) =>
+                          context.read<PreferencesBloc>().add(
+                                UpdatePreferences(
+                                  preferencesState.preferences,
+                                  onSuccess: onSuccess,
+                                  onError: onError,
+                                ),
+                              ),
+                    );
+                  } else if (preferencesState is PreferencesLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  throw Exception("unexpected state");
+                },
+              ),
+      );
+
+  Widget _showHome(
+    String? mainBudget,
+    void Function(
+      String newMainBudget, {
+      OperationSuccessNotifier? onSuccess,
+      OperationExceptionNotifier? onError,
+    })
+        changeMainBudget,
+  ) =>
+      mainBudget != null
+          ? BudgetDetailsPage.page(
+              mainBudget,
               (context, state) => [
                 ElevatedButton(
                   onPressed: () =>
-                      _showMainBudgetSelectorModal(context, userState),
+                      _showMainBudgetSelectorModal(context, changeMainBudget),
                   child: const Text("Change"),
                 ),
               ],
-            );
-          } else {
-            return Scaffold(
-                appBar: AppBar(
-                  title: Text('Home'),
-                ),
-                body: Center(
-                  child: Form(
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text("Main budget not selected or created.."),
+            )
+          : Scaffold(
+              appBar: AppBar(
+                title: Text('Home'),
+              ),
+              body: Center(
+                child: Form(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text("Main budget not selected:"),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => _showMainBudgetSelectorModal(
+                          context,
+                          changeMainBudget,
                         ),
-                        ElevatedButton(
-                          onPressed: () =>
-                              // _showMainBudgetSelectorModal(context, userState),
-                              Navigator.pushNamed(context, '/budgetEdit'),
-                          child: const Text("Add a new budget"),
-                        )
-                      ],
-                    ),
+                        child: const Text("Select Main Budget"),
+                      )
+                    ],
                   ),
-                ));
-          }
-        } else if (userState is UserLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        throw Exception("unexpected state");
-      });
+                ),
+              ),
+            );
 
   void _showMainBudgetSelectorModal(
     BuildContext context,
-    UserLoadSuccess state,
+    void Function(
+      String newMainBudget, {
+      OperationSuccessNotifier? onSuccess,
+      OperationExceptionNotifier? onError,
+    })
+        changeMainBudget,
   ) {
     final selectorKey = GlobalKey<FormFieldState<String>>();
     var budgetId = "";
@@ -154,17 +210,17 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   BlocProvider(
-                    create: (context) =>
-                        BudgetListPageBloc(context.read<BudgetRepository>()),
+                    create: (context) => BudgetListPageBloc(
+                      context.read<BudgetRepository>(),
+                      context.read<OfflineBudgetRepository>(),
+                    ),
                     child: SizedBox(
                       height: MediaQuery.of(context).size.height * 0.4,
                       child: BudgetFormSelector(
                         key: selectorKey,
                         isSelecting: true,
                         onChanged: (value) {
-                          setState(() {
-                            budgetId = value!;
-                          });
+                          setState(() => budgetId = value!);
                         },
                         validator: (value) {
                           if (value == null) {
@@ -180,29 +236,25 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                             final selector = selectorKey.currentState;
                             if (selector != null && selector.validate()) {
                               selector.save();
-                              context.read<UserBloc>().add(
-                                    UpdateUser(
-                                      User.from(state.item,
-                                          mainBudget: budgetId),
-                                      onSuccess: () {
-                                        setState(() => awaitingOp = false);
-                                        this.setState(() => {});
-                                        Navigator.pop(context);
-                                      },
-                                      onError: (err) {
-                                        setState(() => awaitingOp = false);
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            content: err is ConnectionException
-                                                ? Text('Connection Failed')
-                                                : Text('Unknown Error Occured'),
-                                            behavior: SnackBarBehavior.floating,
-                                          ),
-                                        );
-                                      },
+                              changeMainBudget(
+                                budgetId,
+                                onSuccess: () {
+                                  setState(() => awaitingOp = false);
+                                  this.setState(() => {});
+                                  Navigator.pop(context);
+                                },
+                                onError: (err) {
+                                  setState(() => awaitingOp = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: err is ConnectionException
+                                          ? Text('Connection Failed')
+                                          : Text('Unknown Error Occured'),
+                                      behavior: SnackBarBehavior.floating,
                                     ),
                                   );
+                                },
+                              );
                               setState(() => awaitingOp = true);
                             }
                           }
@@ -219,23 +271,23 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
   }
 }
 
-class RefreshScreen extends StatefulWidget {
-  const RefreshScreen({Key? key}) : super(key: key);
+class SyncScreen extends StatefulWidget {
+  const SyncScreen({Key? key}) : super(key: key);
 
   @override
-  State<RefreshScreen> createState() => _RefreshScreenState();
+  State<SyncScreen> createState() => _SyncScreenState();
 }
 
-class _RefreshScreenState extends State<RefreshScreen> {
+class _SyncScreenState extends State<SyncScreen> {
   @override
   void initState() {
     super.initState();
   }
 
   @override
-  Widget build(context) => BlocConsumer<RefresherBloc, RefresherBlocState>(
+  Widget build(context) => BlocConsumer<SyncBloc, SyncBlocState>(
         listener: (context, state) {
-          if (state is Refreshed) {
+          if (state is Synced) {
             Navigator.pushReplacementNamed(
               context,
               SmuniHomeScreen.routeName,
@@ -245,21 +297,29 @@ class _RefreshScreenState extends State<RefreshScreen> {
         builder: (context, state) => Scaffold(
           appBar: AppBar(title: const Text("Kamasio")),
           body: Center(
-            child: state is RefreshFailed
+            child: state is DeSynced
                 ? Column(
                     children: [
-                      state.exception.inner is ConnectionException
-                          ? Text("Refresh failed: connection error")
-                          : Text("Refresh failed: unhandled error"),
+                      state is SyncFailed
+                          ? state.exception.inner is ConnectionException
+                              ? Text("Sync failed: connection error")
+                              : state.exception.inner
+                                      is UnauthenticatedException
+                                  ? Text("Sync failed: signed out")
+                                  : Text("Sync failed: unhandled error")
+                          : state is ReportedDesync
+                              ? Text(
+                                  "Hard server desynchronization: please refresh")
+                              : Text(
+                                  "Hard server desynchronization: please refresh"),
                       const Text("Please try again"),
                       ElevatedButton(
-                        onPressed: () =>
-                            context.read<RefresherBloc>().add(Refresh()),
+                        onPressed: () => context.read<SyncBloc>().add(Sync()),
                         child: const Text("Refresh"),
                       )
                     ],
                   )
-                : state is Refreshing
+                : state is Syncing
                     ? Column(children: const [
                         Text("Loading..."),
                         CircularProgressIndicator()

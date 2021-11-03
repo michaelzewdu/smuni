@@ -3,15 +3,12 @@ import 'dart:collection';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smuni/blocs/category_list_page.dart';
-import 'package:smuni/blocs/details_page/budget_details_page.dart';
-import 'package:smuni/blocs/expense_list_page.dart';
-import 'package:smuni/blocs/refresh.dart';
+
+import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/screens/Expense/expense_edit_page.dart';
 import 'package:smuni/utilities.dart';
-import 'package:smuni/widgets/expense_list_view.dart';
 import 'package:smuni/widgets/widgets.dart';
 
 import 'budget_edit_page.dart';
@@ -33,13 +30,19 @@ class BudgetDetailsPage extends StatefulWidget {
           providers: [
             BlocProvider(
               create: (BuildContext context) => BudgetDetailsPageBloc(
-                  context.read<RefresherBloc>(),
                   context.read<BudgetRepository>(),
+                  context.read<OfflineBudgetRepository>(),
+                  context.read<AuthBloc>(),
+                  context.read<ExpenseRepository>(),
+                  context.read<OfflineExpenseRepository>(),
+                  context.read<SyncBloc>(),
                   id),
             ),
             BlocProvider(
               create: (BuildContext context) => ExpenseListPageBloc(
                   context.read<ExpenseRepository>(),
+                  context.read<OfflineExpenseRepository>(),
+                  context.read<AuthBloc>(),
                   context.read<BudgetRepository>(),
                   context.read<CategoryRepository>(),
                   const DateRangeFilter(
@@ -50,8 +53,10 @@ class BudgetDetailsPage extends StatefulWidget {
                   id),
             ),
             BlocProvider(
-              create: (BuildContext context) =>
-                  CategoryListPageBloc(context.read<CategoryRepository>()),
+              create: (BuildContext context) => CategoryListPageBloc(
+                context.read<CategoryRepository>(),
+                context.read<OfflineCategoryRepository>(),
+              ),
             ),
           ],
           child: BudgetDetailsPage(
@@ -100,7 +105,7 @@ class BudgetDetailsPage extends StatefulWidget {
                                     },
                                     onError: (err) {
                                       setState(() => awaitingOp = false);
-                                      if (err is RefreshException) {
+                                      if (err is SyncException) {
                                         Navigator.pop(dialogContext, false);
                                         Navigator.popUntil(
                                           context,
@@ -560,6 +565,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   child: BlocProvider(
                     create: (context) => ExpenseListPageBloc(
                       context.read<ExpenseRepository>(),
+                      context.read<OfflineExpenseRepository>(),
+                      context.read<AuthBloc>(),
                       context.read<BudgetRepository>(),
                       context.read<CategoryRepository>(),
                       const DateRangeFilter(
@@ -635,7 +642,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
 
                           // FIXME: move this calculation
                           final ancestryTree =
-                              CategoryRepository.calcAncestryTree(
+                              CategoryRepositoryExt.calcAncestryTree(
                             state.item.categoryAllocations.keys.toSet(),
                             catListState.items,
                           );
@@ -971,6 +978,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
               child: BlocProvider(
                   create: (context) => ExpenseListPageBloc(
                         context.read<ExpenseRepository>(),
+                        context.read<OfflineExpenseRepository>(),
+                        context.read<AuthBloc>(),
                         context.read<BudgetRepository>(),
                         context.read<CategoryRepository>(),
                         const DateRangeFilter(
@@ -1197,6 +1206,8 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
             child: BlocProvider(
               create: (context) => ExpenseListPageBloc(
                 context.read<ExpenseRepository>(),
+                context.read<OfflineExpenseRepository>(),
+                context.read<AuthBloc>(),
                 context.read<BudgetRepository>(),
                 context.read<CategoryRepository>(),
                 const DateRangeFilter(

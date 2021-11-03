@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:smuni/blocs/details_page/category_details_page.dart';
-import 'package:smuni/blocs/refresh.dart';
+import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 
@@ -15,8 +14,14 @@ class CategoryDetailsPage extends StatelessWidget {
         settings: const RouteSettings(name: routeName),
         builder: (context) => BlocProvider(
           create: (context) => CategoryDetailsPageBloc(
-              context.read<RefresherBloc>(),
               context.read<CategoryRepository>(),
+              context.read<OfflineCategoryRepository>(),
+              context.read<AuthBloc>(),
+              context.read<BudgetRepository>(),
+              context.read<OfflineBudgetRepository>(),
+              context.read<ExpenseRepository>(),
+              context.read<OfflineExpenseRepository>(),
+              context.read<SyncBloc>(),
               id),
           child: CategoryDetailsPage(),
         ),
@@ -66,7 +71,7 @@ class CategoryDetailsPage extends StatelessWidget {
                                     },
                                     onError: (err) {
                                       setState(() => awaitingOp = false);
-                                      if (err is RefreshException) {
+                                      if (err is SyncException) {
                                         Navigator.pop(dialogContext, false);
                                         Navigator.popUntil(
                                           context,

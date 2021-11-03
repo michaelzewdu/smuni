@@ -1,25 +1,25 @@
-import 'dart:io';
-
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:smuni/repositories/category.dart';
+import 'package:smuni/screens/auth/sign_in_page.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 import 'bloc_observer.dart';
 import 'blocs/blocs.dart';
-import 'blocs/refresh.dart';
 import 'constants.dart';
 import 'models/models.dart';
 import 'providers/cache/cache.dart';
 import 'repositories/repositories.dart';
 import 'screens/home_screen.dart';
 import 'screens/routes.dart';
-import 'utilities.dart';
+import 'screens/splash.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  // WidgetsFlutterBinding.ensureInitialized();
+  runApp(MyApp());
+}
 
 class MyApp extends StatefulWidget {
   MyApp({
@@ -31,192 +31,185 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late Future<Pair<sqflite.Database, AuthTokenRepository>> _initAsyncFuture;
   final _client =
       SmuniApiClient("https://smuni-rest-api-staging.herokuapp.com");
-
-  Future<Pair<sqflite.Database, AuthTokenRepository>> _initAsync() async {
-    var databasesPath = await sqflite.getDatabasesPath();
-    final path = databasesPath + "main.db";
-
-    try {
-      final file = File(path);
-      if (await file.exists()) await file.delete();
-    } catch (_) {}
-
-    final db = await sqflite.openDatabase(
-      sqflite.inMemoryDatabasePath,
-      // path,
-      version: 1,
-      onCreate: (db, version) => db.transaction((txn) async {
-        await migrateV1(txn);
-        /* await SqliteUserCache(db)
-            .setItem(defaultUser.id, User.from(defaultUser));
-        {
-          final cache = SqliteBudgetCache(db);
-          for (var item in defaultUser.budgets) {
-            await cache.setItem(item.id, item);
-          }
-        }
-        {
-          final cache = SqliteCategoryCache(db);
-          for (var item in defaultUser.categories) {
-            await cache.setItem(item.id, item);
-          }
-        }
-        {
-          final cache = SqliteExpenseCache(db);
-          for (var item in defaultUser.expenses) {
-            await cache.setItem(item.id, item);
-          }
-        } */
-      }),
-    );
-
-    final response = await _client.signInEmail(defaultUser.email!, "password");
-
-    await SqliteUserCache(db)
-        .setItem(response.user.username, User.from(response.user));
-    {
-      final cache = SqliteBudgetCache(db);
-      for (final item in response.user.budgets) {
-        await cache.setItem(item.id, item);
-      }
-    }
-    {
-      final cache = SqliteCategoryCache(db);
-      for (final item in response.user.categories) {
-        await cache.setItem(item.id, item);
-      }
-    }
-    {
-      final cache = SqliteExpenseCache(db);
-      for (final item in response.user.expenses) {
-        await cache.setItem(item.id, item);
-      }
-    }
-
-    return Pair(
-      db,
-      await AuthTokenRepository.fromValues(
-        client: _client,
-        cache: AuthTokenCache(db),
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-        loggedInUsername: defaultUser.username,
-      ),
-    );
-
-    /* return Pair(
-      db,
-      FakeAuthTokenRepository(
-          client: _client,
-          cache: AuthTokenCache(db),
-          username: defaultUser.username,
-          accessToken: 'supersunday',
-          refreshToken: 'imightgetafadedin2014'),
-    ); */
-  }
+  late Future<sqflite.Database> _initAsyncFuture;
 
   @override
   void initState() {
-    _initAsyncFuture = _initAsync();
+    _initAsyncFuture = initDb();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) => RepositoryProvider.value(
         value: _client,
-        child: Builder(
-            builder: (context) => FutureBuilder(
-                  future: _initAsyncFuture,
-                  builder: (context,
-                      AsyncSnapshot<Pair<sqflite.Database, AuthTokenRepository>>
-                          snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return Center(
-                        child: Column(
-                          children: const [
-                            CircularProgressIndicator(),
-                            // Text("Accessing db..."),
-                          ],
+        child: FutureBuilder(
+            future: _initAsyncFuture,
+            builder: (
+              context,
+              AsyncSnapshot<sqflite.Database> snapshot,
+            ) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return MaterialApp(home: SplashPage());
+              }
+              if (snapshot.hasError) {
+                throw snapshot.error!;
+              }
+              final db = snapshot.data!;
+              return MultiRepositoryProvider(
+                providers: [
+                  RepositoryProvider(create: (context) => SqliteUserCache(db)),
+                  RepositoryProvider(
+                    create: (context) => SqliteBudgetCache(db),
+                  ),
+                  RepositoryProvider(
+                    create: (context) =>
+                        ServerVersionSqliteCache(SqliteBudgetCache(db)),
+                  ),
+                  RepositoryProvider(
+                    create: (context) => SqliteRemovedBudgetsCache(db),
+                  ),
+                  RepositoryProvider(
+                    create: (context) => SqliteCategoryCache(db),
+                  ),
+                  RepositoryProvider(
+                    create: (context) =>
+                        ServerVersionSqliteCache(SqliteCategoryCache(db)),
+                  ),
+                  RepositoryProvider(
+                    create: (context) => SqliteRemovedCategoriesCache(db),
+                  ),
+                  RepositoryProvider(
+                    create: (context) => SqliteExpenseCache(db),
+                  ),
+                  RepositoryProvider(
+                    create: (context) =>
+                        ServerVersionSqliteCache(SqliteExpenseCache(db)),
+                  ),
+                  RepositoryProvider(
+                    create: (context) => SqliteRemovedExpensesCache(db),
+                  ),
+                  RepositoryProvider(create: (context) => PreferencesCache(db)),
+                  RepositoryProvider(create: (context) => AuthTokenCache(db)),
+                  RepositoryProvider(
+                    create: (context) => AuthRepository(
+                      context.read<SmuniApiClient>(),
+                      context.read<AuthTokenCache>(),
+                    ),
+                  ),
+                  RepositoryProvider(
+                    create: (context) => UserRepository(
+                      context.read<SqliteUserCache>(),
+                      context.read<SmuniApiClient>(),
+                    ),
+                  ),
+                ],
+                child: MultiRepositoryProvider(
+                  providers: [
+                    RepositoryProvider(
+                      create: (context) => UserRepository(
+                        context.read<SqliteUserCache>(),
+                        context.read<SmuniApiClient>(),
+                      ),
+                    ),
+                    RepositoryProvider(
+                      create: (context) => BudgetRepository(
+                        context.read<SmuniApiClient>(),
+                        context.read<SqliteBudgetCache>(),
+                      ),
+                    ),
+                    RepositoryProvider(
+                      create: (context) => OfflineBudgetRepository(
+                        context.read<SqliteBudgetCache>(),
+                        context
+                            .read<ServerVersionSqliteCache<String, Budget>>(),
+                        context.read<SqliteRemovedBudgetsCache>(),
+                      ),
+                    ),
+                    RepositoryProvider(
+                      create: (context) => CategoryRepository(
+                        context.read<SqliteCategoryCache>(),
+                        context.read<SmuniApiClient>(),
+                      ),
+                    ),
+                    RepositoryProvider(
+                      create: (context) => OfflineCategoryRepository(
+                        context.read<SqliteCategoryCache>(),
+                        context
+                            .read<ServerVersionSqliteCache<String, Category>>(),
+                        context.read<SqliteRemovedCategoriesCache>(),
+                      ),
+                    ),
+                    RepositoryProvider(
+                      create: (context) => ExpenseRepository(
+                        context.read<SqliteExpenseCache>(),
+                        context.read<SmuniApiClient>(),
+                      ),
+                    ),
+                    RepositoryProvider(
+                      create: (context) => OfflineExpenseRepository(
+                        context.read<SqliteExpenseCache>(),
+                        context
+                            .read<ServerVersionSqliteCache<String, Expense>>(),
+                        context.read<SqliteRemovedExpensesCache>(),
+                      ),
+                    ),
+                    RepositoryProvider(
+                      create: (context) => CacheSynchronizer(
+                        context.read<SmuniApiClient>(),
+                        userRepo: context.read<UserRepository>(),
+                        budgetRepo: context.read<BudgetRepository>(),
+                        categoryRepo: context.read<CategoryRepository>(),
+                        expenseRepo: context.read<ExpenseRepository>(),
+                        offlineBudgetRepo:
+                            context.read<OfflineBudgetRepository>(),
+                        offlineCategoryRepo:
+                            context.read<OfflineCategoryRepository>(),
+                        offlineExpenseRepo:
+                            context.read<OfflineExpenseRepository>(),
+                      ),
+                    ),
+                  ],
+                  child: MultiBlocProvider(
+                    providers: [
+                      BlocProvider(
+                        create: (context) => AuthBloc(
+                          context.read<AuthRepository>(),
+                          context.read<CacheSynchronizer>(),
+                        )..add(CheckCache()),
+                      ),
+                      BlocProvider(
+                        create: (context) =>
+                            PreferencesBloc(context.read<PreferencesCache>())
+                              ..add(LoadPreferences()),
+                      ),
+                      BlocProvider(
+                        create: (context) => UserBloc(
+                          context.read<UserRepository>(),
+                          context.read<AuthBloc>(),
                         ),
-                      );
-                    }
-                    if (snapshot.hasError) {
-                      throw snapshot.error!;
-                    }
-                    final db = snapshot.data!.a;
-                    return MultiRepositoryProvider(
-                      providers: [
-                        RepositoryProvider.value(value: snapshot.data!.b),
-                        RepositoryProvider(
-                          create: (context) => UserRepository(
-                            SqliteUserCache(db),
-                            context.read<SmuniApiClient>(),
-                            context.read<AuthTokenRepository>(),
-                          ),
+                      ),
+                      BlocProvider(
+                        create: (context) => SyncBloc(
+                          context.read<CacheSynchronizer>(),
+                          context.read<AuthBloc>(),
+                          context.read<PreferencesBloc>(),
                         ),
-                        RepositoryProvider(
-                          create: (context) => BudgetRepository(
-                            SqliteBudgetCache(db),
-                            context.read<SmuniApiClient>(),
-                            context.read<AuthTokenRepository>(),
-                          ),
-                        ),
-                        RepositoryProvider(
-                          create: (context) => CategoryRepository(
-                            ApiCategoryRepository(
-                              SqliteCategoryCache(db),
-                              context.read<SmuniApiClient>(),
-                              context.read<AuthTokenRepository>(),
-                            ),
-                          ),
-                        ),
-                        RepositoryProvider(
-                          create: (context) => ExpenseRepository(
-                            SqliteExpenseCache(db),
-                            context.read<SmuniApiClient>(),
-                            context.read<AuthTokenRepository>(),
-                          ),
-                        ),
-                        RepositoryProvider(
-                          create: (context) => CacheRefresher(
-                            context.read<SmuniApiClient>(),
-                            context.read<AuthTokenRepository>(),
-                            userRepo: context.read<UserRepository>(),
-                            budgetRepo: context.read<BudgetRepository>(),
-                            categoryRepo: context.read<CategoryRepository>(),
-                            expenseRepo: context.read<ExpenseRepository>(),
-                          ),
-                        ),
-                        /* RepositoryProvider(
-                          create: (context) => CacheRefresher(
-                              context.read<SmuniApiClient>(),
-                              SqliteExpenseCache(db)),
-                        ), */
-                      ],
-                      child: MultiBlocProvider(
-                        providers: [
-                          BlocProvider(
-                            create: (context) => UserBloc(
-                                context.read<UserRepository>(), defaultUser.id),
-                          ),
-                          BlocProvider(
-                            create: (context) {
-                              var blocErrorBloc = BlocErrorBloc();
-                              Bloc.observer = SimpleBlocObserver(blocErrorBloc);
-                              return blocErrorBloc;
-                            },
-                          ),
-                          BlocProvider(
-                            create: (context) =>
-                                RefresherBloc(context.read<CacheRefresher>()),
-                          ),
-                        ],
-                        child: BlocBuilder<BlocErrorBloc, BlocErrorBlocState>(
-                            builder: (context, state) {
-                          if (state is ErrorObserved) throw state.error;
+                      ),
+                    ],
+                    child: BlocProvider(
+                      create: (context) {
+                        var blocErrorBloc = BlocErrorBloc();
+                        Bloc.observer = SimpleBlocObserver(blocErrorBloc);
+                        return blocErrorBloc;
+                      },
+                      child: BlocBuilder<BlocErrorBloc, BlocErrorBlocState>(
+                        builder: (context, state) {
+                          if (state is ErrorObserved) {
+                            print(state.stackTrace);
+                            throw state.error;
+                          }
                           return MaterialApp(
                             title: 'Smuni',
                             localizationsDelegates: [
@@ -242,13 +235,44 @@ class _MyAppState extends State<MyApp> {
                             ),
                             onGenerateRoute: Routes.myOnGenerateRoute,
                             // initialRoute: CategoryListPage.routeName,
-                            home: SmuniHomeScreen(),
+                            home: MultiBlocListener(
+                              listeners: [
+                                BlocListener<AuthBloc, AuthBlocState>(
+                                  listener: (context, state) {
+                                    if (state is AuthSuccess) {
+                                      Navigator.pushReplacementNamed(
+                                        context,
+                                        SmuniHomeScreen.routeName,
+                                      );
+                                    } else if (state is Unauthenticated) {
+                                      Navigator.pushReplacementNamed(
+                                        context,
+                                        SignInPage.routeName,
+                                      );
+                                    }
+                                  },
+                                ),
+                                BlocListener<PreferencesBloc,
+                                    PreferencesBlocState>(
+                                  listener: (context, state) {
+                                    if (state is PreferencesLoadSuccess) {
+                                      context
+                                          .read<SyncBloc>()
+                                          .add(LoadSyncState());
+                                    }
+                                  },
+                                ),
+                              ],
+                              child: Scaffold(body: SplashPage()),
+                            ),
                           );
-                        }),
+                        },
                       ),
-                    );
-                  },
-                )),
+                    ),
+                  ),
+                ),
+              );
+            }),
       );
 }
 

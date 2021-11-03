@@ -72,7 +72,7 @@ class DateRange {
           end: DateTime(
             timestamp.year,
             timestamp.month,
-            timestamp.day - (7 - timestamp.weekday),
+            timestamp.day + (7 - timestamp.weekday),
           ),
         );
   DateRange.monthRange(DateTime timestamp)
@@ -212,10 +212,12 @@ abstract class OperationException implements Exception {}
 
 class TimeoutException implements OperationException {}
 
-class RefreshException implements OperationException {
+class UnauthenticatedException implements OperationException {}
+
+class SyncException {
   final OperationException inner;
 
-  RefreshException(this.inner);
+  SyncException(this.inner);
 
   @override
   String toString() => "${runtimeType.toString()} { inner: $inner }";

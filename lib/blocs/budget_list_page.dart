@@ -66,25 +66,30 @@ class BudgetsLoadSuccess extends BudgetListPageBlocState {
 
 class BudgetListPageBloc
     extends Bloc<BudgetsListBlocEvent, BudgetListPageBlocState> {
-  BudgetRepository repo;
+  final BudgetRepository repo;
+  final OfflineBudgetRepository offlineRepo;
   BudgetListPageBloc(
-    this.repo, [
+    this.repo,
+    this.offlineRepo, [
     LoadBudgetsFilter initialFilter = const LoadBudgetsFilter(),
   ]) : super(BudgetsLoading(filterUsed: initialFilter)) {
     on<LoadBudgets>(streamToEmitterAdapter(_handleLoadBudge));
     // on<DeleteBudget>(streamToEmitterAdapter(_handleDeleteBudget));
 
-    repo.changedItems.listen((ids) {
-      final current = state;
-      if (current is BudgetsLoading) {
-        add(LoadBudgets(filter: current.filterUsed));
-      } else if (current is BudgetsLoadSuccess) {
-        add(LoadBudgets(filter: current.filterUsed));
-      } else {
-        throw Exception("unhandled type");
-      }
-    });
+    repo.changedItems.listen(_changeItemsListener);
+    offlineRepo.changedItems.listen(_changeItemsListener);
     add(LoadBudgets(filter: initialFilter));
+  }
+
+  void _changeItemsListener(Set<String> ids) {
+    final current = state;
+    if (current is BudgetsLoading) {
+      add(LoadBudgets(filter: current.filterUsed));
+    } else if (current is BudgetsLoadSuccess) {
+      add(LoadBudgets(filter: current.filterUsed));
+    } else {
+      throw Exception("unhandled type");
+    }
   }
 
   Stream<BudgetListPageBlocState> _handleLoadBudge(LoadBudgets event) async* {

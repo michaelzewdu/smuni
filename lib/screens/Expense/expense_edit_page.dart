@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smuni/blocs/edit_page/expense_edit_page.dart';
+
+import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
-import 'package:smuni/widgets/money_editor.dart';
+import 'package:smuni/widgets/widgets.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
 class ExpenseEditPageNewArgs {
@@ -30,8 +31,11 @@ class ExpenseEditPage extends StatefulWidget {
   static Route route(Expense item) => MaterialPageRoute(
         settings: const RouteSettings(name: routeName),
         builder: (context) => BlocProvider(
-          create: (context) =>
-              ExpenseEditPageBloc(context.read<ExpenseRepository>()),
+          create: (context) => ExpenseEditPageBloc(
+            context.read<ExpenseRepository>(),
+            context.read<OfflineExpenseRepository>(),
+            context.read<AuthBloc>(),
+          ),
           child: ExpenseEditPage(
             item: item,
             isCreating: false,
@@ -56,6 +60,8 @@ class ExpenseEditPage extends StatefulWidget {
         return BlocProvider(
           create: (context) => ExpenseEditPageBloc(
             context.read<ExpenseRepository>(),
+            context.read<OfflineExpenseRepository>(),
+            context.read<AuthBloc>(),
           ),
           child: ExpenseEditPage(item: item, isCreating: true),
         );

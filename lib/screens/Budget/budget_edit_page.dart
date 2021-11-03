@@ -2,13 +2,11 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smuni/blocs/category_list_page.dart';
-import 'package:smuni/blocs/edit_page/budget_edit_page.dart';
+
+import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
-import 'package:smuni/widgets/category_selector.dart';
-import 'package:smuni/widgets/money_editor.dart';
 import 'package:smuni/widgets/widgets.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
@@ -31,10 +29,14 @@ class BudgetEditPage extends StatefulWidget {
         builder: (context) => BlocProvider(
           create: (context) => BudgetEditPageBloc(
             context.read<BudgetRepository>(),
+            context.read<OfflineBudgetRepository>(),
+            context.read<AuthBloc>(),
           ),
           child: BlocProvider(
-            create: (context) =>
-                CategoryListPageBloc(context.read<CategoryRepository>()),
+            create: (context) => CategoryListPageBloc(
+              context.read<CategoryRepository>(),
+              context.read<OfflineCategoryRepository>(),
+            ),
             child: BudgetEditPage(
               item: item,
               isCreating: false,
@@ -60,11 +62,16 @@ class BudgetEditPage extends StatefulWidget {
           categoryAllocations: {},
         );
         return BlocProvider(
-          create: (context) =>
-              BudgetEditPageBloc(context.read<BudgetRepository>()),
+          create: (context) => BudgetEditPageBloc(
+            context.read<BudgetRepository>(),
+            context.read<OfflineBudgetRepository>(),
+            context.read<AuthBloc>(),
+          ),
           child: BlocProvider(
-            create: (context) =>
-                CategoryListPageBloc(context.read<CategoryRepository>()),
+            create: (context) => CategoryListPageBloc(
+              context.read<CategoryRepository>(),
+              context.read<OfflineCategoryRepository>(),
+            ),
             child: BudgetEditPage(
               item: item,
               isCreating: true,
@@ -167,7 +174,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                                           frequency: _frequency,
                                           startTime: _startTime,
                                           endTime: _endTime,
-                                          categoryAllocation:
+                                          categoryAllocations:
                                               _categoryAllocations,
                                         ),
                                         old: widget.item,
@@ -334,7 +341,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
 
                         // FIXME: move this calculation elsewhere
                         final ancestryTree =
-                            CategoryRepository.calcAncestryTree(
+                            CategoryRepositoryExt.calcAncestryTree(
                           _categoryAllocations.keys.toSet(),
                           catListState.items,
                         );
@@ -672,8 +679,10 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
             ),
             Expanded(
               child: BlocProvider(
-                create: (context) =>
-                    CategoryListPageBloc(context.read<CategoryRepository>()),
+                create: (context) => CategoryListPageBloc(
+                  context.read<CategoryRepository>(),
+                  context.read<OfflineCategoryRepository>(),
+                ),
                 child: BlocBuilder<CategoryListPageBloc,
                     CategoryListPageBlocState>(
                   builder: (context, catListState) => catListState

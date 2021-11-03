@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:bloc/bloc.dart';
+import 'package:smuni/blocs/auth.dart';
 
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
@@ -15,25 +16,22 @@ abstract class UserEvent {
 }
 
 class LoadUser extends UserEvent with StatusAwareEvent {
-  final String id;
-  LoadUser(
-    this.id, {
+  LoadUser({
     OperationSuccessNotifier? onSuccess,
     OperationExceptionNotifier? onError,
   }) {
     this.onSuccess = onSuccess;
     this.onError = onError;
   }
-
-  @override
-  String toString() => "${runtimeType.toString()} { id: $id }";
 }
 
 class UpdateUser extends UserEvent with StatusAwareEvent {
   final User update;
+  final String? newPassword;
 
   UpdateUser(
     this.update, {
+    this.newPassword,
     OperationSuccessNotifier? onSuccess,
     OperationExceptionNotifier? onError,
   }) {
@@ -51,14 +49,7 @@ abstract class UserBlocState {
   const UserBlocState();
 }
 
-class UserLoading extends UserBlocState {
-  final String id;
-
-  const UserLoading(this.id);
-
-  @override
-  String toString() => "${runtimeType.toString()} { id: $id }";
-}
+class UserLoading extends UserBlocState {}
 
 class UserLoadSuccess extends UserBlocState {
   final User item;
@@ -72,9 +63,9 @@ class UserLoadSuccess extends UserBlocState {
 // BLOC
 
 class UserBloc extends Bloc<UserEvent, UserBlocState> {
-  final String loggedInUser;
+  final AuthBloc authBloc;
   final UserRepository repo;
-  UserBloc(this.repo, this.loggedInUser) : super(UserLoading(loggedInUser)) {
+  UserBloc(this.repo, this.authBloc) : super(UserLoading()) {
     on<UpdateUser>(
       streamToEmitterAdapterStatusAware(_mapUpdateUserEventToState),
     );
@@ -82,12 +73,13 @@ class UserBloc extends Bloc<UserEvent, UserBlocState> {
       streamToEmitterAdapterStatusAware(_mapLoadUserEventToState),
     );
 
-    add(LoadUser(loggedInUser));
+    add(LoadUser());
   }
 
   Stream<UserBlocState> _mapLoadUserEventToState(LoadUser event) async* {
     try {
-      final item = await repo.getItem(event.id);
+      final auth = authBloc.authSuccesState();
+      final item = await repo.getItem(auth.username, auth.authToken);
       yield UserLoadSuccess(item!);
     } on SocketException catch (err) {
       throw ConnectionException(err);
@@ -98,9 +90,11 @@ class UserBloc extends Bloc<UserEvent, UserBlocState> {
     final current = state;
     if (current is UserLoadSuccess) {
       try {
+        final auth = authBloc.authSuccesState();
         final updated = await repo.updateItem(
-          event.update.username,
-          repo.updateFromDiff(event.update, current.item),
+          repo.updateFromDiff(event.update, current.item, event.newPassword),
+          auth.username,
+          auth.authToken,
         );
         yield UserLoadSuccess(updated);
       } on SocketException catch (err) {

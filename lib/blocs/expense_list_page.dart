@@ -5,6 +5,9 @@ import 'package:bloc/bloc.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
+import 'package:smuni_api_client/smuni_api_client.dart';
+
+import 'auth.dart';
 
 // EVENTS
 
@@ -82,11 +85,16 @@ class ExpensesLoadSuccess extends ExpenseListPageBlocState {
 
 class ExpenseListPageBloc
     extends Bloc<ExpensesListBlocEvent, ExpenseListPageBlocState> {
-  ExpenseRepository repo;
-  BudgetRepository budgetRepo;
-  CategoryRepository categoryRepo;
+  final ExpenseRepository repo;
+  final OfflineExpenseRepository offlineRepo;
+  final BudgetRepository budgetRepo;
+  final CategoryRepository categoryRepo;
+  final AuthBloc authBloc;
+
   ExpenseListPageBloc(
     this.repo,
+    this.offlineRepo,
+    this.authBloc,
     this.budgetRepo,
     this.categoryRepo,
     DateRangeFilter initialRangeToLoad, [
@@ -102,24 +110,8 @@ class ExpenseListPageBloc
     on<LoadExpenses>(streamToEmitterAdapter(_mapLoadExpensesEventToState));
     on<DeleteExpense>(streamToEmitterAdapter(_mapDeleteExpenseEventToState));
 
-    repo.changedItems.listen((ids) {
-      final current = state;
-      if (current is ExpensesLoadSuccess) {
-        add(LoadExpenses(
-          current.range,
-          ofBudget: current.ofBudget,
-          ofCategory: current.ofCategory,
-        ));
-      } else if (current is ExpensesLoading) {
-        add(LoadExpenses(
-          current.range,
-          ofBudget: current.ofBudget,
-          ofCategory: current.ofCategory,
-        ));
-      } else {
-        throw Exception("Unhandled type.");
-      }
-    });
+    repo.changedItems.listen(_changeItemsListener);
+    offlineRepo.changedItems.listen(_changeItemsListener);
 
     add(LoadExpenses(
       initialRangeToLoad,
@@ -128,15 +120,47 @@ class ExpenseListPageBloc
     ));
   }
 
-  Stream<ExpenseListPageBlocState> _mapDeleteExpenseEventToState(
-      DeleteExpense event) async* {
+  void _changeItemsListener(Set<String> ids) {
     final current = state;
     if (current is ExpensesLoadSuccess) {
-      await repo.removeItem(event.id);
-      current.items.remove(event.id);
-      final dateRangeFilters =
-          await repo.getDateRangeFilters(ofCategories: current.categoryFilter);
+      add(LoadExpenses(
+        current.range,
+        ofBudget: current.ofBudget,
+        ofCategory: current.ofCategory,
+      ));
+    } else if (current is ExpensesLoading) {
+      add(LoadExpenses(
+        current.range,
+        ofBudget: current.ofBudget,
+        ofCategory: current.ofCategory,
+      ));
+    } else {
+      throw Exception("Unhandled type.");
+    }
+  }
 
+  Stream<ExpenseListPageBlocState> _mapDeleteExpenseEventToState(
+    DeleteExpense event,
+  ) async* {
+    final current = state;
+    if (current is ExpensesLoadSuccess) {
+      try {
+        final auth = authBloc.authSuccesState();
+        await repo.removeItem(event.id, auth.username, auth.authToken);
+      } catch (err) {
+        if (err is SocketException || err is UnauthenticatedException) {
+          // do it offline if not connected or authenticated
+          await offlineRepo.removeItemOffline(
+            event.id,
+          );
+        } else {
+          rethrow;
+        }
+      }
+      current.items.remove(event.id);
+      final dateRangeFilters = await repo.getDateRangeFilters(
+        ofCategories: current.categoryFilter,
+      );
       yield ExpensesLoadSuccess(
         current.items,
         current.range,
@@ -153,7 +177,8 @@ class ExpenseListPageBloc
   }
 
   Stream<ExpenseListPageBlocState> _mapLoadExpensesEventToState(
-      LoadExpenses event) async* {
+    LoadExpenses event,
+  ) async* {
     Set<String>? catFilter;
     final ofCategory = event.ofCategory;
     if (ofCategory != null) {

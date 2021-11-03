@@ -28,6 +28,19 @@ void main() {
       expect(response.refreshToken, isNotEmpty);
       expect(response.user.id, equals(testUser.id));
     });
+    test("supports username signIn", () async {
+      var response = await client.signInUsername(testUser.username, "password");
+      expect(response.accessToken, isNotEmpty);
+      expect(response.refreshToken, isNotEmpty);
+      expect(response.user.id, equals(testUser.id));
+    });
+    test("supports firebaseId signIn", () async {
+      var response =
+          await client.signInUsername(testUser.firebaseId, "password");
+      expect(response.accessToken, isNotEmpty);
+      expect(response.refreshToken, isNotEmpty);
+      expect(response.user.id, equals(testUser.id));
+    });
     test("throws when password wrong", () {
       expect(
         () => client.signInPhone(testUser.phoneNumber!, "invalid"),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smuni/blocs/category_list_page.dart';
-import 'package:smuni/blocs/edit_page/category_edit_page.dart';
+
+import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
-import 'package:smuni/widgets/category_selector.dart';
+import 'package:smuni/widgets/widgets.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
 class CategoryEditPage extends StatefulWidget {
@@ -25,6 +25,8 @@ class CategoryEditPage extends StatefulWidget {
         builder: (context) => BlocProvider(
           create: (context) => CategoryEditPageBloc(
             context.read<CategoryRepository>(),
+            context.read<OfflineCategoryRepository>(),
+            context.read<AuthBloc>(),
           ),
           child: CategoryEditPage(item: item, isCreating: false),
         ),
@@ -42,8 +44,11 @@ class CategoryEditPage extends StatefulWidget {
           tags: [],
         );
         return BlocProvider(
-          create: (context) =>
-              CategoryEditPageBloc(context.read<CategoryRepository>()),
+          create: (context) => CategoryEditPageBloc(
+            context.read<CategoryRepository>(),
+            context.read<OfflineCategoryRepository>(),
+            context.read<AuthBloc>(),
+          ),
           child: CategoryEditPage(item: item, isCreating: true),
         );
       });
@@ -112,7 +117,8 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                                         update: Category.from(
                                           widget.item,
                                           name: _name,
-                                          parentId: _parentId,
+                                          parentId:
+                                              !_isSubcategory ? "" : _parentId,
                                         ),
                                         old: widget.item,
                                       )),
@@ -165,7 +171,9 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                   if (_isSubcategory)
                     BlocProvider(
                       create: (context) => CategoryListPageBloc(
-                          context.read<CategoryRepository>()),
+                        context.read<CategoryRepository>(),
+                        context.read<OfflineCategoryRepository>(),
+                      ),
                       child: Expanded(
                         child: CategoryFormSelector(
                           isSelecting: _parentId == null,

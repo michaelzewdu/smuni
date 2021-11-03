@@ -5,30 +5,26 @@ import 'package:smuni/providers/cache/cache.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
-import 'auth.dart';
 import 'repositories.dart';
 
-class ApiExpenseRepository extends Repository<String, Expense,
+class ApiExpenseRepository extends ApiRepository<String, Expense,
     CreateExpenseInput, UpdateExpenseInput> {
   final Cache<String, Expense> cache;
   final SmuniApiClient client;
-  final AuthTokenRepository tokenRepo;
-
   final StreamController<Set<String>> _changedItemsController =
       StreamController.broadcast();
 
-  ApiExpenseRepository(this.cache, this.client, this.tokenRepo);
+  ApiExpenseRepository(this.cache, this.client);
 
   @override
   Stream<Set<String>> get changedItems => _changedItemsController.stream;
 
   @override
-  Future<Expense?> getItem(String id) async {
+  Future<Expense?> getItem(String id, String username, String authToken) async {
     var item = await cache.getItem(id);
     if (item != null) return item;
     try {
-      final token = await tokenRepo.accessToken;
-      item = await client.getExpense(id, tokenRepo.username, token);
+      item = await client.getExpense(id, username, authToken);
       await cache.setItem(id, item);
       return item;
     } on EndpointError catch (e) {
@@ -38,16 +34,9 @@ class ApiExpenseRepository extends Repository<String, Expense,
   }
 
   @override
-  Future<Expense> updateItem(String id, UpdateExpenseInput input) async {
-    if (input.isEmpty) {
-      final old = await getItem(id);
-      if (old == null) throw ItemNotFoundException(id);
-      return old;
-    }
-
-    final token = await tokenRepo.accessToken;
-    final item =
-        await client.updateExpense(id, tokenRepo.username, token, input);
+  Future<Expense> updateItem(String id, UpdateExpenseInput input,
+      String username, String authToken) async {
+    final item = await client.updateExpense(id, username, authToken, input);
 
     await cache.setItem(id, item);
     _changedItemsController.add({id});
@@ -55,24 +44,16 @@ class ApiExpenseRepository extends Repository<String, Expense,
   }
 
   @override
-  Future<Expense> createItem(CreateExpenseInput input, [String? id]) async {
-    final token = await tokenRepo.accessToken;
-    final item = await client.createExpense(tokenRepo.username, token, input);
+  Future<Expense> createItem(
+    CreateExpenseInput input,
+    String username,
+    String authToken,
+  ) async {
+    final item = await client.createExpense(username, authToken, input);
 
     await cache.setItem(item.id, item);
     _changedItemsController.add({item.id});
     return item;
-  }
-
-  Future<void> deleteItem(String id) async {
-    final token = await tokenRepo.accessToken;
-    await client.deleteExpense(
-      id,
-      tokenRepo.username,
-      token,
-    );
-    await cache.removeItem(id);
-    _changedItemsController.add({id});
   }
 
   @override
@@ -80,31 +61,23 @@ class ApiExpenseRepository extends Repository<String, Expense,
 
   @override
   Future<void> removeItem(
-    String id, [
+    String id,
+    String username,
+    String authToken, [
     bool bypassChangedItemNotification = false,
   ]) async {
-    final token = await tokenRepo.accessToken;
-    await client.deleteExpense(
-      id,
-      tokenRepo.username,
-      token,
-    );
+    await client.deleteExpense(id, username, authToken);
     await cache.removeItem(id);
     if (!bypassChangedItemNotification) _changedItemsController.add({id});
   }
 
   @override
-  UpdateExpenseInput updateFromDiff(Expense update, Expense old) {
-    return UpdateExpenseInput.fromDiff(update: update, old: old);
-  }
+  UpdateExpenseInput updateFromDiff(Expense update, Expense old) =>
+      UpdateExpenseInput.fromDiff(update: update, old: old);
 
   @override
-  CreateExpenseInput createFromItem(Expense item) => CreateExpenseInput(
-        name: item.name,
-        budgetId: item.budgetId,
-        categoryId: item.categoryId,
-        amount: item.amount,
-      );
+  CreateExpenseInput createFromItem(Expense item) =>
+      CreateExpenseInput.fromItem(item);
 
   @override
   Future<void> refreshCache(Map<String, Expense> items) async {
@@ -116,4 +89,61 @@ class ApiExpenseRepository extends Repository<String, Expense,
     }
     _changedItemsController.add(ids);
   }
+}
+
+class OfflineExpenseRepository extends OfflineRepository<String, Expense,
+    CreateExpenseInput, UpdateExpenseInput> {
+  OfflineExpenseRepository(
+    Cache<String, Expense> cache,
+    Cache<String, Expense> serverVersionCache,
+    RemovedItemsCache<String> removedItemsCache,
+  ) : super(cache, serverVersionCache, removedItemsCache);
+
+  @override
+  Pair<String, Expense> itemFromCreateInput(CreateExpenseInput input) {
+    final id = "offlineId-${DateTime.now().millisecondsSinceEpoch}";
+    return Pair(
+      id,
+      Expense(
+        id: id,
+        version: -1,
+        isServerVersion: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        name: input.name,
+        timestamp: input.timestamp ?? DateTime.now(),
+        categoryId: input.categoryId,
+        budgetId: input.budgetId,
+        amount: input.amount,
+      ),
+    );
+  }
+
+  @override
+  Expense itemFromUpdateInput(Expense item, UpdateExpenseInput input) =>
+      Expense.from(
+        item,
+        name: input.name,
+        isServerVersion: false,
+        timestamp: input.timestamp,
+        amount: input.amount,
+      );
+
+  @override
+  Future<List<Pair<String, CreateExpenseInput>>> getPendingCreates() async => [
+        for (final item
+            in (await getItemsOffline()).values.where((e) => e.version == -1))
+          Pair(item.id, CreateExpenseInput.fromItem(item))
+      ];
+  @override
+  Future<Map<String, UpdateExpenseInput>> getPendingUpdates() async => {
+        for (final item in (await getItemsOffline())
+            .values
+            .where((e) => !e.isServerVersion && e.version > -1))
+          item.id: UpdateExpenseInput.fromDiff(
+              update: item, old: (await serverVersionCache.getItem(item.id))!)
+      };
+
+  @override
+  bool isServerVersion(Expense item) => item.isServerVersion;
 }

@@ -1,6 +1,11 @@
+export 'budget_edit_page.dart';
+export 'category_edit_page.dart';
+export 'expense_edit_page.dart';
+
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:smuni/blocs/auth.dart';
 
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
@@ -68,10 +73,14 @@ class EditSuccess<Identifier, Item, CreateInput, UpdateInput>
 class EditPageBloc<Identifier, Item, CreateInput, UpdateInput> extends Bloc<
     EditPageBlocEvent<Identifier, Item, CreateInput, UpdateInput>,
     EditPageBlocState<Identifier, Item, CreateInput, UpdateInput>> {
-  Repository<Identifier, Item, CreateInput, UpdateInput> repo;
+  final ApiRepository<Identifier, Item, CreateInput, UpdateInput> repo;
+  final OfflineRepository<Identifier, Item, dynamic, dynamic> offlineRepo;
+  final AuthBloc authBloc;
 
   EditPageBloc(
     this.repo,
+    this.offlineRepo,
+    this.authBloc,
   ) : super(InitialState()) {
     on<CreateItem<Identifier, Item, CreateInput, UpdateInput>>(
       streamToEmitterAdapter(_handleCreateItem),
@@ -86,10 +95,21 @@ class EditPageBloc<Identifier, Item, CreateInput, UpdateInput> extends Bloc<
     CreateItem event,
   ) async* {
     try {
-      final result = await repo.createItem(event.input);
+      final auth = authBloc.authSuccesState();
+      final result = await repo.createItem(
+        event.input,
+        auth.username,
+        auth.authToken,
+      );
       yield EditSuccess(item: result);
-    } on SocketException catch (err) {
-      yield EditFailed(ConnectionException(err));
+    } catch (err) {
+      if (err is SocketException || err is UnauthenticatedException) {
+        // do it offline if not connected or authenticated
+        final result = await offlineRepo.createItemOffline(event.input);
+        yield EditSuccess(item: result);
+      } else {
+        rethrow;
+      }
     }
   }
 
@@ -98,10 +118,23 @@ class EditPageBloc<Identifier, Item, CreateInput, UpdateInput> extends Bloc<
     UpdateItem event,
   ) async* {
     try {
-      final result = await repo.updateItem(event.id, event.input);
+      final auth = authBloc.authSuccesState();
+      final result = await repo.updateItem(
+        event.id,
+        event.input,
+        auth.username,
+        auth.authToken,
+      );
       yield EditSuccess(id: event.id, item: result);
-    } on SocketException catch (err) {
-      yield EditFailed(ConnectionException(err));
+    } catch (err) {
+      if (err is SocketException || err is UnauthenticatedException) {
+        // do it offline if not connected or authenticated
+        final result =
+            await offlineRepo.updateItemOffline(event.id, event.input);
+        yield EditSuccess(id: event.id, item: result);
+      } else {
+        rethrow;
+      }
     }
   }
 }

@@ -15,7 +15,7 @@
   
 - [x] Decide on how to tackle deletion
 - [ ] Decide on how to aggregate budget usage in the category tree
-- [-] Get rid of CacheRefresher
+- [ ] Get rid of CacheSynchronizer
 
 ## Design doc
 

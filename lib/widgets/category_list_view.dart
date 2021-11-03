@@ -73,8 +73,6 @@ class CategoryListView extends StatelessWidget {
             itemBuilder: (context, index) =>
                 _catDisplay(context, topNodes[index].item),
           )
-        : state.items.isEmpty
-            ? const Center(child: Text("No categories."))
-            : throw Exception("parents are missing");
+        : Expanded(child: Center(child: Text("No categories.")));
   }
 }
