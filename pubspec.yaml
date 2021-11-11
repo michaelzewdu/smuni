@@ -31,8 +31,8 @@ dependencies:
   path: ^1.8.0
   http: ^0.13.3
   google_fonts: ^2.1.0
-  # firebase_core: ^1.8.0
-  # firebase_auth: ^3.1.4
+  firebase_core: ^1.10.0
+  firebase_auth: ^3.2.0
   smuni_api_client:
     path: packages/smuni_api_client
 
@@ -40,6 +40,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.3
   jwt_decode: ^0.3.1
+  phone_number: ^0.12.0+1
 
 dev_dependencies:
   lints: ^1.0.0

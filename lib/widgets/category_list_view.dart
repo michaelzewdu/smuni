@@ -19,15 +19,38 @@ class CategoryListView extends StatelessWidget {
     final isMarked = item.isArchived == markArchived;
     final isDisabled = disabledItems.contains(item.id) || isMarked;
     return ListTile(
+      leading: item.parentId == null
+          ? Icon(Icons.workspaces_outline)
+          : Icon(Icons.account_tree_outlined),
       dense: isDisabled,
+      /*
       trailing: isMarked
           ? item.isArchived
               ? const Text("Archived")
               : const Text("Active")
           : null,
-      title: Text(item.name),
+
+
+      trailing: Container(
+        width: 50,
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.edit),
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ),
+
+       */
+      title: Text(
+        item.name,
+        textScaleFactor: 1.3,
+      ),
       subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
       onTap: () => !isDisabled ? onSelect?.call(item.id) : null,
+      onLongPress: () {},
     );
   }
 

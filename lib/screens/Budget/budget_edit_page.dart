@@ -2,11 +2,14 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'package:smuni/blocs/blocs.dart';
+import 'package:smuni/blocs/auth.dart';
+import 'package:smuni/blocs/category_list_page.dart';
+import 'package:smuni/blocs/edit_page/budget_edit_page.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
+import 'package:smuni/widgets/category_selector.dart';
+import 'package:smuni/widgets/money_editor.dart';
 import 'package:smuni/widgets/widgets.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
@@ -124,6 +127,9 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
         },
         child: Scaffold(
           appBar: AppBar(
+            backgroundColor: semuni50,
+            foregroundColor: Colors.black,
+            shadowColor: Colors.transparent,
             title: _awaitingSave
                 ? const Text("Loading...")
                 : widget.isCreating
@@ -131,63 +137,73 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     : Text("Editing budget: ${widget.item.name}"),
             actions: !_awaitingSave
                 ? [
-                    ElevatedButton(
-                      child: const Text("Save"),
-                      onPressed: () {
-                        final allocated = _categoryAllocations.isNotEmpty
-                            ? _categoryAllocations.values
-                                .reduce((a, b) => a + b)
-                            : 0;
-                        final remaining = _amount.amount - allocated;
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4.0, vertical: 8),
+                      child: ElevatedButton(
+                        child: const Text("Save"),
+                        onPressed: () {
+                          final allocated = _categoryAllocations.isNotEmpty
+                              ? _categoryAllocations.values
+                                  .reduce((a, b) => a + b)
+                              : 0;
+                          final remaining = _amount.amount - allocated;
 
-                        final form = _formKey.currentState;
-                        if (remaining != 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(remaining > 0
-                                ? "Unallocated amount remains."
-                                : "Allocation over budget."),
-                            behavior: SnackBarBehavior.floating,
-                          ));
-                        }
-                        if (form != null && form.validate() && remaining == 0) {
-                          form.save();
-                          if (widget.isCreating) {
-                            context.read<BudgetEditPageBloc>().add(
-                                  CreateBudget(CreateBudgetInput(
-                                    name: _name,
-                                    startTime: _startTime,
-                                    endTime: _endTime,
-                                    frequency: _frequency,
-                                    allocatedAmount: _amount,
-                                    categoryAllocations: _categoryAllocations,
-                                  )),
-                                );
-                          } else {
-                            context.read<BudgetEditPageBloc>().add(
-                                  UpdateBudget(
-                                      widget.item.id,
-                                      UpdateBudgetInput.fromDiff(
-                                        update: Budget.from(
-                                          widget.item,
-                                          name: _name,
-                                          allocatedAmount: _amount,
-                                          frequency: _frequency,
-                                          startTime: _startTime,
-                                          endTime: _endTime,
-                                          categoryAllocations:
-                                              _categoryAllocations,
-                                        ),
-                                        old: widget.item,
-                                      )),
-                                );
+                          final form = _formKey.currentState;
+                          if (remaining != 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(remaining > 0
+                                  ? "Unallocated amount remains."
+                                  : "Allocation over budget."),
+                              behavior: SnackBarBehavior.floating,
+                            ));
                           }
-                          setState(() => _awaitingSave = true);
-                        }
-                      },
+                          if (form != null &&
+                              form.validate() &&
+                              remaining == 0) {
+                            form.save();
+                            if (widget.isCreating) {
+                              context.read<BudgetEditPageBloc>().add(
+                                    CreateBudget(CreateBudgetInput(
+                                      name: _name,
+                                      startTime: _startTime,
+                                      endTime: _endTime,
+                                      frequency: _frequency,
+                                      allocatedAmount: _amount,
+                                      categoryAllocations: _categoryAllocations,
+                                    )),
+                                  );
+                            } else {
+                              context.read<BudgetEditPageBloc>().add(
+                                    UpdateBudget(
+                                        widget.item.id,
+                                        UpdateBudgetInput.fromDiff(
+                                          update: Budget.from(
+                                            widget.item,
+                                            name: _name,
+                                            allocatedAmount: _amount,
+                                            frequency: _frequency,
+                                            startTime: _startTime,
+                                            endTime: _endTime,
+                                            categoryAllocations:
+                                                _categoryAllocations,
+                                          ),
+                                          old: widget.item,
+                                        )),
+                                  );
+                            }
+                            setState(() => _awaitingSave = true);
+                          }
+                        },
+                      ),
                     ),
-                    ElevatedButton(
-                      child: const Text("Cancel"),
-                      onPressed: () => Navigator.pop(context, false),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4.0, vertical: 8),
+                      child: ElevatedButton(
+                        child: const Text("Cancel"),
+                        onPressed: () => Navigator.pop(context, false),
+                      ),
                     ),
                   ]
                 : null,

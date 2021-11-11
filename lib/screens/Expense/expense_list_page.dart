@@ -6,6 +6,7 @@ import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/expense_list_view.dart';
 
+import '../../constants.dart';
 import 'expense_edit_page.dart';
 
 class ExpenseListPage extends StatefulWidget {
@@ -40,6 +41,9 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
+          backgroundColor: semuni50,
+          foregroundColor: Colors.black,
+          shadowColor: Colors.transparent,
           title: const Text("Expenses"),
         ),
         body: BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(

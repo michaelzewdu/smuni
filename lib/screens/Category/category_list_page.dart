@@ -4,6 +4,7 @@ import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/widgets.dart';
 
+import '../../constants.dart';
 import 'category_details_page.dart';
 import 'category_edit_page.dart';
 
@@ -60,6 +61,9 @@ class _CategoryListPageState extends State<CategoryListPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
+          backgroundColor: semuni50,
+          foregroundColor: Colors.black,
+          shadowColor: Colors.transparent,
           title: widget.showingArchivedOnly
               ? const Text("Archived Categories")
               : const Text("Categories"),

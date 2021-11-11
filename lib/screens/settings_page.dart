@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'package:smuni/constants.dart';
 import 'package:smuni/blocs/blocs.dart';
+import 'package:smuni/constants.dart';
 import 'package:smuni/utilities.dart';
+
+import '../constants.dart';
 
 class MenusPage extends StatefulWidget {
   const MenusPage({Key? key}) : super(key: key);
@@ -26,6 +27,7 @@ class _MenusPageState extends State<MenusPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
+          shadowColor: Colors.transparent,
           centerTitle: true,
           title: Text(
             'Kamasio',
@@ -36,7 +38,8 @@ class _MenusPageState extends State<MenusPage> {
           ),
         ),
         body: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          // crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
               padding: const EdgeInsets.all(8.0),

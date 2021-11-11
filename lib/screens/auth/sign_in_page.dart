@@ -1,6 +1,6 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/screens/home_screen.dart';
 import 'package:smuni/utilities.dart';
@@ -21,13 +21,29 @@ class SignInPage extends StatefulWidget {
 class _SignInPageState extends State<SignInPage> {
   final _formKey = GlobalKey<FormState>();
 
-  var _method = SignInMethod.username;
+  var _method = SignInMethod.email;
+  String? _userIdentity;
   String? _username;
   String? _email;
   String? _phoneNumber;
   String? _password;
 
   bool _awaitingOp = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _awaitingOp = true;
+
+    initializeFirebase();
+    _awaitingOp = false;
+    setState(() {});
+  }
+
+  void initializeFirebase() async {
+    await Firebase.initializeApp();
+  }
 
   @override
   Widget build(BuildContext context) => BlocListener<AuthBloc, AuthBlocState>(
@@ -41,173 +57,183 @@ class _SignInPageState extends State<SignInPage> {
           }
         },
         child: Scaffold(
-          appBar: AppBar(
-            title:
-                _awaitingOp ? const Text("Loading...") : const Text("Sign In"),
-          ),
-          body: Form(
-            key: _formKey,
-            child: Column(
-              children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Text("Sign In Method"),
-                    DropdownButton(
-                      value: _method,
-                      onChanged: (v) =>
-                          setState(() => _method = v as SignInMethod),
-                      items: [
-                        ...<List<dynamic>>[
-                          [SignInMethod.username, "Username"],
-                          [SignInMethod.email, "Email"],
-                          [SignInMethod.phoneNumber, "Phone Number"],
-                        ].map(
-                          (e) => DropdownMenuItem<SignInMethod>(
-                            value: e[0],
-                            child: Text(e[1]),
-                            // groupValue: _method,
-                          ),
-                        )
+          body: SafeArea(
+            child: Form(
+              key: _formKey,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: <Widget>[
+                    /*
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text("Sign In Method"),
+
+                        DropdownButton(
+                          value: _method,
+                          onChanged: (v) =>
+                              setState(() => _method = v as SignInMethod),
+                          items: [
+                            ...<List<dynamic>>[
+                              [SignInMethod.username, "Username"],
+                              [SignInMethod.email, "Email"],
+                              [SignInMethod.phoneNumber, "Phone Number"],
+                            ].map(
+                              (e) => DropdownMenuItem<SignInMethod>(
+                                value: e[0],
+                                child: Text(e[1]),
+                                // groupValue: _method,
+                              ),
+                            )
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
 
-                if (_method == SignInMethod.username)
-                  TextFormField(
-                    enabled: !_awaitingOp,
-                    initialValue: _username,
-                    onSaved: (value) => setState(() => _username = value!),
-                    validator: (value) {
-                      // TODO: username validation
-                      if (value == null || value.isEmpty) {
-                        return "Username can't be empty";
-                      }
-                    },
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      hintText: "Username",
-                      helperText: "Username",
+                     */
+                    Text(
+                      'KamasiYo',
+                      textScaleFactor: 3,
                     ),
-                  ),
-                if (_method == SignInMethod.email)
-                  TextFormField(
-                    enabled: !_awaitingOp,
-                    initialValue: _email,
-                    onSaved: (value) => setState(() => _email = value!),
-                    validator: (value) {
-                      // TODO: email validation
-                      if (value == null || value.isEmpty) {
-                        return "Email can't be empty";
-                      }
-                    },
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      hintText: "Email",
-                      helperText: "Email",
-                    ),
-                  ),
-                if (_method == SignInMethod.phoneNumber)
-                  TextFormField(
-                    enabled: !_awaitingOp,
-                    initialValue: _phoneNumber,
-                    onSaved: (value) => setState(() => _phoneNumber = value!),
-                    validator: (value) {
-                      // TODO: phoneNumber validation
-                      if (value == null || value.isEmpty) {
-                        return "Phone Number can't be empty";
-                      }
-                    },
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      hintText: "Phone Number",
-                      helperText: "Phone Numbe",
-                    ),
-                  ),
-                TextFormField(
-                  enabled: !_awaitingOp,
-                  initialValue: _password,
-                  onSaved: (value) => setState(() => _password = value!),
-                  validator: (value) {
-                    // TODO: password validation
-                    if (value == null || value.isEmpty) {
-                      return "Password can't be empty";
-                    }
-                  },
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    hintText: "Password",
-                    helperText: "Password",
-                  ),
-                ),
-                !_awaitingOp
-                    ? ElevatedButton(
-                        onPressed: () {
-                          final form = _formKey.currentState;
-                          if (form != null && form.validate()) {
-                            form.save();
-                            setState(() => _awaitingOp = true);
-                            context.read<AuthBloc>().add(
-                                  SignIn(
-                                    method: _method,
-                                    identifier: _method == SignInMethod.email
-                                        ? _email!
-                                        : _method == SignInMethod.username
-                                            ? _username!
-                                            : _method ==
-                                                    SignInMethod.phoneNumber
-                                                ? _phoneNumber!
-                                                : throw Exception(
-                                                    "unhandled type"),
-                                    password: _password!,
-                                    onSuccess: () {
-                                      setState(() => _awaitingOp = false);
-                                      context.read<UserBloc>().add(LoadUser());
-                                    },
-                                    onError: (err) {
-                                      setState(() => _awaitingOp = false);
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: err is ConnectionException
-                                              ? Text('Connection Failed')
-                                              : err is CredentialsRejected
-                                                  ? Text('Credentials Rejected')
-                                                  : Text(
-                                                      'Unknown Error Occured'),
-                                          behavior: SnackBarBehavior.floating,
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
+                    // if (_method == SignInMethod.username)
+                    TextFormField(
+                      enabled: !_awaitingOp,
+                      initialValue: _userIdentity,
+                      onSaved: (value) {
+                        setState(() => _userIdentity = value!);
+                      },
+                      validator: (value) {
+                        // TODO: username validation
+                        if (value == null || value.isEmpty) {
+                          return "Username can't be empty";
+                        }
+                        if (value.contains('@')) {
+                          print('This is an email');
+                          _method = SignInMethod.email;
+                          _email = _userIdentity;
+                        } else if (RegExp(r'^[0-9]+$').hasMatch(value) ||
+                            value.contains('+')) {
+                          print('This is a phone number');
+                          _method = SignInMethod.phoneNumber;
+                          _phoneNumber = _userIdentity;
+                        } else {
+                          print('This is a username');
+                          _method = SignInMethod.username;
+                          _username = _userIdentity;
+                        }
+                        /*
+                          if (RegExp(
+                                  r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+                              .hasMatch(value)) {
+                            print('it is an email');
+                            // _email = value;
                           }
-                        },
-                        child: const Text("Sign In"),
-                      )
-                    : const CircularProgressIndicator(),
-                Spacer(),
-                // TODO
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    TextButton(
-                      onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        SmuniHomeScreen.routeName,
-                        (r) => false,
+                          if (RegExp(r"/^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$/")
+                              .hasMatch(value)) {
+                            print('This is a username');
+                          }
+
+                           */
+                      },
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        hintText: "Email, phone or username",
+                        helperText: "Username",
                       ),
-                      child: const Text("Skip"),
                     ),
-                    ElevatedButton(
-                      onPressed: () {},
-                      child: const Text("Sign Up"),
+
+                    TextFormField(
+                      enabled: !_awaitingOp,
+                      initialValue: _password,
+                      onSaved: (value) => setState(() => _password = value!),
+                      validator: (value) {
+                        // TODO: password validation
+                        if (value == null || value.isEmpty) {
+                          return "Password can't be empty";
+                        }
+                      },
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        hintText: "Password",
+                        helperText: "Password",
+                      ),
                     ),
+                    !_awaitingOp
+                        ? ElevatedButton(
+                            onPressed: () {
+                              final form = _formKey.currentState;
+                              if (form != null && form.validate()) {
+                                form.save();
+                                setState(() => _awaitingOp = true);
+                                context.read<AuthBloc>().add(
+                                      SignIn(
+                                        method: _method,
+                                        identifier: _method ==
+                                                SignInMethod.email
+                                            ? _email!
+                                            : _method == SignInMethod.username
+                                                ? _username!
+                                                : _method ==
+                                                        SignInMethod.phoneNumber
+                                                    ? _phoneNumber!
+                                                    : throw Exception(
+                                                        "unhandled type"),
+                                        password: _password!,
+                                        onSuccess: () {
+                                          setState(() => _awaitingOp = false);
+                                          context
+                                              .read<UserBloc>()
+                                              .add(LoadUser());
+                                        },
+                                        onError: (err) {
+                                          setState(() => _awaitingOp = false);
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: err
+                                                      is ConnectionException
+                                                  ? Text('Connection Failed')
+                                                  : err is CredentialsRejected
+                                                      ? Text(
+                                                          'Credentials Rejected')
+                                                      : Text(
+                                                          'Unknown Error Occured'),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              duration: Duration(seconds: 2),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    );
+                              }
+                            },
+                            child: const Text("Sign In"),
+                          )
+                        : const CircularProgressIndicator(),
+                    Spacer(),
+                    // TODO
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        TextButton(
+                          onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            SmuniHomeScreen.routeName,
+                            (r) => false,
+                          ),
+                          child: const Text("Skip"),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {},
+                          child: const Text("Sign Up"),
+                        ),
+                      ],
+                    )
                   ],
-                )
-              ],
+                ),
+              ),
             ),
           ),
         ),
