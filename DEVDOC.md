@@ -16,7 +16,7 @@
 - [x] Decide on how to tackle deletion
 - [ ] Decide on how to aggregate budget usage in the category tree
 - [ ] Get rid of CacheSynchronizer
-
+- [ ] On app level build.gradle Warning:(40, 9) Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details.
 ## Design doc
 
 ### Entities thinking map

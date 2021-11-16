@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "598511815310",
+    "project_id": "kamasio",
+    "storage_bucket": "kamasio.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:598511815310:android:87d1daad60548d505397df",
+        "android_client_info": {
+          "package_name": "com.example.smuni"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "598511815310-8h633k2319qkovo0v3i522lu0ofscr0m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHDYCkyF2rXONNYvc1tZnMyeHwfbENzk4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "598511815310-8h633k2319qkovo0v3i522lu0ofscr0m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

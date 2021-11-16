@@ -1,8 +1,6 @@
 import 'package:flutter/widgets.dart';
-
 import 'package:smuni/models/models.dart';
 
-import 'splash.dart';
 import 'Budget/budget_details_page.dart';
 import 'Budget/budget_edit_page.dart';
 import 'Budget/budget_list_page.dart';
@@ -12,8 +10,10 @@ import 'Category/category_list_page.dart';
 import 'Expense/expense_edit_page.dart';
 import 'Expense/expense_list_page.dart';
 import 'auth/sign_in_page.dart';
+import 'auth/sign_up_page.dart';
 import 'home_screen.dart';
 import 'settings_page.dart';
+import 'splash.dart';
 
 class Routes {
   static Route myOnGenerateRoute(RouteSettings settings) {
@@ -56,6 +56,13 @@ class Routes {
         return settings.arguments == null
             ? CategoryEditPage.routeNew()
             : CategoryEditPage.route(settings.arguments as Category);
+      case SignUpPage.routeName:
+        return SignUpPage.route();
+      /*
+      case OtpVerificationPage.routeName:
+        return OtpVerificationPage.route();
+
+         */
       default:
         return SplashPage.route();
     }

@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
+import 'package:smuni/screens/auth/sign_up_page.dart';
 import 'package:smuni/screens/home_screen.dart';
 import 'package:smuni/utilities.dart';
 
@@ -57,12 +58,28 @@ class _SignInPageState extends State<SignInPage> {
           }
         },
         child: Scaffold(
+          appBar: AppBar(
+            foregroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            backgroundColor: Colors.transparent,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  SmuniHomeScreen.routeName,
+                  (r) => false,
+                ),
+                child: const Text("Skip"),
+              ),
+            ],
+          ),
           body: SafeArea(
             child: Form(
               key: _formKey,
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: <Widget>[
                     /*
                     Row(
@@ -97,138 +114,162 @@ class _SignInPageState extends State<SignInPage> {
                       textScaleFactor: 3,
                     ),
                     // if (_method == SignInMethod.username)
-                    TextFormField(
-                      enabled: !_awaitingOp,
-                      initialValue: _userIdentity,
-                      onSaved: (value) {
-                        setState(() => _userIdentity = value!);
-                      },
-                      validator: (value) {
-                        // TODO: username validation
-                        if (value == null || value.isEmpty) {
-                          return "Username can't be empty";
-                        }
-                        if (value.contains('@')) {
-                          print('This is an email');
-                          _method = SignInMethod.email;
-                          _email = _userIdentity;
-                        } else if (RegExp(r'^[0-9]+$').hasMatch(value) ||
-                            value.contains('+')) {
-                          print('This is a phone number');
-                          _method = SignInMethod.phoneNumber;
-                          _phoneNumber = _userIdentity;
-                        } else {
-                          print('This is a username');
-                          _method = SignInMethod.username;
-                          _username = _userIdentity;
-                        }
-                        /*
-                          if (RegExp(
-                                  r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
-                              .hasMatch(value)) {
-                            print('it is an email');
-                            // _email = value;
-                          }
-                          if (RegExp(r"/^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$/")
-                              .hasMatch(value)) {
-                            print('This is a username');
-                          }
 
-                           */
-                      },
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        hintText: "Email, phone or username",
-                        helperText: "Username",
-                      ),
-                    ),
+                    Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: TextFormField(
+                            enabled: !_awaitingOp,
+                            initialValue: _userIdentity,
+                            onSaved: (value) {
+                              setState(() => _userIdentity = value!);
+                            },
+                            validator: (value) {
+                              // TODO: username validation
+                              if (value == null || value.isEmpty) {
+                                return "Username can't be empty";
+                              }
+                              if (value.contains('@')) {
+                                print('This is an email');
+                                _method = SignInMethod.email;
+                                _email = _userIdentity;
+                              } else if (RegExp(r'^[0-9]+$').hasMatch(value) ||
+                                  value.contains('+')) {
+                                print('This is a phone number');
+                                _method = SignInMethod.phoneNumber;
+                                _phoneNumber = _userIdentity;
+                              } else {
+                                print('This is a username');
+                                _method = SignInMethod.username;
+                                _username = _userIdentity;
+                              }
+                              /*
+                                if (RegExp(
+                                        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+                                    .hasMatch(value)) {
+                                  print('it is an email');
+                                  // _email = value;
+                                }
+                                if (RegExp(r"/^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$/")
+                                    .hasMatch(value)) {
+                                  print('This is a username');
+                                }
 
-                    TextFormField(
-                      enabled: !_awaitingOp,
-                      initialValue: _password,
-                      onSaved: (value) => setState(() => _password = value!),
-                      validator: (value) {
-                        // TODO: password validation
-                        if (value == null || value.isEmpty) {
-                          return "Password can't be empty";
-                        }
-                      },
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        hintText: "Password",
-                        helperText: "Password",
-                      ),
-                    ),
-                    !_awaitingOp
-                        ? ElevatedButton(
-                            onPressed: () {
-                              final form = _formKey.currentState;
-                              if (form != null && form.validate()) {
-                                form.save();
-                                setState(() => _awaitingOp = true);
-                                context.read<AuthBloc>().add(
-                                      SignIn(
-                                        method: _method,
-                                        identifier: _method ==
-                                                SignInMethod.email
-                                            ? _email!
-                                            : _method == SignInMethod.username
-                                                ? _username!
-                                                : _method ==
-                                                        SignInMethod.phoneNumber
-                                                    ? _phoneNumber!
-                                                    : throw Exception(
-                                                        "unhandled type"),
-                                        password: _password!,
-                                        onSuccess: () {
-                                          setState(() => _awaitingOp = false);
-                                          context
-                                              .read<UserBloc>()
-                                              .add(LoadUser());
-                                        },
-                                        onError: (err) {
-                                          setState(() => _awaitingOp = false);
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: err
-                                                      is ConnectionException
-                                                  ? Text('Connection Failed')
-                                                  : err is CredentialsRejected
-                                                      ? Text(
-                                                          'Credentials Rejected')
-                                                      : Text(
-                                                          'Unknown Error Occured'),
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              duration: Duration(seconds: 2),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    );
+                                 */
+                            },
+                            decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              hintText: "Email, phone or username",
+                              // helperText: "Username",
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: TextFormField(
+                            enabled: !_awaitingOp,
+                            initialValue: _password,
+                            onSaved: (value) =>
+                                setState(() => _password = value!),
+                            validator: (value) {
+                              // TODO: password validation
+                              if (value == null || value.isEmpty) {
+                                return "Password can't be empty";
                               }
                             },
-                            child: const Text("Sign In"),
-                          )
-                        : const CircularProgressIndicator(),
-                    Spacer(),
-                    // TODO
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        TextButton(
-                          onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            SmuniHomeScreen.routeName,
-                            (r) => false,
+                            decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              hintText: "Password",
+                              // helperText: "Password",
+                            ),
                           ),
-                          child: const Text("Skip"),
                         ),
-                        ElevatedButton(
-                          onPressed: () {},
-                          child: const Text("Sign Up"),
-                        ),
+                      ],
+                    ),
+
+                    // Spacer(),
+                    // TODO
+                    Column(
+                      children: [
+                        !_awaitingOp
+                            ? ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    shape: BeveledRectangleBorder(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.elliptical(8, 8))),
+                                    minimumSize: Size(200, 40)),
+                                onPressed: () {
+                                  final form = _formKey.currentState;
+                                  if (form != null && form.validate()) {
+                                    form.save();
+                                    setState(() => _awaitingOp = true);
+                                    context.read<AuthBloc>().add(
+                                          SignIn(
+                                            method: _method,
+                                            identifier: _method ==
+                                                    SignInMethod.email
+                                                ? _email!
+                                                : _method ==
+                                                        SignInMethod.username
+                                                    ? _username!
+                                                    : _method ==
+                                                            SignInMethod
+                                                                .phoneNumber
+                                                        ? _phoneNumber!
+                                                        : throw Exception(
+                                                            "unhandled type"),
+                                            password: _password!,
+                                            onSuccess: () {
+                                              setState(
+                                                  () => _awaitingOp = false);
+                                              context
+                                                  .read<UserBloc>()
+                                                  .add(LoadUser());
+                                            },
+                                            onError: (err) {
+                                              setState(
+                                                  () => _awaitingOp = false);
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: err
+                                                          is ConnectionException
+                                                      ? Text(
+                                                          'Connection Failed')
+                                                      : err
+                                                              is CredentialsRejected
+                                                          ? Text(
+                                                              'Credentials Rejected')
+                                                          : Text(
+                                                              'Unknown Error Occurred'),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                  duration:
+                                                      Duration(seconds: 2),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        );
+                                  }
+                                },
+                                child: const Text("Sign In"),
+                              )
+                            : const CircularProgressIndicator(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Text('Don\'t have an account? '),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                    context, SignUpPage.routeName);
+                              },
+                              child: const Text("Sign Up"),
+                            ),
+                          ],
+                        )
                       ],
                     )
                   ],

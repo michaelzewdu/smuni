@@ -8,6 +8,7 @@ import 'package:sqflite/sqflite.dart' as sqflite;
 
 import 'bloc_observer.dart';
 import 'blocs/blocs.dart';
+import 'blocs/signup.dart';
 import 'constants.dart';
 import 'models/models.dart';
 import 'providers/cache/cache.dart';
@@ -178,6 +179,12 @@ class _MyAppState extends State<MyApp> {
                           context.read<AuthRepository>(),
                           context.read<CacheSynchronizer>(),
                         )..add(CheckCache()),
+                      ),
+                      BlocProvider(
+                        create: (context) => SignUpBloc(
+                          context.read<AuthRepository>(),
+                          NotSignedUp(),
+                        ),
                       ),
                       BlocProvider(
                         create: (context) =>

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:smuni/providers/cache/cache.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
@@ -11,6 +12,7 @@ class CacheEmptyException implements Exception {}
 class AuthRepository {
   final SmuniApiClient client;
   final AuthTokenCache cache;
+  String thisVerificationId = '';
 
   Future<SignInResponse> signInUsername(
     String username,
@@ -111,4 +113,45 @@ class AuthRepository {
     await cache.clearRefreshToken();
     await cache.clearUsername();
   }
+
+  void firebaseCodeSent(
+      {String? verificationId,
+      int? resendToken,
+      String? otpCode,
+      FirebaseAuth? firebaseAuth}) async {
+    if (otpCode != null) {
+      String smsCode = otpCode;
+
+      // Create a PhoneAuthCredential with the code
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+          verificationId: thisVerificationId, smsCode: smsCode);
+
+      // Sign the user in (or link) with the credential
+      await firebaseAuth!.signInWithCredential(credential);
+    }
+  }
+
+  Future<void> authenticatePhoneNumber(
+      String phoneNo, FirebaseAuth firebaseAuth) async {
+    await firebaseAuth.verifyPhoneNumber(
+        phoneNumber: phoneNo,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // ANDROID ONLY!
+
+          // Sign the user in (or link) with the auto-generated credential
+          await firebaseAuth.signInWithCredential(credential);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          throw (MyFirebaseError(e.code));
+        },
+        codeSent: (String verificationId, int? resendToken) async {
+          thisVerificationId = verificationId;
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {});
+  }
+}
+
+class MyFirebaseError implements Exception {
+  String cause;
+  MyFirebaseError(this.cause);
 }
