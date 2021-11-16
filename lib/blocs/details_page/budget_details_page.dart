@@ -96,7 +96,6 @@ class BudgetDetailsPageBloc extends DetailsPageBloc<String, Budget,
       } catch (err) {
         if (err is SocketException || err is UnauthenticatedException) {
           // do it offline if not connected or authenticated
-
           for (final expense in await expenseRepo
               .getItemsInRange(DateRange(), ofBudgets: {current.id})) {
             await offlineExpenseRepo.removeItemOffline(expense.id);

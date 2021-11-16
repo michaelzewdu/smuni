@@ -13,6 +13,7 @@ import 'Budget/budget_details_page.dart';
 import 'Budget/budget_list_page.dart';
 import 'Category/category_list_page.dart';
 import 'Expense/expense_list_page.dart';
+import 'income/income_list_page.dart';
 import 'settings_page.dart';
 
 class SmuniHomeScreen extends StatefulWidget {
@@ -70,7 +71,7 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                 Icons.align_horizontal_center,
                 "Categories"
               ],
-              [Icons.assignment, Icons.wysiwyg_sharp, "Menu"],
+              [Icons.assignment, Icons.wysiwyg_sharp, "Incomes"],
             ]
                 .map((e) => BottomNavigationBarItem(
                       icon: Icon(e[0]),
@@ -79,10 +80,9 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                     ))
                 .toList()),
         body: Builder(builder: (context) {
-          // return Center(child: Text("Shit"));
           switch (_selectedPage) {
             case 4:
-              return MenusPage();
+              return IncomeListPage.page();
             case 3:
               return CategoryListPage.page();
             case 2:
@@ -161,6 +161,11 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                       _showMainBudgetSelectorModal(context, changeMainBudget),
                   child: const Text("Change"),
                 ),
+                ElevatedButton(
+                  onPressed: () =>
+                      Navigator.pushNamed(context, MenusPage.routeName),
+                  child: const Text("Settings"),
+                ),
               ],
             )
           : Scaffold(
@@ -219,6 +224,11 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                       child: BudgetFormSelector(
                         key: selectorKey,
                         isSelecting: true,
+                        caption: const Text(
+                          "Select Main Budget",
+                          textScaleFactor: 1.5,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         onChanged: (value) {
                           setState(() => budgetId = value!);
                         },

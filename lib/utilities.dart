@@ -1,15 +1,10 @@
+export 'package:smuni_api_client/smuni_api_client.dart' show Pair;
+
 import 'dart:async';
 
 import 'package:flutter/material.dart' as flutter;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
-
-class Pair<A, B> {
-  final A a;
-  final B b;
-
-  const Pair(this.a, this.b);
-}
 
 class EnemeratedIterator<T> extends Iterator<Pair<int, T>> {
   int currentCount = -1;
@@ -109,7 +104,8 @@ class DateRange {
       flutter.DateTimeRange(start: start, end: end);
 
   @override
-  String toString() => "DateRange{ startTime: $startTime, endTime: $endTime }";
+  String toString() =>
+      "${runtimeType.toString()} { startTime: $start, endTime: $end }";
 
   @override
   bool operator ==(other) =>
@@ -131,8 +127,36 @@ class DateRangeFilter {
   const DateRangeFilter(this.name, this.range, this.level);
   @override
   String toString() {
-    return "DateRangeFilter { name: $name, range: $range, level: $level }";
+    return "${runtimeType.toString()} { name: $name, range: $range, level: $level }";
   }
+}
+
+String humanReadableDayRelationName(
+  DateTime time,
+  DateTime relativeTo,
+) {
+  final diff = time.difference(relativeTo);
+  if (diff.inDays < -7) {
+    return '${monthNames[time.month]} ${time.day} ${time.year}';
+  }
+  if (diff.inDays <= -2) return '${diff.inDays.abs()} days ago';
+  if (relativeTo.day - 1 == time.day) return 'Yesterday';
+  return 'Today';
+}
+
+String humanReadableTimeRelationName(
+  DateTime time,
+  DateTime relativeTo,
+) {
+  final diff = time.difference(relativeTo);
+  if (diff.inDays < -7) {
+    return '${monthNames[time.month]} ${time.day} ${time.year}';
+  }
+  if (diff.inDays > -2) return '${diff.inDays.abs()} days ago';
+  if (diff.inDays < -1 && relativeTo.day - 1 == time.day) return 'Yesterday';
+  if (diff.inHours < -1) return '${diff.inHours.abs()} hours ago';
+  if (diff.inMinutes < -1) return '${diff.inMinutes.abs()} minutes ago';
+  return 'Now';
 }
 
 // TODO: i10n
@@ -188,6 +212,57 @@ Map<DateRange, DateRangeFilter> generateDateRangesFilters(
     );
   }
   return filters;
+}
+
+DateRangeFilter currentBudgetCycle(
+  Recurring freq,
+  DateTime startTime,
+  DateTime endTime,
+  DateTime now,
+) {
+  final recurrenceSpan = Duration(seconds: freq.recurringIntervalSecs);
+  final durationSinceInit = DateTime.now().difference(startTime);
+  final numberOfPastCycles =
+      (durationSinceInit.inMilliseconds / recurrenceSpan.inMilliseconds)
+          .truncate();
+  final start = startTime.add(Duration(
+    seconds: numberOfPastCycles * freq.recurringIntervalSecs,
+  ));
+  final span = endTime.difference(startTime);
+  return DateRangeFilter(
+    "Current Cycle",
+    DateRange.usingDates(start: start, end: start.add(span)),
+    FilterLevel.custom,
+  );
+}
+
+List<DateRangeFilter> pastCycleDateRanges(
+  Recurring frequency,
+  DateTime startTime,
+  DateTime endTime,
+  DateTime now,
+) {
+  final span = endTime.difference(startTime);
+  final recurrenceSpan = Duration(seconds: frequency.recurringIntervalSecs);
+  var cycleNo = 1;
+  var start = startTime;
+  final cycleRanges = <DateRangeFilter>[];
+  do {
+    cycleRanges.add(
+      DateRangeFilter(
+          "Cycle $cycleNo",
+          DateRange.usingDates(start: start, end: start.add(span)),
+          FilterLevel.custom),
+    );
+    start = start.add(recurrenceSpan);
+    cycleNo += 1;
+  } while (start.isBefore(now));
+  cycleRanges[cycleRanges.length - 1] = DateRangeFilter(
+    "Current Cycle",
+    cycleRanges.last.range,
+    FilterLevel.custom,
+  );
+  return cycleRanges.reversed.toList();
 }
 
 class TreeNode<T> {

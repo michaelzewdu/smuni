@@ -60,7 +60,7 @@ class _BudgetListPageState extends State<BudgetListPage> {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: widget.showingArchivedOnly
-              ? const Text("Archived Budgets")
+              ? const Text("Budget Trash")
               : const Text("Budgets"),
           actions: [
             if (!widget.showingArchivedOnly)
@@ -75,7 +75,7 @@ class _BudgetListPageState extends State<BudgetListPage> {
                       <PopupMenuEntry<BudgetActionsMenuItem>>[
                         const PopupMenuItem(
                           value: BudgetActionsMenuItem.archived,
-                          child: Text('Archived budgets'),
+                          child: Text('Trash'),
                         )
                       ])
           ],
@@ -85,13 +85,13 @@ class _BudgetListPageState extends State<BudgetListPage> {
             if (state is BudgetsLoadSuccess) {
               return Column(
                 children: [
-                  if (!widget.showingArchivedOnly)
+                  /* if (!widget.showingArchivedOnly)
                     ListTile(
-                      title: Text("Archived budgets"),
+                      title: Text("Trash"),
                       dense: true,
                       onTap: () => Navigator.pushNamed(
                           context, BudgetListPage.routeNameArchivedOnly),
-                    ),
+                    ), */
                   Expanded(
                     child: BudgetListView(
                       state: state,

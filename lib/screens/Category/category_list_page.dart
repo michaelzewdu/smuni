@@ -65,7 +65,7 @@ class _CategoryListPageState extends State<CategoryListPage> {
           foregroundColor: Colors.black,
           shadowColor: Colors.transparent,
           title: widget.showingArchivedOnly
-              ? const Text("Archived Categories")
+              ? const Text("Category Trash")
               : const Text("Categories"),
           actions: [
             if (!widget.showingArchivedOnly)
@@ -79,7 +79,7 @@ class _CategoryListPageState extends State<CategoryListPage> {
                   itemBuilder: (context) => [
                         const PopupMenuItem(
                             value: CategoryListActions.archived,
-                            child: Text('Archived categories'))
+                            child: Text('Trash'))
                       ])
           ],
         ),
@@ -88,13 +88,13 @@ class _CategoryListPageState extends State<CategoryListPage> {
             if (state is CategoriesLoadSuccess) {
               return Column(
                 children: [
-                  if (!widget.showingArchivedOnly)
+                  /* if (!widget.showingArchivedOnly)
                     ListTile(
-                      title: Text("Archived categories"),
+                      title: Text("Trash"),
                       dense: true,
                       onTap: () => Navigator.pushNamed(
                           context, CategoryListPage.routeNameArchivedOnly),
-                    ),
+                    ), */
                   Expanded(
                     child: CategoryListView(
                       state: state,

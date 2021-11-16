@@ -1,6 +1,7 @@
 export 'budget_edit_page.dart';
 export 'category_edit_page.dart';
 export 'expense_edit_page.dart';
+export 'income_edit_page.dart';
 
 import 'dart:async';
 

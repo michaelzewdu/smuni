@@ -62,7 +62,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
 
   late var _name = widget.item.name;
   late String? _parentId = widget.item.parentId;
-  late var _isSubcategory = widget.item.parentId != null;
+  late var tags = widget.item.tags;
 
   bool _awaitingSave = false;
 
@@ -81,7 +81,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                     ? Text('Connection Failed')
                     : Text('Unknown Error Occured'),
                 behavior: SnackBarBehavior.floating,
-                duration: Duration(seconds: 1),
+                duration: Duration(seconds: 2),
               ),
             );
           } else {
@@ -92,7 +92,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
           appBar: AppBar(
             title: _awaitingSave
                 ? const Text("Loading...")
-                : Text("Editing category: ${widget.item.name}"),
+                : FittedBox(child: Text(widget.item.name)),
             actions: !_awaitingSave
                 ? [
                     ElevatedButton(
@@ -117,8 +117,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                                         update: Category.from(
                                           widget.item,
                                           name: _name,
-                                          parentId:
-                                              !_isSubcategory ? "" : _parentId,
+                                          parentId: _parentId ?? "",
                                         ),
                                         old: widget.item,
                                       )),
@@ -162,38 +161,32 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
 
                    */
                   // Text("category: ${state.unmodified.categoryId}"),
-                  CheckboxListTile(
-                    value: _isSubcategory,
-                    title: const Text("Is a Subcategory"),
-                    onChanged: (value) =>
-                        setState(() => _isSubcategory = value!),
-                  ),
-                  if (_isSubcategory)
-                    BlocProvider(
-                      create: (context) => CategoryListPageBloc(
-                        context.read<CategoryRepository>(),
-                        context.read<OfflineCategoryRepository>(),
-                      ),
-                      child: Expanded(
-                        child: CategoryFormSelector(
-                          isSelecting: _parentId == null,
-                          caption: Text("Parent category"),
-                          disabledItems:
-                              !widget.isCreating ? {widget.item.id} : null,
-                          initialValue: _parentId == null ? null : _parentId!,
-                          onChanged: (value) {
-                            setState(() {
-                              _parentId = value!;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null) {
-                              return "Parent category not selected";
-                            }
-                          },
-                        ),
+
+                  BlocProvider(
+                    create: (context) => CategoryListPageBloc(
+                      context.read<CategoryRepository>(),
+                      context.read<OfflineCategoryRepository>(),
+                    ),
+                    child: Expanded(
+                      child: CategoryFormSelector(
+                        isSelecting: widget.isCreating,
+                        caption: Text("Parent category"),
+                        disabledItems:
+                            !widget.isCreating ? {widget.item.id} : null,
+                        initialValue: _parentId == null ? null : _parentId!,
+                        onChanged: (value) {
+                          setState(() {
+                            _parentId = value!;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return "Parent category not selected";
+                          }
+                        },
                       ),
                     ),
+                  ),
                 ],
               ),
             ),

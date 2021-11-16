@@ -1,3 +1,10 @@
+class Pair<A, B> {
+  final A a;
+  final B b;
+
+  const Pair(this.a, this.b);
+}
+
 class User {
   final String id;
   final DateTime createdAt;
@@ -9,6 +16,7 @@ class User {
   final String? phoneNumber;
   final String? pictureURL;
   final String? mainBudget;
+  final String? miscCategory;
 
   User({
     required this.id,
@@ -21,6 +29,7 @@ class User {
     this.phoneNumber,
     this.pictureURL,
     this.mainBudget,
+    this.miscCategory,
   });
 
   Map<String, dynamic> toJson() => {
@@ -34,6 +43,7 @@ class User {
         "phoneNumber": phoneNumber,
         "pictureURL": pictureURL,
         "mainBudget": mainBudget,
+        "miscCategory": miscCategory,
       };
 
   factory User.fromJson(Map<String, dynamic> json) => User(
@@ -47,6 +57,7 @@ class User {
         phoneNumber: checkedConvert(json, "phoneNumber", (v) => v as String?),
         pictureURL: checkedConvert(json, "pictureURL", (v) => v as String?),
         mainBudget: checkedConvert(json, "mainBudget", (v) => v as String?),
+        miscCategory: checkedConvert(json, "miscCategory", (v) => v as String?),
       );
 
   factory User.from(
@@ -61,6 +72,7 @@ class User {
     String? phoneNumber,
     String? pictureURL,
     String? mainBudget,
+    String? miscCategory,
   }) =>
       User(
         id: id ?? other.id,
@@ -73,6 +85,7 @@ class User {
         phoneNumber: phoneNumber ?? other.phoneNumber,
         pictureURL: pictureURL ?? other.pictureURL,
         mainBudget: mainBudget ?? other.mainBudget,
+        miscCategory: miscCategory ?? other.miscCategory,
       );
 
   @override
@@ -80,9 +93,10 @@ class User {
 }
 
 class UserDenorm extends User {
+  final List<Category> categories;
   final List<Budget> budgets;
   final List<Expense> expenses;
-  final List<Category> categories;
+  final List<Income> incomes;
 
   UserDenorm({
     required String id,
@@ -95,9 +109,11 @@ class UserDenorm extends User {
     String? phoneNumber,
     String? pictureURL,
     String? mainBudget,
+    String? miscCategory,
     required this.budgets,
     required this.expenses,
     required this.categories,
+    required this.incomes,
   }) : super(
           id: id,
           createdAt: createdAt,
@@ -109,6 +125,7 @@ class UserDenorm extends User {
           phoneNumber: phoneNumber,
           pictureURL: pictureURL,
           mainBudget: mainBudget,
+          miscCategory: miscCategory,
         );
 
   @override
@@ -117,6 +134,7 @@ class UserDenorm extends User {
         "budgets": budgets.map((e) => e.toJson()),
         "categories": categories.map((c) => c.toJson()),
         "expenses": expenses.map((e) => e.toJson()),
+        "incomes": incomes.map((e) => e.toJson()),
       };
 
   factory UserDenorm.fromJson(Map<String, dynamic> json) {
@@ -132,6 +150,7 @@ class UserDenorm extends User {
       phoneNumber: user.phoneNumber,
       pictureURL: user.pictureURL,
       mainBudget: user.mainBudget,
+      miscCategory: user.miscCategory,
       budgets: checkedConvert(
         json,
         "budgets",
@@ -156,6 +175,14 @@ class UserDenorm extends User {
             : checkedConvertArray(
                 v as List<dynamic>, (_, v) => Category.fromJson(v)),
       ),
+      incomes: checkedConvert(
+        json,
+        "incomes",
+        (v) => v == null
+            ? []
+            : checkedConvertArray(
+                v as List<dynamic>, (_, v) => Income.fromJson(v)),
+      ),
     );
   }
 
@@ -171,9 +198,11 @@ class UserDenorm extends User {
     String? phoneNumber,
     String? pictureURL,
     String? mainBudget,
+    String? miscCategory,
     List<Budget>? budgets,
     List<Expense>? expenses,
     List<Category>? categories,
+    List<Income>? incomes,
   }) =>
       UserDenorm(
         id: id ?? other.id,
@@ -186,9 +215,11 @@ class UserDenorm extends User {
         phoneNumber: phoneNumber ?? other.phoneNumber,
         pictureURL: pictureURL ?? other.pictureURL,
         mainBudget: mainBudget ?? other.mainBudget,
+        miscCategory: miscCategory ?? other.miscCategory,
         budgets: budgets ?? other.budgets,
         expenses: expenses ?? other.expenses,
         categories: categories ?? other.categories,
+        incomes: incomes ?? other.incomes,
       );
 }
 
@@ -544,6 +575,84 @@ class Expense {
         name: name ?? other.name,
         categoryId: categoryId ?? other.categoryId,
         budgetId: budgetId ?? other.budgetId,
+        amount: amount ?? other.amount,
+      );
+
+  @override
+  String toString() => "${runtimeType.toString()} ${toJson().toString()}";
+}
+
+class Income {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int version;
+  final bool isServerVersion;
+  final String name;
+  final DateTime timestamp;
+  final MonetaryAmount amount;
+  final Frequency frequency;
+
+  Income({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.version = 0,
+    this.isServerVersion = false,
+    required this.name,
+    required this.amount,
+    required this.timestamp,
+    required this.frequency,
+  });
+
+  Map<String, dynamic> toJson() => {
+        "_id": id,
+        "createdAt": createdAt.toIso8601String(),
+        "updatedAt": updatedAt.toIso8601String(),
+        "version": version,
+        "isServerVersion": isServerVersion,
+        "name": name,
+        "amount": amount.toJson(),
+        "timestamp": timestamp.toIso8601String(),
+        "frequency": frequency.toJson(),
+      };
+
+  factory Income.fromJson(Map<String, dynamic> json) => Income(
+        id: checkedConvert(json, "_id", (v) => v as String),
+        createdAt: checkedConvert(json, "createdAt", (v) => DateTime.parse(v)),
+        updatedAt: checkedConvert(json, "updatedAt", (v) => DateTime.parse(v)),
+        version: checkedConvert(json, "version", (v) => v as int),
+        isServerVersion:
+            checkedConvert(json, "isServerVersion", (v) => v as bool? ?? true),
+        timestamp: checkedConvert(json, "timestamp", (v) => DateTime.parse(v)),
+        name: checkedConvert(json, "name", (v) => v as String),
+        frequency:
+            checkedConvert(json, "frequency", (v) => Frequency.fromJson(v)),
+        amount:
+            checkedConvert(json, "amount", (v) => MonetaryAmount.fromJson(v)),
+      );
+
+  factory Income.from(
+    Income other, {
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    int? version,
+    bool? isServerVersion,
+    String? name,
+    DateTime? timestamp,
+    Frequency? frequency,
+    MonetaryAmount? amount,
+  }) =>
+      Income(
+        id: id ?? other.id,
+        createdAt: createdAt ?? other.createdAt,
+        updatedAt: updatedAt ?? other.updatedAt,
+        timestamp: updatedAt ?? other.timestamp,
+        version: version ?? other.version,
+        isServerVersion: isServerVersion ?? other.isServerVersion,
+        name: name ?? other.name,
+        frequency: frequency ?? other.frequency,
         amount: amount ?? other.amount,
       );
 

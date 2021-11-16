@@ -25,9 +25,22 @@ Future<sqflite.Database> initDb() async {
     path,
     // path,
     version: 1,
-    onCreate: (db, version) => db.transaction((txn) async {
-      await migrateV1(txn);
-    }),
+    onCreate: (db, version) async {
+      await db.transaction(migrateV1);
+      // in case they skipped sign up, create a misc category in cache
+      SqliteCategoryCache(db).setItem(
+        "000000000000000000000000",
+        Category(
+          id: "000000000000000000000000",
+          version: -1,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          name: "Misc",
+          tags: ["misc"],
+          isServerVersion: false,
+        ),
+      );
+    },
   );
 
   return db;
@@ -42,11 +55,13 @@ create table users (
   email text unique,
   phoneNumber text unique,
   pictureURL text unique,
-  mainBudget text unique,
+  mainBudget text,
+  miscCategory text,
   version integer not null,
   createdAt integer not null,
   updatedAt integer not null
 )''');
+
   final budgetRows = """
   ( 
   _id text primary key,
@@ -99,6 +114,22 @@ create table users (
   await txn
       .execute("create table ${_serverVersionPrefix}Expenses $expenseRows");
   await txn.execute('''create table removedExpenses (_id text primary key)''');
+
+  final incomeRows = '''( 
+  _id text primary key,
+  name text not null,
+  timestamp integer not null,
+  amountCurrency text not null,
+  amountValue integer not null,
+  frequencyKind text not null,
+  frequencyRecurringIntervalSecs integer,
+  version integer not null,
+  isServerVersion integer not null,
+  createdAt integer not null,
+  updatedAt integer not null)''';
+  await txn.execute("create table incomes $incomeRows");
+  await txn.execute("create table ${_serverVersionPrefix}Incomes $incomeRows");
+  await txn.execute('''create table removedIncomes (_id text primary key)''');
 
   await txn.execute('''
 create table stuff ( 
@@ -170,6 +201,7 @@ class PreferencesCache {
   PreferencesCache(sqflite.Database db) : _stuffCache = _StuffCache(db);
 
   Future<Preferences> getPreferences() async => Preferences(
+        miscCategory: await getMiscCategory(),
         mainBudget: await getMainBudget(),
         syncPending: await getSyncPending(),
       );
@@ -178,6 +210,16 @@ class PreferencesCache {
   Future<void> setMainBudget(String token) =>
       _stuffCache.setStuff("mainBudget", token);
   Future<void> clearMainBudget() => _stuffCache.clearStuff("mainBudget");
+
+  Future<String> getMiscCategory() async {
+    final id = await _stuffCache.getStuff("miscCategory");
+    if (id == null) await setMiscCategory("000000000000000000000000");
+    return "000000000000000000000000";
+  }
+
+  Future<void> setMiscCategory(String token) =>
+      _stuffCache.setStuff("miscCategory", token);
+  Future<void> clearMiscCategory() => _stuffCache.clearStuff("miscCategory");
 
   Future<bool?> getSyncPending() async {
     final pending = await _stuffCache.getStuff("syncPending");
@@ -194,6 +236,7 @@ class _SqliteCache<Identifier, Item> extends Cache<Identifier, Item> {
   final sqflite.Database db;
   String tableName;
   final String primaryColumnName;
+  final String? defaultOrderColumn;
   final List<String> columns;
   final Map<String, dynamic> Function(Item) toMap;
   final Item Function(Map<String, dynamic>) fromMap;
@@ -205,6 +248,7 @@ class _SqliteCache<Identifier, Item> extends Cache<Identifier, Item> {
     required this.columns,
     required this.toMap,
     required this.fromMap,
+    this.defaultOrderColumn,
   });
 
   @override
@@ -222,6 +266,7 @@ class _SqliteCache<Identifier, Item> extends Cache<Identifier, Item> {
     List<Map<String, Object?>> maps = await db.query(
       tableName,
       columns: columns,
+      orderBy: defaultOrderColumn,
     );
     return Map.fromEntries(
       maps.map((e) => MapEntry(e[primaryColumnName] as Identifier, fromMap(e))),
@@ -260,13 +305,14 @@ class SqliteUserCache extends _SqliteCache<String, User> {
             "_id",
             "createdAt",
             "updatedAt",
+            "version",
             "firebaseId",
             "username",
             "email",
             "phoneNumber",
             "pictureURL",
             "mainBudget",
-            "version",
+            "miscCategory",
           ],
           toMap: (u) => u.toJson()
             ..update("createdAt", (t) => u.createdAt.millisecondsSinceEpoch)
@@ -307,6 +353,7 @@ class SqliteBudgetCache extends _SqliteCache<String, Budget> {
             "frequencyRecurringIntervalSecs",
             "categoryAllocations",
           ],
+          defaultOrderColumn: "createdAt",
           toMap: (o) => o.toJson()
             ..update("createdAt", (t) => o.createdAt.millisecondsSinceEpoch)
             ..update("updatedAt", (t) => o.updatedAt.millisecondsSinceEpoch)
@@ -378,6 +425,7 @@ class SqliteCategoryCache extends _SqliteCache<String, Category> {
             "parentId",
             "tags",
           ],
+          defaultOrderColumn: "createdAt",
           toMap: (o) => o.toJson()
             ..update("createdAt", (t) => o.createdAt.millisecondsSinceEpoch)
             ..update("updatedAt", (t) => o.updatedAt.millisecondsSinceEpoch)
@@ -435,6 +483,7 @@ class SqliteExpenseCache extends _SqliteCache<String, Expense> {
             "amountCurrency",
             "amountValue",
           ],
+          defaultOrderColumn: "timestamp",
           toMap: (o) => o.toJson()
             ..update("createdAt", (t) => o.createdAt.millisecondsSinceEpoch)
             ..update("updatedAt", (t) => o.updatedAt.millisecondsSinceEpoch)
@@ -465,6 +514,66 @@ class SqliteExpenseCache extends _SqliteCache<String, Expense> {
               ..["category"] = {
                 "_id": m["categoryId"],
                 "budgetId": m["budgetId"],
+              },
+          ),
+        );
+}
+
+class SqliteIncomeCache extends _SqliteCache<String, Income> {
+  SqliteIncomeCache(sqflite.Database db)
+      : super(
+          db,
+          tableName: "incomes",
+          primaryColumnName: "_id",
+          columns: [
+            "_id",
+            "createdAt",
+            "updatedAt",
+            "version",
+            "isServerVersion",
+            "name",
+            "timestamp",
+            "amountCurrency",
+            "amountValue",
+            "frequencyKind",
+            "frequencyRecurringIntervalSecs",
+          ],
+          defaultOrderColumn: "timestamp",
+          toMap: (o) => o.toJson()
+            ..update("createdAt", (t) => o.createdAt.millisecondsSinceEpoch)
+            ..update("updatedAt", (t) => o.updatedAt.millisecondsSinceEpoch)
+            ..update("timestamp", (t) => o.timestamp.millisecondsSinceEpoch)
+            ..update("isServerVersion", (t) => o.isServerVersion ? 1 : 0)
+            ..["amountCurrency"] = o.amount.currency
+            ..["amountValue"] = o.amount.amount
+            ..["frequencyKind"] = o.frequency.kind.toString()
+            ..["frequencyRecurringIntervalSecs"] = o.frequency is Recurring
+                ? (o.frequency as Recurring).recurringIntervalSecs
+                : null
+            ..remove("amount")
+            ..remove("frequency"),
+          fromMap: (m) => Income.fromJson(
+            Map.from(m)
+              ..update(
+                  "createdAt",
+                  (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
+                      .toIso8601String())
+              ..update(
+                  "updatedAt",
+                  (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
+                      .toIso8601String())
+              ..update(
+                  "timestamp",
+                  (t) => DateTime.fromMillisecondsSinceEpoch(t as int)
+                      .toIso8601String())
+              ..update("isServerVersion", (t) => m["isServerVersion"] == 1)
+              ..["amount"] = {
+                "currency": m["amountCurrency"],
+                "amount": m["amountValue"],
+              }
+              ..["frequency"] = {
+                "kind": m["frequencyKind"],
+                "recurringIntervalSecs": m["frequencyRecurringIntervalSecs"],
               },
           ),
         );
@@ -533,4 +642,8 @@ class SqliteRemovedCategoriesCache extends _SqliteRemovedItemsCache {
 class SqliteRemovedExpensesCache extends _SqliteRemovedItemsCache {
   SqliteRemovedExpensesCache(sqflite.Database db)
       : super(db, "removedExpenses");
+}
+
+class SqliteRemovedIncomesCache extends _SqliteRemovedItemsCache {
+  SqliteRemovedIncomesCache(sqflite.Database db) : super(db, "removedIncomes");
 }

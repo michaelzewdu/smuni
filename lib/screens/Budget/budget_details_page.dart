@@ -18,7 +18,7 @@ class BudgetDetailsPage extends StatefulWidget {
 
   static Route route(String id) => MaterialPageRoute(
         settings: const RouteSettings(name: routeName),
-        builder: (context) => page(id),
+        builder: (context) => BudgetDetailsPage.page(id),
       );
 
   static Widget page(
@@ -39,23 +39,13 @@ class BudgetDetailsPage extends StatefulWidget {
                   id),
             ),
             BlocProvider(
-              create: (BuildContext context) => ExpenseListPageBloc(
-                  context.read<ExpenseRepository>(),
-                  context.read<OfflineExpenseRepository>(),
-                  context.read<AuthBloc>(),
-                  context.read<BudgetRepository>(),
-                  context.read<CategoryRepository>(),
-                  const DateRangeFilter(
-                    "All",
-                    DateRange(),
-                    FilterLevel.all,
-                  ),
-                  id),
-            ),
-            BlocProvider(
               create: (BuildContext context) => CategoryListPageBloc(
                 context.read<CategoryRepository>(),
                 context.read<OfflineCategoryRepository>(),
+                LoadCategoriesFilter(
+                  includeActive: true,
+                  includeArchvied: true,
+                ),
               ),
             ),
           ],
@@ -119,7 +109,7 @@ class BudgetDetailsPage extends StatefulWidget {
                                                 ? Text('Connection Failed')
                                                 : Text('Unknown Error Occured'),
                                             behavior: SnackBarBehavior.floating,
-                                            duration: Duration(seconds: 1),
+                                            duration: Duration(seconds: 2),
                                           ),
                                         );
                                       }
@@ -217,8 +207,6 @@ class BudgetDetailsPage extends StatefulWidget {
 }
 
 class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
-  int? _totalUsed;
-  Map<String, int>? _perCategoryUsed;
   String? _selectedCategory;
 
   var _showAllBudgetExpenses = false;
@@ -258,466 +246,542 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
   Widget _details(
     BuildContext context,
     BudgetLoadSuccess state,
-  ) =>
-      Scaffold(
-        body: _budgetDetails(context, state),
-      );
-
-  Widget _budgetDetails(
-    BuildContext context,
-    BudgetLoadSuccess state,
   ) {
     final currency = state.item.allocatedAmount.currency;
     final totalAllocated = state.item.allocatedAmount.amount;
 
-    return BlocListener<ExpenseListPageBloc, ExpenseListPageBlocState>(
-      listener: (context, expensesState) {
-        if (expensesState is ExpensesLoadSuccess) {
-          var totalUsed = 0;
-          final perCategoryUsed = <String, int>{};
-          for (final expense in expensesState.items.values) {
-            final expenseAmount = expense.amount.amount;
-            totalUsed += expenseAmount;
-            perCategoryUsed.update(
-              expense.categoryId,
-              (value) => value + expenseAmount,
-              ifAbsent: () => expenseAmount,
-            );
-          }
-          setState(() {
-            _totalUsed = totalUsed;
-            _perCategoryUsed = perCategoryUsed;
-          });
-        } else {
-          setState(() {
-            _totalUsed = null;
-            _perCategoryUsed = null;
-          });
-        }
-      },
-      child: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            toolbarHeight: 60,
-            title: Text(state.item.name),
-            shape: RoundedRectangleBorder(
-              side: BorderSide.none,
-              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30)),
-            ),
-            expandedHeight: 250,
-            pinned: true,
-            //floating: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 60, 0, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _totalUsed != null
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ...<dynamic>[
-                                  [
-                                    'Used',
-                                    "${_totalUsed! / 100}",
-                                    _totalUsed! > totalAllocated
-                                  ],
-                                  [
-                                    'Remaining',
-                                    "${(totalAllocated - _totalUsed!) / 100}",
-                                    _totalUsed! > totalAllocated
-                                  ],
-                                  ['Total', "${totalAllocated / 100}", false],
-                                ].map(((e) => DefaultTextStyle(
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(e[0]),
-                                          DefaultTextStyle(
-                                            style: const TextStyle(
-                                              fontSize: 20,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Text(
-                                                  "$currency ",
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w200),
-                                                ),
-                                                Text(
-                                                  e[1],
-                                                  style: TextStyle(
-                                                    backgroundColor: e[2]
-                                                        ? Colors.red[700]
-                                                        : null,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ))),
-                              ],
-                            )
-                          : CircularProgressIndicator(
-                              color: Colors.white,
-                            ),
-                      _totalUsed != null
-                          ? Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                // crossAxisAlignment: CrossAxisAlignment.start?,
-                                children: [
-                                  Expanded(
-                                    child: Center(
-                                      child: DefaultTextStyle(
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 44,
-                                          ),
-                                          child: totalAllocated == 0
-                                              ? Text("0%")
-                                              : Builder(builder: (context) {
-                                                  final percentage =
-                                                      ((_totalUsed! /
-                                                                  totalAllocated) *
-                                                              100)
-                                                          .truncate();
-                                                  return FittedBox(
-                                                    child: Text(
-                                                      "$percentage%",
-                                                      style: percentage >= 100
-                                                          ? TextStyle(
-                                                              backgroundColor:
-                                                                  Colors
-                                                                      .red[700],
-                                                            )
-                                                          : null,
-                                                    ),
-                                                  );
-                                                })),
+    return Scaffold(
+        body: BlocProvider(
+          create: (BuildContext context) => ExpenseListPageBloc(
+            context.read<ExpenseRepository>(),
+            context.read<OfflineExpenseRepository>(),
+            context.read<AuthBloc>(),
+            context.read<BudgetRepository>(),
+            context.read<CategoryRepository>(),
+            initialFilter: LoadExpensesFilter(
+                ofBudget: state.id,
+                range: state.item.frequency is Recurring
+                    ? currentBudgetCycle(
+                        state.item.frequency as Recurring,
+                        state.item.startTime,
+                        state.item.endTime,
+                        DateTime.now())
+                    : DateRangeFilter("All", DateRange(), FilterLevel.all)),
+          ),
+          child: BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
+            builder: (context, expensesState) => expensesState
+                    is ExpensesLoadSuccess
+                ? BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
+                    builder: (context, catListState) => catListState
+                            is CategoriesLoadSuccess
+                        ? Builder(builder: (context) {
+                            var totalUsed = 0;
+                            final perCategoryUsed = <String, int>{};
+                            for (final expense in expensesState.items.values) {
+                              final expenseAmount = expense.amount.amount;
+                              totalUsed += expenseAmount;
+                              perCategoryUsed.update(
+                                expense.categoryId,
+                                (value) => value + expenseAmount,
+                                ifAbsent: () => expenseAmount,
+                              );
+                            }
+                            return CustomScrollView(
+                              slivers: [
+                                _detailsAppBar(
+                                  context,
+                                  state,
+                                  totalAllocated,
+                                  currency,
+                                  totalUsed,
+                                ),
+                                if (!_showAllBudgetExpenses &&
+                                    state.item.frequency is Recurring)
+                                  SliverToBoxAdapter(
+                                    child: Container(
+                                      height: 50,
+                                      child: Builder(builder: (context) {
+                                        final allRange = DateRangeFilter("All",
+                                            DateRange(), FilterLevel.all);
+                                        final cycleRanges = pastCycleDateRanges(
+                                          state.item.frequency as Recurring,
+                                          state.item.startTime,
+                                          state.item.endTime,
+                                          DateTime.now(),
+                                        );
+                                        Widget tabButton(
+                                                DateRangeFilter range) =>
+                                            ExpenseListView.buttonChip(
+                                              range.name,
+                                              isSelected: expensesState
+                                                      .filter.range.range ==
+                                                  range.range,
+                                              isIncluded: expensesState
+                                                  .filter.range.range
+                                                  .contains(range.range),
+                                              onPressed: () => context
+                                                  .read<ExpenseListPageBloc>()
+                                                  .add(LoadExpenses(
+                                                      filter:
+                                                          LoadExpensesFilter(
+                                                    range: range,
+                                                    ofBudget: state.id,
+                                                  ))),
+                                            );
+                                        print(
+                                            "a: ${cycleRanges[0]}\n b: ${expensesState.filter.range}");
+                                        return ListView(
+                                          scrollDirection: Axis.horizontal,
+                                          children: [
+                                            // All expenses button
+                                            tabButton(allRange),
+                                            ...cycleRanges.map(tabButton),
+                                          ],
+                                        );
+                                      }),
                                     ),
                                   ),
-                                  // span = endTime - startTime
-                                  // noOfCyclesPast = (( now - startTime) / recurrenceInterval).truncate();
-                                  // startOfCurrentCycle = (noOfCyclesPast * recurrenceInterval) + startTime;
-                                  // endOfCurrentCycle = startOfCurrentCycle + span;
-                                  if (state.item.frequency is Recurring)
-                                    Builder(builder: (context) {
-                                      Duration span = state.item.endTime
-                                          .difference(state.item.startTime);
-                                      int recurrenceIntervalSeconds =
-                                          (state.item.frequency as Recurring)
-                                              .recurringIntervalSecs;
-                                      // print('recurrenceIntervalSeconds: $recurrenceIntervalSeconds');
-                                      int untilNow = DateTime.now()
-                                          .difference(state.item.startTime)
-                                          .inSeconds;
-                                      // print('UntilNow: $untilNow');
-                                      int numberOfRecurringCyclesPassed =
-                                          (untilNow / recurrenceIntervalSeconds)
-                                              .ceil();
-                                      // print('numberOfRecurringCyclesPasssed: $numberOfRecurringCyclesPassed');
-                                      DateTime budgetEndDate =
-                                          (state.item.startTime.add(Duration(
-                                              seconds:
-                                                  numberOfRecurringCyclesPassed *
-                                                      recurrenceIntervalSeconds)));
-                                      // print('budgetEndDate: ${budgetEndDate.toString()}');
-                                      Duration remainingDays = budgetEndDate
-                                          .difference(DateTime.now());
-                                      // print('remaining days: ${remainingDays.toString()}');
-                                      if (remainingDays.inHours < 1) {
-                                        return Text(
-                                            '${remainingDays.inMinutes} minutes left till new budget',
-                                            style: TextStyle(
-                                                color: Colors.yellow));
-                                      } else if (remainingDays.inDays < 1) {
-                                        return Text(
-                                            '${remainingDays.inHours} hours left till new budget',
-                                            style: TextStyle(
-                                                color: Colors.yellow));
-                                      } else {
-                                        return Text(
-                                            '${remainingDays.inDays} days left till new budget',
-                                            style:
-                                                TextStyle(color: Colors.white));
-                                      }
-                                    }),
-                                  //DateTime budgetEndDate=
-
-                                  if (state.item.frequency is OneTime)
-                                    Builder(builder: (context) {
-                                      Duration remainingDays = state
-                                          .item.endTime
-                                          .difference(DateTime.now());
-                                      if (remainingDays.inDays > 0 &&
-                                          !remainingDays.isNegative) {
-                                        return Text(
-                                          '${remainingDays.inDays.toString()} days to budget end',
-                                          style: TextStyle(color: Colors.white),
-                                        );
-                                      } else if (remainingDays.isNegative) {
-                                        return Text(
-                                            'Budget ended ${remainingDays.inDays * -1} days ago');
-                                      } else if (remainingDays.inHours > 0 &&
-                                          !remainingDays.isNegative) {
-                                        return Text(
-                                            '${remainingDays.inHours} hours left',
-                                            style:
-                                                TextStyle(color: Colors.white));
-                                      } else if (remainingDays.inMinutes > 0 &&
-                                          !remainingDays.isNegative) {
-                                        return Text(
-                                            '${remainingDays.inMinutes} minutes left',
-                                            style: TextStyle(
-                                                color: Colors.yellow));
-                                      } else {
-                                        return Text('');
-                                      }
-                                    }),
-                                  _showAllBudgetExpenses
-                                      ? TextButton(
-                                          onPressed: () => setState(() =>
-                                              _showAllBudgetExpenses = false),
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                MaterialStateProperty.all(
-                                                    Colors.white),
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Padding(
-                                                padding: EdgeInsets.all(8.0),
-                                                child: Icon(Icons.list_alt),
-                                              ),
-                                              Text("Show Allocations"),
-                                            ],
-                                          ),
-                                        )
-                                      : TextButton(
-                                          onPressed: () => setState(() =>
-                                              _showAllBudgetExpenses = true),
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                MaterialStateProperty.all(
-                                                    Colors.white),
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Padding(
-                                                padding: EdgeInsets.all(8.0),
-                                                child: Icon(
-                                                  Icons.list,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              Text("Show Expenses"),
-                                            ],
-                                          ),
-                                        )
-                                ],
-                              ),
-                            )
-                          : CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            actions: widget.actionsListBuilder(context, state),
-          ),
-          /*
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                    border: Border.all(),
-                    borderRadius: BorderRadius.circular(15)),
-                child: Column(
-                  children: [],
-                ),
-              ),
-            ),
-          ),
-
-           */
-          _showAllBudgetExpenses
-              ? SliverToBoxAdapter(
-                  child: BlocProvider(
-                    create: (context) => ExpenseListPageBloc(
-                      context.read<ExpenseRepository>(),
-                      context.read<OfflineExpenseRepository>(),
-                      context.read<AuthBloc>(),
-                      context.read<BudgetRepository>(),
-                      context.read<CategoryRepository>(),
-                      const DateRangeFilter(
-                        "All",
-                        DateRange(),
-                        FilterLevel.all,
-                      ),
-                      state.item.id,
-                    ),
-                    child: BlocBuilder<ExpenseListPageBloc,
-                            ExpenseListPageBlocState>(
-                        builder: (context, expensesState) {
-                      if (expensesState is ExpensesLoadSuccess) {
-                        return ExpenseListView(
-                          dense: true,
-                          items: expensesState.items,
-                          allDateRanges: expensesState.dateRangeFilters.values,
-                          displayedRange: expensesState.range,
-                          loadRange: (range) => context
-                              .read<ExpenseListPageBloc>()
-                              .add(LoadExpenses(
-                                range,
-                                ofBudget: state.item.id,
-                              )),
-                          onEdit: (id) => Navigator.pushNamed(
-                            context,
-                            ExpenseEditPage.routeName,
-                            arguments: expensesState.items[id],
-                          ),
-                          onDelete: (id) async {
-                            final item = expensesState.items[id]!;
-                            final confirm = await showDialog<bool?>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Confirm deletion'),
-                                content: Text(
-                                  'Are you sure you want to delete entry ${item.name}?',
-                                ),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    child: const Text('Confirm'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirm != null && confirm) {
-                              context
-                                  .read<ExpenseListPageBloc>()
-                                  .add(DeleteExpense(id));
-                            }
-                          },
-                        );
-                      }
-                      return Center(
-                          child: CircularProgressIndicator.adaptive());
-                    }),
-                  ),
-                )
-              : _perCategoryUsed != null
-                  ? BlocBuilder<CategoryListPageBloc,
-                      CategoryListPageBlocState>(
-                      builder: (context, catListState) {
-                        if (catListState is CategoriesLoadSuccess) {
-                          // ignore: prefer_collection_literals
-                          Set<String> rootNodes = LinkedHashSet();
-
-                          // FIXME: move this calculation
-                          final ancestryTree =
-                              CategoryRepositoryExt.calcAncestryTree(
-                            state.item.categoryAllocations.keys.toSet(),
-                            catListState.items,
-                          );
-                          for (final node in ancestryTree.values
-                              .where((e) => e.parent == null)) {
-                            rootNodes.add(node.item);
-                          }
-
-                          return rootNodes.isNotEmpty
-                              ? SliverPadding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  sliver: SliverList(
-                                    delegate: SliverChildBuilderDelegate(
-                                        (BuildContext context, int index) {
-                                      final id = rootNodes.elementAt(index);
-                                      return _catTree(
+                                _showAllBudgetExpenses
+                                    ? _allBudgetExpenses(context, state,
+                                        expensesState, catListState)
+                                    : _categoryAllocations(
                                         context,
                                         state,
-                                        catListState.items,
-                                        ancestryTree,
-                                        _perCategoryUsed!,
-                                        id,
-                                      );
-                                    }, childCount: rootNodes.length),
+                                        expensesState,
+                                        catListState,
+                                        perCategoryUsed,
+                                      )
+                              ],
+                            );
+                          })
+                        : catListState is CategoriesLoading
+                            ? Center(child: CircularProgressIndicator())
+                            : throw Exception("Unhandled state: $catListState"),
+                  )
+                : expensesState is ExpensesLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : throw Exception("Unhandled state: $expensesState"),
+          ),
+        ),
+        floatingActionButton: !state.item.isArchived
+            ? FloatingActionButton.extended(
+                onPressed: () => Navigator.pushNamed(
+                  context,
+                  ExpenseEditPage.routeName,
+                  arguments: ExpenseEditPageNewArgs(
+                    budgetId: state.item.id,
+                  ),
+                ),
+                label: Text('Add new expense'),
+                icon: Icon(Icons.add),
+              )
+            : null);
+  }
+
+  Widget _detailsAppBar(
+    BuildContext context,
+    BudgetLoadSuccess state,
+    int totalAllocated,
+    String currency,
+    int totalUsed,
+  ) =>
+      SliverAppBar(
+        toolbarHeight: 60,
+        title: FittedBox(child: Text(state.item.name)),
+        shape: RoundedRectangleBorder(
+          side: BorderSide.none,
+          borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30)),
+        ),
+        expandedHeight: 250,
+        pinned: true,
+        //floating: true,
+        flexibleSpace: FlexibleSpaceBar(
+          background: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 60, 0, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...<dynamic>[
+                        [
+                          'Used',
+                          "${totalUsed / 100}",
+                          totalUsed > totalAllocated
+                        ],
+                        [
+                          'Remaining',
+                          "${(totalAllocated - totalUsed) / 100}",
+                          totalUsed > totalAllocated
+                        ],
+                        ['Total', "${totalAllocated / 100}", false],
+                      ].map(((e) => DefaultTextStyle(
+                            style: const TextStyle(
+                              color: Colors.white,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(e[0]),
+                                DefaultTextStyle(
+                                  style: const TextStyle(
+                                    fontSize: 20,
                                   ),
-                                )
-                              : state.item.categoryAllocations.isEmpty
-                                  ? SliverFillRemaining(
-                                      child: Center(
-                                          child: const Text("No categories.")))
-                                  : throw Exception(
-                                      "error: parents are missing");
-                        }
-                        return const SliverFillRemaining(
-                            child: Center(
-                                child: CircularProgressIndicator.adaptive()));
-                      },
-                    )
-                  : const SliverFillRemaining(
-                      child:
-                          Center(child: CircularProgressIndicator.adaptive()),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        "$currency ",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w200),
+                                      ),
+                                      Text(
+                                        e[1],
+                                        style: TextStyle(
+                                          backgroundColor:
+                                              e[2] ? Colors.red[700] : null,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ))),
+                    ],
+                  ),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      // crossAxisAlignment: CrossAxisAlignment.start?,
+                      children: [
+                        Expanded(
+                          child: Center(
+                            child: DefaultTextStyle(
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 44,
+                                ),
+                                child: totalAllocated == 0
+                                    ? Text("0%")
+                                    : Builder(builder: (context) {
+                                        final percentage =
+                                            ((totalUsed / totalAllocated) * 100)
+                                                .truncate();
+                                        return FittedBox(
+                                          child: Text(
+                                            "$percentage%",
+                                            style: percentage >= 100
+                                                ? TextStyle(
+                                                    backgroundColor:
+                                                        Colors.red[700],
+                                                  )
+                                                : null,
+                                          ),
+                                        );
+                                      })),
+                          ),
+                        ),
+                        if (state.item.frequency is Recurring)
+                          Builder(builder: (context) {
+                            int recurrenceIntervalSeconds =
+                                (state.item.frequency as Recurring)
+                                    .recurringIntervalSecs;
+                            int untilNow = DateTime.now()
+                                .difference(state.item.startTime)
+                                .inSeconds;
+                            int numberOfRecurringCyclesPassed =
+                                (untilNow / recurrenceIntervalSeconds).ceil();
+                            DateTime budgetEndDate = (state.item.startTime.add(
+                                Duration(
+                                    seconds: numberOfRecurringCyclesPassed *
+                                        recurrenceIntervalSeconds)));
+                            Duration remainingDays =
+                                budgetEndDate.difference(DateTime.now());
+                            if (remainingDays.inHours < 1) {
+                              return Text(
+                                  '${remainingDays.inMinutes} minutes left till new cycle',
+                                  style: TextStyle(color: Colors.yellow));
+                            } else if (remainingDays.inDays < 1) {
+                              return Text(
+                                  '${remainingDays.inHours} hours left till new cycle',
+                                  style: TextStyle(color: Colors.yellow));
+                            } else {
+                              return Text(
+                                  '${remainingDays.inDays} days left till new cycle',
+                                  style: TextStyle(color: Colors.white));
+                            }
+                          }),
+                        if (state.item.frequency is OneTime)
+                          Builder(builder: (context) {
+                            Duration remainingDays =
+                                state.item.endTime.difference(DateTime.now());
+                            if (remainingDays.inDays > 0 &&
+                                !remainingDays.isNegative) {
+                              return Text(
+                                '${remainingDays.inDays.toString()} days to budget end',
+                                style: TextStyle(color: Colors.white),
+                              );
+                            } else if (remainingDays.isNegative) {
+                              return Text(
+                                'Budget ended ${remainingDays.inDays * -1} days ago',
+                                style: TextStyle(color: Colors.white),
+                              );
+                            } else if (remainingDays.inHours > 0 &&
+                                !remainingDays.isNegative) {
+                              return Text('${remainingDays.inHours} hours left',
+                                  style: TextStyle(color: Colors.white));
+                            } else if (remainingDays.inMinutes > 0 &&
+                                !remainingDays.isNegative) {
+                              return Text(
+                                  '${remainingDays.inMinutes} minutes left',
+                                  style: TextStyle(color: Colors.yellow));
+                            } else {
+                              return Text('');
+                            }
+                          }),
+                        _showAllBudgetExpenses
+                            ? TextButton(
+                                onPressed: () => setState(
+                                    () => _showAllBudgetExpenses = false),
+                                style: ButtonStyle(
+                                  foregroundColor:
+                                      MaterialStateProperty.all(Colors.white),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Icon(Icons.list_alt),
+                                    ),
+                                    Text("Show Allocations"),
+                                  ],
+                                ),
+                              )
+                            : TextButton(
+                                onPressed: () => setState(
+                                    () => _showAllBudgetExpenses = true),
+                                style: ButtonStyle(
+                                  foregroundColor:
+                                      MaterialStateProperty.all(Colors.white),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Icon(
+                                        Icons.list,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    Text("Show Expenses"),
+                                  ],
+                                ),
+                              )
+                      ],
                     ),
-        ],
-      ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: widget.actionsListBuilder(context, state),
+      );
+
+  Widget _allBudgetExpenses(
+    BuildContext context,
+    BudgetLoadSuccess state,
+    ExpensesLoadSuccess allExpensesState,
+    CategoriesLoadSuccess catListState,
+  ) =>
+      SliverToBoxAdapter(
+        child: MultiBlocProvider(
+          providers: [
+            // use a separate expenses bloc for range load
+            BlocProvider(
+              create: (context) => ExpenseListPageBloc(
+                context.read<ExpenseRepository>(),
+                context.read<OfflineExpenseRepository>(),
+                context.read<AuthBloc>(),
+                context.read<BudgetRepository>(),
+                context.read<CategoryRepository>(),
+                initialFilter: LoadExpensesFilter(ofBudget: state.item.id),
+              ),
+            ),
+            BlocProvider(
+              create: (context) => BudgetListPageBloc(
+                context.read<BudgetRepository>(),
+                context.read<OfflineBudgetRepository>(),
+                LoadBudgetsFilter(
+                  includeActive: true,
+                  includeArchvied: true,
+                ),
+              ),
+            ),
+          ],
+          child: BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
+            builder: (context, expensesState) => expensesState
+                    is ExpensesLoadSuccess
+                ? BlocBuilder<BudgetListPageBloc, BudgetListPageBlocState>(
+                    builder: (context, budgetsState) => budgetsState
+                            is BudgetsLoadSuccess
+                        ? SingleChildScrollView(
+                            child: ExpenseListView(
+                              dense: true,
+                              items: expensesState.items,
+                              allBudgets: budgetsState.items,
+                              allCategories: catListState.items,
+                              allDateRanges:
+                                  expensesState.dateRangeFilters.values,
+                              unbucketedRanges:
+                                  state.item.frequency is Recurring
+                                      ? pastCycleDateRanges(
+                                          state.item.frequency as Recurring,
+                                          state.item.startTime,
+                                          state.item.endTime,
+                                          DateTime.now(),
+                                        )
+                                      : [],
+                              displayedRange: expensesState.filter.range,
+                              showBudgetDetail: false,
+                              loadRange: (range) => context
+                                  .read<ExpenseListPageBloc>()
+                                  .add(LoadExpenses(
+                                    filter: LoadExpensesFilter(
+                                      range: range,
+                                      ofBudget: state.item.id,
+                                    ),
+                                  )),
+                              onEdit: (id) => Navigator.pushNamed(
+                                context,
+                                ExpenseEditPage.routeName,
+                                arguments: expensesState.items[id],
+                              ),
+                              onDelete: (id) async {
+                                final item = expensesState.items[id]!;
+                                final confirm = await showDialog<bool?>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Confirm deletion'),
+                                    content: Text(
+                                      'Are you sure you want to delete entry ${item.name}?',
+                                    ),
+                                    actions: <Widget>[
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: const Text('Confirm'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm != null && confirm) {
+                                  context
+                                      .read<ExpenseListPageBloc>()
+                                      .add(DeleteExpense(id));
+                                }
+                              },
+                            ),
+                          )
+                        : budgetsState is BudgetsLoading
+                            ? Center(
+                                child: CircularProgressIndicator.adaptive())
+                            : throw Exception("Unhandled state: $budgetsState"),
+                  )
+                : expensesState is ExpensesLoading
+                    ? Center(child: CircularProgressIndicator.adaptive())
+                    : throw Exception("Unhandled state: $expensesState"),
+          ),
+        ),
+      );
+
+  Widget _categoryAllocations(
+    BuildContext context,
+    BudgetLoadSuccess state,
+    ExpensesLoadSuccess expensesState,
+    CategoriesLoadSuccess catListState,
+    Map<String, int> perCategoryUsed,
+  ) {
+    // FIXME: move this calculation out of the buld method
+    final ancestryTree = CategoryRepositoryExt.calcAncestryTree(
+      // build tree from used as well as allocation
+      // to catch misc and other unallocated category
+      // expenses
+      perCategoryUsed.keys
+          .toSet()
+          .union(state.item.categoryAllocations.keys.toSet()),
+      catListState.items,
     );
+
+    // ignore: prefer_collection_literals
+    Set<String> rootNodes = LinkedHashSet();
+    for (final node in ancestryTree.values.where((e) => e.parent == null)) {
+      rootNodes.add(node.item);
+    }
+
+    return rootNodes.isNotEmpty
+        ? SliverPadding(
+            padding: const EdgeInsets.all(8.0),
+            sliver: SliverList(
+              delegate:
+                  SliverChildBuilderDelegate((BuildContext context, int index) {
+                final id = rootNodes.elementAt(index);
+                return _catTree(
+                  context,
+                  state,
+                  catListState.items,
+                  ancestryTree,
+                  perCategoryUsed,
+                  id,
+                );
+              }, childCount: rootNodes.length),
+            ),
+          )
+        : state.item.categoryAllocations.isEmpty
+            ? SliverFillRemaining(
+                child: Center(child: const Text("No categories.")))
+            : throw Exception("error: parents are missing");
   }
 
   Widget _catTree(
     BuildContext context,
     BudgetLoadSuccess state,
-    Map<String, Category> items,
+    Map<String, Category> allItems,
     Map<String, TreeNode<String>> nodes,
     Map<String, int> perCategoryUsed,
     String id,
   ) {
-    final item = items[id];
+    final item = allItems[id];
     final itemNode = nodes[id];
     if (item == null) return Text("Error: Category under id $id not found");
     if (itemNode == null) {
       return Text("Error: Category under id $id not found in ancestryGraph");
     }
 
-    final allocatedAmount = state.item.categoryAllocations[id];
+    final allocatedAmount = state.item.categoryAllocations[id] ?? 0;
     final used = perCategoryUsed[id] ?? 0;
 
     return Column(
       children: [
-        allocatedAmount != null
+        allocatedAmount > 0 || used > 0
             ? ListTile(
                 selected: _selectedCategory == id,
                 title: Text(item.name),
                 subtitle: item.tags.isNotEmpty || item.isArchived
                     ? Row(children: [
                         if (item.isArchived)
-                          Text("Archived", style: TextStyle(color: Colors.red)),
+                          Text("In Trash", style: TextStyle(color: Colors.red)),
                         if (item.isArchived && item.tags.isNotEmpty)
                           const DotSeparator(),
                         if (item.tags.isNotEmpty)
@@ -729,12 +793,19 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Text("${used / 100} / ${allocatedAmount / 100}"),
-                      LinearProgressIndicator(
-                        minHeight: 8,
-                        value: used / allocatedAmount,
-                        color: used > allocatedAmount ? Colors.red : null,
-                      ),
+                      allocatedAmount > 0
+                          ? Text("${used / 100} / ${allocatedAmount / 100}")
+                          : Text("${used / 100}"),
+                      allocatedAmount > 0
+                          ? LinearProgressIndicator(
+                              minHeight: 8,
+                              value: used / allocatedAmount,
+                              color: used > allocatedAmount ? Colors.red : null,
+                            )
+                          : Text(
+                              "Not allocated",
+                              style: TextStyle(color: Colors.grey),
+                            ),
                     ],
                   ),
                 ),
@@ -775,7 +846,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                       context,
                       CupertinoPageRoute(
                         builder: (context) =>
-                            _BudgetDetailsCategoryAllocationDisplay(
+                            _BudgetDetailsCategoryAllocationDisplay.page(
                           budget: state.item,
                           category: item,
                           usedAllocation: used,
@@ -798,7 +869,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   (e) => _catTree(
                     context,
                     state,
-                    items,
+                    allItems,
                     nodes,
                     perCategoryUsed,
                     e,
@@ -810,268 +881,200 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
       ],
     );
   }
-
-  Widget _categoryAllocationDetails(
-    BuildContext context,
-    BudgetLoadSuccess state,
-  ) {
-    final currency = state.item.allocatedAmount.currency;
-    final used = _perCategoryUsed![_selectedCategory]!;
-    final allocated = state.item.categoryAllocations[_selectedCategory]!;
-
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            toolbarHeight: 60,
-            title: Text(state.item.name),
-            expandedHeight: 250,
-            pinned: true,
-            shape: RoundedRectangleBorder(
-              side: BorderSide.none,
-              borderRadius: BorderRadius.only(bottomRight: Radius.circular(30)),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    top: 60,
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.1,
-                        child: Center(
-                          child: IconButton(
-                            onPressed: () =>
-                                setState(() => _selectedCategory = null),
-                            icon: Icon(
-                              Icons.chevron_left_outlined,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                      _totalUsed != null
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ...<dynamic>[
-                                  ['Used', "${used / 100}", used > allocated],
-                                  [
-                                    'Remaining',
-                                    "${(allocated - used) / 100}",
-                                    used > allocated
-                                  ],
-                                  ['Allocated', "${allocated / 100}", false],
-                                ].map(((e) => DefaultTextStyle(
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(e[0]),
-                                          DefaultTextStyle(
-                                            style: const TextStyle(
-                                              fontSize: 20,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Text(
-                                                  "$currency ",
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w200),
-                                                ),
-                                                Text(
-                                                  e[1],
-                                                  style: TextStyle(
-                                                    backgroundColor: e[2]
-                                                        ? Colors.red[700]
-                                                        : null,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ))),
-                              ],
-                            )
-                          : CircularProgressIndicator(
-                              color: Colors.white,
-                            ),
-                      _totalUsed != null
-                          ? Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                // crossAxisAlignment: CrossAxisAlignment.start?,
-                                children: [
-                                  Expanded(
-                                    child: Center(
-                                      child: DefaultTextStyle(
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 44,
-                                          ),
-                                          child: allocated == 0
-                                              ? Text("0%")
-                                              : Builder(builder: (context) {
-                                                  final percentage =
-                                                      ((used / allocated) * 100)
-                                                          .truncate();
-                                                  return FittedBox(
-                                                    child: Text(
-                                                      "$percentage%",
-                                                      style: percentage >= 100
-                                                          ? TextStyle(
-                                                              backgroundColor:
-                                                                  Colors
-                                                                      .red[700],
-                                                            )
-                                                          : null,
-                                                    ),
-                                                  );
-                                                })),
-                                    ),
-                                  ),
-                                  _showAllBudgetExpenses
-                                      ? TextButton.icon(
-                                          onPressed: () => setState(() =>
-                                              _showAllBudgetExpenses = false),
-                                          style: ButtonStyle(
-                                              foregroundColor:
-                                                  MaterialStateProperty.all(
-                                                      Colors.white)),
-                                          icon: const Icon(Icons.list_alt),
-                                          label: const Text("Show Allocations"),
-                                        )
-                                      : TextButton.icon(
-                                          onPressed: () => setState(() =>
-                                              _showAllBudgetExpenses = true),
-                                          style: ButtonStyle(
-                                              foregroundColor:
-                                                  MaterialStateProperty.all(
-                                                      Colors.white)),
-                                          label: const Text("Show Expenses"),
-                                          icon: const Icon(Icons.list),
-                                        )
-                                ],
-                              ),
-                            )
-                          : CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            actions: widget.actionsListBuilder(context, state),
-          ),
-          SliverToBoxAdapter(
-              child: BlocProvider(
-                  create: (context) => ExpenseListPageBloc(
-                        context.read<ExpenseRepository>(),
-                        context.read<OfflineExpenseRepository>(),
-                        context.read<AuthBloc>(),
-                        context.read<BudgetRepository>(),
-                        context.read<CategoryRepository>(),
-                        const DateRangeFilter(
-                          "All",
-                          DateRange(),
-                          FilterLevel.all,
-                        ),
-                        state.item.id,
-                        _selectedCategory,
-                      ),
-                  child: BlocBuilder<ExpenseListPageBloc,
-                          ExpenseListPageBlocState>(
-                      builder: (context, expensesState) {
-                    if (expensesState is ExpensesLoadSuccess) {
-                      return Column(
-                        children: [
-                          Center(
-                              child: ElevatedButton(
-                            child: const Text("Add Expense"),
-                            onPressed: () => Navigator.pushNamed(
-                              context,
-                              ExpenseEditPage.routeName,
-                              arguments: ExpenseEditPageNewArgs(
-                                  budgetId: state.item.id,
-                                  categoryId: _selectedCategory!),
-                            ),
-                          )),
-                          ExpenseListView(
-                              dense: true,
-                              items: expensesState.items,
-                              allDateRanges:
-                                  expensesState.dateRangeFilters.values,
-                              displayedRange: expensesState.range,
-                              loadRange: (range) =>
-                                  context.read<ExpenseListPageBloc>().add(
-                                        LoadExpenses(range,
-                                            ofBudget: state.item.id,
-                                            ofCategory: _selectedCategory),
-                                      )),
-                        ],
-                      );
-                    }
-                    return Center(child: CircularProgressIndicator.adaptive());
-                  }))),
-        ],
-      ),
-    );
-  }
 }
 
 class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
   final Budget budget;
   final Category category;
-  final int usedAllocation;
-
-  const _BudgetDetailsCategoryAllocationDisplay({
+  const _BudgetDetailsCategoryAllocationDisplay._({
     Key? key,
     required this.budget,
     required this.category,
-    required this.usedAllocation,
   }) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    final currency = budget.allocatedAmount.currency;
-    final allocated = budget.categoryAllocations[category.id]!;
-    final used = usedAllocation;
-
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            toolbarHeight: 60,
-            title: Text(budget.name),
-            expandedHeight: 250,
-            pinned: true,
-            shape: RoundedRectangleBorder(
-              side: BorderSide.none,
-              borderRadius: BorderRadius.only(bottomRight: Radius.circular(30)),
+  static Widget page({
+    Key? key,
+    required Budget budget,
+    required Category category,
+    required int usedAllocation,
+  }) =>
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => BudgetListPageBloc(
+              context.read<BudgetRepository>(),
+              context.read<OfflineBudgetRepository>(),
+              LoadBudgetsFilter(
+                includeActive: true,
+                includeArchvied: true,
+              ),
             ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    top: 60,
-                  ),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                    child: Row(
+          ),
+          BlocProvider(
+            create: (BuildContext context) => ExpenseListPageBloc(
+              context.read<ExpenseRepository>(),
+              context.read<OfflineExpenseRepository>(),
+              context.read<AuthBloc>(),
+              context.read<BudgetRepository>(),
+              context.read<CategoryRepository>(),
+              initialFilter: LoadExpensesFilter(
+                ofBudget: budget.id,
+                ofCategory: category.id,
+                range: budget.frequency is Recurring
+                    ? currentBudgetCycle(
+                        budget.frequency as Recurring,
+                        budget.startTime,
+                        budget.endTime,
+                        DateTime.now(),
+                      )
+                    : DateRangeFilter("All", DateRange(), FilterLevel.all),
+              ),
+            ),
+          ),
+          BlocProvider(
+            create: (BuildContext context) => CategoryListPageBloc(
+              context.read<CategoryRepository>(),
+              context.read<OfflineCategoryRepository>(),
+              LoadCategoriesFilter(
+                includeActive: true,
+                includeArchvied: true,
+              ),
+            ),
+          ),
+        ],
+        child: _BudgetDetailsCategoryAllocationDisplay._(
+          key: key,
+          budget: budget,
+          category: category,
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
+          builder: (context, expensesState) {
+            return expensesState is ExpensesLoadSuccess
+                ? CustomScrollView(
+                    slivers: [
+                      _appBar(context, expensesState),
+                      SliverToBoxAdapter(
+                        child: BlocBuilder<BudgetListPageBloc,
+                            BudgetListPageBlocState>(
+                          builder: (context, budgetsState) => budgetsState
+                                  is BudgetsLoadSuccess
+                              ? BlocBuilder<CategoryListPageBloc,
+                                  CategoryListPageBlocState>(
+                                  builder: (context, categoriesState) =>
+                                      categoriesState is CategoriesLoadSuccess
+                                          ? SingleChildScrollView(
+                                              child: ExpenseListView(
+                                                  dense: true,
+                                                  items: expensesState.items,
+                                                  allBudgets:
+                                                      budgetsState.items,
+                                                  allCategories:
+                                                      categoriesState.items,
+                                                  allDateRanges: expensesState
+                                                      .dateRangeFilters.values,
+                                                  displayedRange: expensesState
+                                                      .filter.range,
+                                                  unbucketedRanges:
+                                                      budget.frequency
+                                                              is Recurring
+                                                          ? pastCycleDateRanges(
+                                                              budget.frequency
+                                                                  as Recurring,
+                                                              budget.startTime,
+                                                              budget.endTime,
+                                                              DateTime.now(),
+                                                            )
+                                                          : [],
+                                                  showBudgetDetail: false,
+                                                  showCategoryDetail: false,
+                                                  loadRange: (range) => context
+                                                      .read<
+                                                          ExpenseListPageBloc>()
+                                                      .add(
+                                                        LoadExpenses(
+                                                            filter:
+                                                                LoadExpensesFilter(
+                                                          range: range,
+                                                          ofBudget: budget.id,
+                                                          ofCategory:
+                                                              category.id,
+                                                        )),
+                                                      )),
+                                            )
+                                          : categoriesState is CategoriesLoading
+                                              ? Center(
+                                                  child:
+                                                      CircularProgressIndicator
+                                                          .adaptive())
+                                              : throw Exception(
+                                                  "Unhandled state: $categoriesState"),
+                                )
+                              : budgetsState is BudgetsLoading
+                                  ? Center(
+                                      child:
+                                          CircularProgressIndicator.adaptive())
+                                  : throw Exception(
+                                      "Unhandled state: $budgetsState"),
+                        ),
+                      ),
+                    ],
+                  )
+                : expensesState is ExpensesLoading
+                    ? Center(child: CircularProgressIndicator.adaptive())
+                    : throw Exception("Unhandled state: $expensesState");
+          },
+        ),
+        floatingActionButton: Visibility(
+            child: FloatingActionButton.extended(
+                onPressed: () => Navigator.pushNamed(
+                      context,
+                      ExpenseEditPage.routeName,
+                      arguments: ExpenseEditPageNewArgs(
+                        budgetId: budget.id,
+                        categoryId: category.id,
+                      ),
+                    ),
+                label: Text('Add new expense'),
+                icon: Icon(Icons.add)),
+            visible: !category.isArchived ? true : false),
+      );
+
+  SliverAppBar _appBar(
+    BuildContext context,
+    ExpensesLoadSuccess expensesState,
+  ) {
+    var used = 0;
+    for (final expense in expensesState.items.values) {
+      final expenseAmount = expense.amount.amount;
+      used += expenseAmount;
+    }
+    final currency = budget.allocatedAmount.currency;
+    final allocated = budget.categoryAllocations[category.id];
+
+    return SliverAppBar(
+      toolbarHeight: 60,
+      title: Text(budget.name),
+      expandedHeight: 250,
+      pinned: true,
+      shape: RoundedRectangleBorder(
+        side: BorderSide.none,
+        borderRadius: BorderRadius.only(bottomRight: Radius.circular(30)),
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        background: SafeArea(
+          child: DefaultTextStyle(
+            style: const TextStyle(color: Colors.white),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 60, left: 16, right: 16),
+              child: allocated != null
+                  ? Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        // usage column
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Column(
@@ -1104,49 +1107,43 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
                                           false
                                         ],
                                       ].map(
-                                        ((e) => DefaultTextStyle(
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.all(3.0),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(e[0]),
-                                                    DefaultTextStyle(
-                                                      style: const TextStyle(
-                                                        fontSize: 16,
-                                                      ),
-                                                      child: Row(
-                                                        children: [
-                                                          Text(
-                                                            "$currency ",
-                                                            style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w200),
-                                                          ),
-                                                          Text(
-                                                            e[1],
-                                                            style: TextStyle(
-                                                              backgroundColor: e[
-                                                                      2]
-                                                                  ? Colors
-                                                                      .red[700]
-                                                                  : null,
+                                        ((e) => Padding(
+                                              padding:
+                                                  const EdgeInsets.all(3.0),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(e[0]),
+                                                  DefaultTextStyle(
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Text(
+                                                          "$currency ",
+                                                          style: TextStyle(
                                                               fontWeight:
                                                                   FontWeight
-                                                                      .bold,
-                                                            ),
+                                                                      .w200),
+                                                        ),
+                                                        Text(
+                                                          e[1],
+                                                          style: TextStyle(
+                                                            backgroundColor: e[
+                                                                    2]
+                                                                ? Colors
+                                                                    .red[700]
+                                                                : null,
+                                                            fontWeight:
+                                                                FontWeight.bold,
                                                           ),
-                                                        ],
-                                                      ),
+                                                        ),
+                                                      ],
                                                     ),
-                                                  ],
-                                                ),
+                                                  ),
+                                                ],
                                               ),
                                             )),
                                       )
@@ -1157,23 +1154,24 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
                             ],
                           ),
                         ),
+                        // precentage column
                         Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           // crossAxisAlignment: CrossAxisAlignment.start?,
                           children: [
                             Text(
                               category.name,
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 24,
-                                  color: Colors.white),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 24,
+                              ),
                             ),
+                            if (budget.allocatedAmount.amount > 0)
+                              Text(
+                                  "Allocated ${(((allocated * 100) / budget.allocatedAmount.amount)).truncate()}% of budget"),
                             Center(
                               child: DefaultTextStyle(
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 44,
-                                  ),
+                                  style: const TextStyle(fontSize: 44),
                                   child: allocated == 0
                                       ? Text("0%")
                                       : Builder(builder: (context) {
@@ -1196,70 +1194,66 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
                           ],
                         )
                       ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: BlocProvider(
-              create: (context) => ExpenseListPageBloc(
-                context.read<ExpenseRepository>(),
-                context.read<OfflineExpenseRepository>(),
-                context.read<AuthBloc>(),
-                context.read<BudgetRepository>(),
-                context.read<CategoryRepository>(),
-                const DateRangeFilter(
-                  "All",
-                  DateRange(),
-                  FilterLevel.all,
-                ),
-                budget.id,
-                category.id,
-              ),
-              child: BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
-                builder: (context, expensesState) {
-                  if (expensesState is ExpensesLoadSuccess) {
-                    return Column(
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ExpenseListView(
-                            dense: true,
-                            items: expensesState.items,
-                            allDateRanges:
-                                expensesState.dateRangeFilters.values,
-                            displayedRange: expensesState.range,
-                            loadRange: (range) =>
-                                context.read<ExpenseListPageBloc>().add(
-                                      LoadExpenses(
-                                        range,
-                                        ofBudget: budget.id,
-                                        ofCategory: category.id,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: Colors.white,
+                                  size: 13,
+                                ),
+                                Text(
+                                  "This category is unallocated for.",
+                                  textScaleFactor: 0.9,
+                                ),
+                              ],
+                            ),
+                            Text(
+                              category.name,
+                              textScaleFactor: 2,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Used"),
+                            DefaultTextStyle(
+                              style: const TextStyle(
+                                // color: Colors.white,
+                                fontSize: 33,
+                              ),
+                              child: FittedBox(
+                                  alignment: Alignment.topLeft,
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        "$currency ",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w200),
                                       ),
-                                    )),
+                                      Text("${used / 100}"),
+                                    ],
+                                  )),
+                            ),
+                          ],
+                        )
                       ],
-                    );
-                  }
-                  return Center(child: CircularProgressIndicator.adaptive());
-                },
-              ),
+                    ),
             ),
           ),
-        ],
+        ),
       ),
-      floatingActionButton: Visibility(
-          child: FloatingActionButton.extended(
-              onPressed: () => Navigator.pushNamed(
-                    context,
-                    ExpenseEditPage.routeName,
-                    arguments: ExpenseEditPageNewArgs(
-                      budgetId: budget.id,
-                      categoryId: category.id,
-                    ),
-                  ),
-              label: Text('Add new expense'),
-              icon: Icon(Icons.add)),
-          visible: !category.isArchived ? true : false),
     );
   }
 }

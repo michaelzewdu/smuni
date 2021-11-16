@@ -4,6 +4,7 @@ export 'category_list_view.dart';
 export 'category_selector.dart';
 export 'expense_list_view.dart';
 export 'money_editor.dart';
+export 'simple_date_range_editor.dart';
 
 import 'package:flutter/material.dart';
 

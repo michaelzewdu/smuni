@@ -133,7 +133,7 @@ class OfflineCategoryRepository extends OfflineRepository<String, Category,
       item,
       isServerVersion: false,
       name: input.name,
-      tags: input.tags ?? [],
+      tags: input.tags ?? item.tags,
       parentId: input.parentId,
     );
     if (category.parentId == "") {

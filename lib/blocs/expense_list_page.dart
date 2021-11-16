@@ -15,15 +15,30 @@ abstract class ExpensesListBlocEvent {
   const ExpensesListBlocEvent();
 }
 
-class LoadExpenses extends ExpensesListBlocEvent {
+class LoadExpensesFilter {
   final DateRangeFilter range;
   final String? ofBudget;
   final String? ofCategory;
-  const LoadExpenses(this.range, {this.ofBudget, this.ofCategory});
-
+  const LoadExpensesFilter({
+    this.range = const DateRangeFilter(
+      "All",
+      DateRange(),
+      FilterLevel.all,
+    ),
+    this.ofBudget,
+    this.ofCategory,
+  });
   @override
   String toString() =>
       "${runtimeType.toString()} { range: $range, ofBudget: $ofBudget , ofCategory: $ofCategory }";
+}
+
+class LoadExpenses extends ExpensesListBlocEvent {
+  final LoadExpensesFilter filter;
+  const LoadExpenses({this.filter = const LoadExpensesFilter()});
+
+  @override
+  String toString() => "${runtimeType.toString()} { filter: $filter }";
 }
 
 class DeleteExpense extends ExpensesListBlocEvent {
@@ -37,30 +52,18 @@ class DeleteExpense extends ExpensesListBlocEvent {
 // STATE
 
 abstract class ExpenseListPageBlocState {
-  final DateRangeFilter range;
-  const ExpenseListPageBlocState(
-    this.range,
-  );
+  final LoadExpensesFilter filter;
+  const ExpenseListPageBlocState(this.filter);
 }
 
 class ExpensesLoading extends ExpenseListPageBlocState {
-  final String? ofBudget;
-  final String? ofCategory;
-  ExpensesLoading(
-    DateRangeFilter range, [
-    this.ofBudget,
-    this.ofCategory,
-  ]) : super(range);
+  ExpensesLoading(LoadExpensesFilter filter) : super(filter);
 
   @override
-  String toString() =>
-      "${runtimeType.toString()} { range: $range, ofBudget: $ofBudget , ofCategory: $ofCategory }";
+  String toString() => "${runtimeType.toString()} { filter: $filter }";
 }
 
 class ExpensesLoadSuccess extends ExpenseListPageBlocState {
-  final String? ofBudget;
-  final String? ofCategory;
-
   /// cache the category filters
   Map<DateRange, DateRangeFilter> dateRangeFilters;
   final Set<String>? categoryFilter;
@@ -69,16 +72,14 @@ class ExpensesLoadSuccess extends ExpenseListPageBlocState {
 
   ExpensesLoadSuccess(
     this.items,
-    DateRangeFilter range,
+    LoadExpensesFilter filter,
     this.dateRangeFilters, [
-    this.ofBudget,
-    this.ofCategory,
     this.categoryFilter,
-  ]) : super(range);
+  ]) : super(filter);
 
   @override
   String toString() =>
-      "${runtimeType.toString()} { range: $range, dateRangeFilters: $dateRangeFilters, budgetFilter: $ofBudget, categoryFilter: $categoryFilter, items: $items }";
+      "${runtimeType.toString()} { filter: $filter, dateRangeFilters: $dateRangeFilters, categoryFilter: $categoryFilter, items: $items }";
 }
 
 // BLOC
@@ -96,16 +97,10 @@ class ExpenseListPageBloc
     this.offlineRepo,
     this.authBloc,
     this.budgetRepo,
-    this.categoryRepo,
-    DateRangeFilter initialRangeToLoad, [
-    String? initialBudgetToLoad,
-    String? initialCategoryToLoad,
-  ]) : super(
-          ExpensesLoading(
-            initialRangeToLoad,
-            initialBudgetToLoad,
-            initialCategoryToLoad,
-          ),
+    this.categoryRepo, {
+    LoadExpensesFilter initialFilter = const LoadExpensesFilter(),
+  }) : super(
+          ExpensesLoading(initialFilter),
         ) {
     on<LoadExpenses>(streamToEmitterAdapter(_mapLoadExpensesEventToState));
     on<DeleteExpense>(streamToEmitterAdapter(_mapDeleteExpenseEventToState));
@@ -113,27 +108,15 @@ class ExpenseListPageBloc
     repo.changedItems.listen(_changeItemsListener);
     offlineRepo.changedItems.listen(_changeItemsListener);
 
-    add(LoadExpenses(
-      initialRangeToLoad,
-      ofBudget: initialBudgetToLoad,
-      ofCategory: initialCategoryToLoad,
-    ));
+    add(LoadExpenses(filter: initialFilter));
   }
 
   void _changeItemsListener(Set<String> ids) {
     final current = state;
     if (current is ExpensesLoadSuccess) {
-      add(LoadExpenses(
-        current.range,
-        ofBudget: current.ofBudget,
-        ofCategory: current.ofCategory,
-      ));
+      add(LoadExpenses(filter: current.filter));
     } else if (current is ExpensesLoading) {
-      add(LoadExpenses(
-        current.range,
-        ofBudget: current.ofBudget,
-        ofCategory: current.ofCategory,
-      ));
+      add(LoadExpenses(filter: current.filter));
     } else {
       throw Exception("Unhandled type.");
     }
@@ -163,10 +146,8 @@ class ExpenseListPageBloc
       );
       yield ExpensesLoadSuccess(
         current.items,
-        current.range,
+        current.filter,
         dateRangeFilters,
-        current.ofBudget,
-        current.ofCategory,
         current.categoryFilter,
       );
     } else if (current is ExpensesLoading) {
@@ -180,17 +161,18 @@ class ExpenseListPageBloc
     LoadExpenses event,
   ) async* {
     Set<String>? catFilter;
-    final ofCategory = event.ofCategory;
+    final ofCategory = event.filter.ofCategory;
     if (ofCategory != null) {
       final tree = (await categoryRepo.getCategoryDescendantsTree(ofCategory));
       if (tree == null) throw Exception("category not found");
       catFilter = tree.toSet();
     }
 
-    final budgetFilter = event.ofBudget != null ? {event.ofBudget!} : null;
+    final budgetFilter =
+        event.filter.ofBudget != null ? {event.filter.ofBudget!} : null;
 
     final items = await repo.getItemsInRange(
-      event.range.range,
+      event.filter.range.range,
       ofBudgets: budgetFilter,
       ofCategories: catFilter,
     );
@@ -200,10 +182,8 @@ class ExpenseListPageBloc
     );
     yield ExpensesLoadSuccess(
       {for (final item in items) item.id: item},
-      event.range,
+      event.filter,
       dateRangeFilters,
-      event.ofBudget,
-      event.ofCategory,
       catFilter,
     );
   }

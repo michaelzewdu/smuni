@@ -72,7 +72,7 @@ class _MenusPageState extends State<MenusPage> {
                                           ? Text('Not Signed In')
                                           : Text('Unknown Error Occured'),
                                   behavior: SnackBarBehavior.floating,
-                                  duration: Duration(seconds: 1),
+                                  duration: Duration(seconds: 2),
                                 ),
                               );
                             },

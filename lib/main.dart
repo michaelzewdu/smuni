@@ -91,6 +91,16 @@ class _MyAppState extends State<MyApp> {
                   RepositoryProvider(
                     create: (context) => SqliteRemovedExpensesCache(db),
                   ),
+                  RepositoryProvider(
+                    create: (context) => SqliteIncomeCache(db),
+                  ),
+                  RepositoryProvider(
+                    create: (context) =>
+                        ServerVersionSqliteCache(SqliteIncomeCache(db)),
+                  ),
+                  RepositoryProvider(
+                    create: (context) => SqliteRemovedIncomesCache(db),
+                  ),
                   RepositoryProvider(create: (context) => PreferencesCache(db)),
                   RepositoryProvider(create: (context) => AuthTokenCache(db)),
                   RepositoryProvider(
@@ -157,18 +167,35 @@ class _MyAppState extends State<MyApp> {
                       ),
                     ),
                     RepositoryProvider(
+                      create: (context) => IncomeRepository(
+                        context.read<SqliteIncomeCache>(),
+                        context.read<SmuniApiClient>(),
+                      ),
+                    ),
+                    RepositoryProvider(
+                      create: (context) => OfflineIncomeRepository(
+                        context.read<SqliteIncomeCache>(),
+                        context
+                            .read<ServerVersionSqliteCache<String, Income>>(),
+                        context.read<SqliteRemovedIncomesCache>(),
+                      ),
+                    ),
+                    RepositoryProvider(
                       create: (context) => CacheSynchronizer(
                         context.read<SmuniApiClient>(),
                         userRepo: context.read<UserRepository>(),
                         budgetRepo: context.read<BudgetRepository>(),
                         categoryRepo: context.read<CategoryRepository>(),
                         expenseRepo: context.read<ExpenseRepository>(),
+                        incomeRepo: context.read<IncomeRepository>(),
                         offlineBudgetRepo:
                             context.read<OfflineBudgetRepository>(),
                         offlineCategoryRepo:
                             context.read<OfflineCategoryRepository>(),
                         offlineExpenseRepo:
                             context.read<OfflineExpenseRepository>(),
+                        offlineIncomeRepo:
+                            context.read<OfflineIncomeRepository>(),
                       ),
                     ),
                   ],
@@ -293,6 +320,7 @@ final UserDenorm defaultUser = UserDenorm(
   phoneNumber: "+251900112233",
   pictureURL: "https://imagine.co/9q6roh3cifnp",
   mainBudget: "614193c7f2ea51b47f5896ba",
+  miscCategory: "000000000000000000000000",
   budgets: [
     Budget(
       id: "614193c7f2ea51b47f5896ba",
@@ -328,6 +356,14 @@ final UserDenorm defaultUser = UserDenorm(
     ),
   ],
   categories: [
+    Category(
+      id: "000000000000000000000000",
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      name: "Misc",
+      parentId: null,
+      tags: ["misc"],
+    ),
     Category(
       id: "616966d7ff32b0373dd0ec2f",
       createdAt: DateTime.now(),
@@ -484,6 +520,35 @@ final UserDenorm defaultUser = UserDenorm(
       categoryId: "jfasqdeyjasodjmfasdbsd",
       budgetId: "61419397f2ez61b47f5896cb",
       amount: MonetaryAmount(currency: "ETB", amount: 100100 * 100),
+    ),
+  ],
+  incomes: [
+    Income(
+      id: "6169668bff32b0373dd0ec29",
+      createdAt: DateTime.now().add(Duration(days: -1)),
+      updatedAt: DateTime.now().add(Duration(days: -1)),
+      name: "Salary",
+      timestamp: DateTime.now().add(Duration(days: -1)),
+      frequency: Recurring(1 * 30 * 24 * 60 * 60),
+      amount: MonetaryAmount(currency: "ETB", amount: 14000 * 100),
+    ),
+    Income(
+      id: "6169668bff32b0373dd0ec39",
+      createdAt: DateTime.now().add(Duration(days: -7)),
+      updatedAt: DateTime.now().add(Duration(days: -7)),
+      name: "Cheque 1",
+      timestamp: DateTime.now().add(Duration(days: -7)),
+      frequency: OneTime(),
+      amount: MonetaryAmount(currency: "ETB", amount: 50000 * 100),
+    ),
+    Income(
+      id: "6169668bff32b0373dd0ec39",
+      createdAt: DateTime.now().add(Duration(days: -3)),
+      updatedAt: DateTime.now().add(Duration(days: -3)),
+      name: "Cheque 2",
+      timestamp: DateTime.now().add(Duration(days: -3)),
+      frequency: OneTime(),
+      amount: MonetaryAmount(currency: "ETB", amount: 25000 * 100),
     ),
   ],
 );

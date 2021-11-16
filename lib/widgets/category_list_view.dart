@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
@@ -15,44 +17,24 @@ class CategoryListView extends StatelessWidget {
     this.markArchived = true,
   }) : super(key: key);
 
-  Widget _listTile(BuildContext context, Category item) {
-    final isMarked = item.isArchived == markArchived;
-    final isDisabled = disabledItems.contains(item.id) || isMarked;
-    return ListTile(
-      leading: item.parentId == null
-          ? Icon(Icons.workspaces_outline)
-          : Icon(Icons.account_tree_outlined),
-      dense: isDisabled,
-      /*
-      trailing: isMarked
-          ? item.isArchived
-              ? const Text("Archived")
-              : const Text("Active")
-          : null,
-
-
-      trailing: Container(
-        width: 50,
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.edit),
-              onPressed: () {},
-            ),
-          ],
-        ),
-      ),
-
-       */
-      title: Text(
-        item.name,
-        textScaleFactor: 1.3,
-      ),
-      subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
-      onTap: () => !isDisabled ? onSelect?.call(item.id) : null,
-      onLongPress: () {},
-    );
-  }
+  static Widget listTile(
+    BuildContext context,
+    Category item, {
+    bool showStatus = true,
+    FutureOr<void> Function()? onTap,
+    // bool isDisabled = false,
+  }) =>
+      ListTile(
+        dense: onTap == null,
+        trailing: showStatus
+            ? item.isArchived
+                ? const Text("In Trash")
+                : const Text("Active")
+            : null,
+        title: Text(item.name),
+        subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
+        onTap: onTap,
+      );
 
   Widget _catDisplay(
     BuildContext context,
@@ -66,10 +48,18 @@ class CategoryListView extends StatelessWidget {
     }
 
     return itemNode.children.isEmpty
-        ? _listTile(context, item)
+        ? listTile(
+            context,
+            item,
+            showStatus: item.isArchived == markArchived,
+            onTap: !disabledItems.contains(item.id) ||
+                    item.isArchived != markArchived
+                ? () => onSelect?.call(item.id)
+                : null,
+          )
         : Column(
             children: [
-              _listTile(context, item),
+              listTile(context, item),
               Padding(
                 padding: EdgeInsets.only(
                     left: MediaQuery.of(context).size.width * 0.05),

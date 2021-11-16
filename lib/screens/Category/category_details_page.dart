@@ -22,6 +22,7 @@ class CategoryDetailsPage extends StatelessWidget {
               context.read<ExpenseRepository>(),
               context.read<OfflineExpenseRepository>(),
               context.read<SyncBloc>(),
+              context.read<PreferencesBloc>(),
               id),
           child: CategoryDetailsPage(),
         ),
@@ -32,6 +33,7 @@ class CategoryDetailsPage extends StatelessWidget {
   static Widget _dialogActionButton(
     BuildContext context,
     CategoryLoadSuccess state, {
+    bool disabled = false,
     required String butonTitle,
     required String dialogTitle,
     required String dialogContent,
@@ -60,7 +62,7 @@ class CategoryDetailsPage extends StatelessWidget {
                       child: Text(cancelButtonTitle),
                     ),
                     TextButton(
-                      onPressed: !awaitingOp
+                      onPressed: !disabled && !awaitingOp
                           ? () {
                               context
                                   .read<CategoryDetailsPageBloc>()
@@ -83,9 +85,14 @@ class CategoryDetailsPage extends StatelessWidget {
                                           SnackBar(
                                             content: err is ConnectionException
                                                 ? Text('Connection Failed')
-                                                : Text('Unknown Error Occured'),
+                                                : err
+                                                        is MiscCategoryArchivalForbidden
+                                                    ? Text(
+                                                        'Is default misc category.')
+                                                    : Text(
+                                                        'Unknown Error Occured'),
                                             behavior: SnackBarBehavior.floating,
-                                            duration: Duration(seconds: 1),
+                                            duration: Duration(seconds: 2),
                                           ),
                                         );
                                       }
@@ -121,32 +128,42 @@ class CategoryDetailsPage extends StatelessWidget {
                   _dialogActionButton(
                     context,
                     state,
-                    butonTitle: "Unarchive",
+                    butonTitle: "Restore",
                     dialogTitle: "Confirm",
                     dialogContent:
-                        "Are you sure you want to reactivate category ${state.item.name}?",
+                        "Are you sure you want to restore category ${state.item.name}?",
                     cancelButtonTitle: "Cancel",
-                    confirmButtonTitle: "Unarchive",
+                    confirmButtonTitle: "Restore",
                     eventGenerator: ({onError, onSuccess}) => UnarchiveCategory(
                       onSuccess: onSuccess,
                       onError: onError,
                     ),
                   ),
-                  _dialogActionButton(
-                    context,
-                    state,
-                    butonTitle: "Delete",
-                    dialogTitle: "Confirm deletion",
-                    dialogContent:
-                        "Are you sure you want to permanently delete entry ${state.item.name}?"
-                        "\nWARNING: All attached expenses will be removed as well.",
-                    cancelButtonTitle: "Cancel",
-                    confirmButtonTitle: "Delete",
-                    eventGenerator: ({onError, onSuccess}) => DeleteCategory(
-                      onSuccess: onSuccess,
-                      onError: onError,
-                    ),
-                  ),
+                  Builder(builder: (context) {
+                    final isMiscCat = context
+                            .read<PreferencesBloc>()
+                            .preferencesLoadSuccessState()
+                            .preferences
+                            .miscCategory ==
+                        state.item.id;
+
+                    return _dialogActionButton(context, state,
+                        butonTitle: "Delete",
+                        dialogTitle: "Confirm deletion",
+                        dialogContent: isMiscCat
+                            ? "Category ${state.item.name} is selected as the default miscallenous category. "
+                                "Please choose another one from the setting screen before deleting it."
+                            : "Are you sure you want to permanently delete entry ${state.item.name}?"
+                                "\nWARNING: All attached expenses will be moved to the default misc category.",
+                        cancelButtonTitle: "Cancel",
+                        confirmButtonTitle: "Delete",
+                        eventGenerator: ({onError, onSuccess}) =>
+                            DeleteCategory(
+                              onSuccess: onSuccess,
+                              onError: onError,
+                            ),
+                        disabled: isMiscCat);
+                  }),
                 ]
               : [
                   ElevatedButton(
@@ -157,21 +174,33 @@ class CategoryDetailsPage extends StatelessWidget {
                     ),
                     child: const Text("Edit"),
                   ),
-                  _dialogActionButton(
-                    context,
-                    state,
-                    butonTitle: "Archive",
-                    dialogTitle: "Confirm archival",
-                    dialogContent:
-                        "Are you sure you want to archive entry ${state.item.name}?"
-                        "\nAssociated expense entries won't removed and you can always Unarchive it afterwards.",
-                    cancelButtonTitle: "Cancel",
-                    confirmButtonTitle: "Archive",
-                    eventGenerator: ({onError, onSuccess}) => ArchiveCategory(
-                      onSuccess: onSuccess,
-                      onError: onError,
-                    ),
-                  ),
+                  Builder(builder: (context) {
+                    final isMiscCat = context
+                            .read<PreferencesBloc>()
+                            .preferencesLoadSuccessState()
+                            .preferences
+                            .miscCategory ==
+                        state.item.id;
+
+                    return _dialogActionButton(
+                      context,
+                      state,
+                      butonTitle: "Delete",
+                      dialogTitle: "Confirm deletion",
+                      dialogContent: isMiscCat
+                          ? "Category ${state.item.name} is selected as the default miscallenous category. "
+                              "Please choose another one from the setting screen before deleting it."
+                          : "Are you sure you want to move Category ${state.item.name} to the trash?"
+                              "\nAssociated expense entries won't removed and you can always recover it afterwards.",
+                      cancelButtonTitle: "Cancel",
+                      confirmButtonTitle: "Delete",
+                      eventGenerator: ({onError, onSuccess}) => ArchiveCategory(
+                        onSuccess: onSuccess,
+                        onError: onError,
+                      ),
+                      disabled: isMiscCat,
+                    );
+                  }),
                 ],
         ),
         body: Column(

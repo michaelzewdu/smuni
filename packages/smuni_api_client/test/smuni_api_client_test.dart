@@ -36,7 +36,7 @@ void main() {
     });
     test("supports firebaseId signIn", () async {
       var response =
-          await client.signInUsername(testUser.firebaseId, "password");
+          await client.signInFirebaseId(testUser.firebaseId, "password");
       expect(response.accessToken, isNotEmpty);
       expect(response.refreshToken, isNotEmpty);
       expect(response.user.id, equals(testUser.id));
@@ -228,11 +228,14 @@ void main() {
             phoneNumber: phoneNumber,
             pictureURL: pictureURL,
             lastSeenVersion: testUser.version,
+            mainBudget: testUser.budgets[1].id,
+            miscCategory: testUser.categories[1].id,
           ));
       expect(response.username, equals(username));
       expect(response.email, equals(email));
       expect(response.phoneNumber, equals(phoneNumber));
-      expect(response.pictureURL, equals(pictureURL));
+      expect(response.miscCategory, equals(testUser.categories[1].id));
+      expect(response.mainBudget, equals(testUser.budgets[1].id));
     });
     test("throws when not found", () {
       expect(
@@ -753,6 +756,8 @@ void main() {
     final name = "Business Hymns CD 1";
     final amount = MonetaryAmount(currency: "ETB", amount: 100 * 100);
     final timestamp = DateTime.now().subtract(Duration(days: 1));
+    final budgetId = testUser.budgets[1].id;
+    final categoryId = testUser.categories[1].id;
 
     test("succeeds", () async {
       var response = await client.updateExpense(
@@ -764,9 +769,14 @@ void main() {
             name: name,
             amount: amount,
             timestamp: timestamp,
+            budgetAndCategoryId: Pair(budgetId, categoryId),
           ));
       expect(response.name, equals(name));
       expect(response.amount, equals(amount));
+      expect(response.budgetId, equals(budgetId));
+      expect(response.categoryId, equals(categoryId));
+      expect(response.timestamp.millisecondsSinceEpoch,
+          equals(timestamp.millisecondsSinceEpoch));
     });
     test("throws when not found", () {
       expect(
@@ -797,6 +807,145 @@ void main() {
     test("succeeds", () async {
       await client.deleteExpense(
         testUser.expenses[0].id,
+        testUser.username,
+        token,
+      );
+    });
+  });
+
+// INCOMEs
+
+  group("get /users/:username/incomes/:incomeId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    test("succeeds", () async {
+      var response = await client.getIncome(
+        testUser.incomes[0].id,
+        testUser.username,
+        token,
+      );
+      expect(response.id, isNotEmpty);
+      expect(response.name, equals(testUser.incomes[0].name));
+    });
+    test("throws when not found", () {
+      expect(
+        () => client.getIncome(
+          "614193c7f2ea51b47f5896be",
+          testUser.username,
+          token,
+        ),
+        throwsEndpointError(
+          404,
+          "IncomeNotFound",
+        ),
+      );
+    });
+  });
+
+  group("post /users/:username/incomes", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    final name = "Insurance Payout";
+    final amount = MonetaryAmount(currency: "ETB", amount: 100 * 100);
+    final timestamp = DateTime.now();
+    final frequency = OneTime();
+
+    test("succeeds", () async {
+      var response = await client.createIncome(
+        testUser.username,
+        token,
+        CreateIncomeInput(
+          name: name,
+          timestamp: timestamp,
+          amount: amount,
+          frequency: frequency,
+        ),
+      );
+      expect(response.id, isNotEmpty);
+      expect(response.name, equals(name));
+      expect(response.amount, equals(amount));
+      expect(response.frequency, equals(frequency));
+      expect(response.timestamp.millisecondsSinceEpoch,
+          equals(timestamp.millisecondsSinceEpoch));
+    });
+  });
+
+  group("patch /users/:username/incomes/:incomeId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    final name = "Insurance Payout";
+    final amount = MonetaryAmount(currency: "ETB", amount: 100 * 100);
+    final timestamp = DateTime.now().subtract(Duration(days: 1));
+    final frequency = OneTime();
+
+    test("succeeds", () async {
+      var response = await client.updateIncome(
+          testUser.incomes[0].id,
+          testUser.username,
+          token,
+          UpdateIncomeInput(
+            lastSeenVersion: testUser.expenses[0].version,
+            name: name,
+            amount: amount,
+            timestamp: timestamp,
+            frequency: frequency,
+          ));
+      expect(response.name, equals(name));
+      expect(response.amount, equals(amount));
+      expect(response.timestamp.millisecondsSinceEpoch,
+          equals(timestamp.millisecondsSinceEpoch));
+      expect(response.frequency, equals(frequency));
+    });
+    test("throws when not found", () {
+      expect(
+        () => client.updateIncome(
+          "614193c7f2ea51b47f5896be",
+          testUser.username,
+          token,
+          UpdateIncomeInput(name: name, lastSeenVersion: 0),
+        ),
+        throwsEndpointError(
+          404,
+          "IncomeNotFound",
+        ),
+      );
+    });
+  });
+
+  group("delete /users/:username/incomes/:incomeId", () {
+    late String token;
+    late UserDenorm testUser;
+    setUp(() async {
+      final resp = await setupTestUser(client);
+      token = resp.accessToken;
+      testUser = resp.user;
+    });
+    tearDown(() async => await client.deleteUser(testUser.username, token));
+
+    test("succeeds", () async {
+      await client.deleteIncome(
+        testUser.incomes[0].id,
         testUser.username,
         token,
       );
@@ -904,6 +1053,28 @@ Future<SignInResponse> setupTestUser(SmuniApiClient client) async {
         categoryId: category01.id,
         budgetId: budget01.id,
         amount: MonetaryAmount(currency: "ETB", amount: 200 * 100),
+        timestamp: DateTime.now(),
+      ),
+    );
+  }
+  {
+    await client.createIncome(
+      user.username,
+      token,
+      CreateIncomeInput(
+        name: "Wage",
+        frequency: Recurring(24 * 60 * 60 * 1000),
+        amount: MonetaryAmount(currency: "ETB", amount: 400 * 100),
+        timestamp: DateTime.now(),
+      ),
+    );
+    await client.createIncome(
+      user.username,
+      token,
+      CreateIncomeInput(
+        name: "Night Wage",
+        frequency: Recurring(24 * 60 * 60 * 1000),
+        amount: MonetaryAmount(currency: "ETB", amount: 400 * 100),
         timestamp: DateTime.now(),
       ),
     );
