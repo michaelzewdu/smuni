@@ -73,3 +73,4 @@ Right now, we're using a CacheSyncronizer entity to send all offline updates one
 - operation ordering: you can't add expenses to budgets that don't exist, can you?
 - operation failure: if network buckles after succefully updating a category, we need to update all related budgets and whatnot
 - offline operations: some CRUD operations affect other entities, when doing them online, we need to do the same on the items in the local cache
+- unseen versions:TODO: if unseen versions exist on the backend, it'll reject and updates. Merging the two separate branches will have to be handeled.

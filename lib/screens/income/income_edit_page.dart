@@ -87,7 +87,9 @@ class _IncomeEditPageState extends State<IncomeEditPage> {
               SnackBar(
                 content: state.error is ConnectionException
                     ? Text('Connection Failed')
-                    : Text('Unknown Error Occured'),
+                    : state.error is UnseenVersionException
+                        ? Text('Desync error: sync first')
+                        : Text('Unknown Error Occured'),
                 behavior: SnackBarBehavior.floating,
                 duration: Duration(seconds: 2),
               ),

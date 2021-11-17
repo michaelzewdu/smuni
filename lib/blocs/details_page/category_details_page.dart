@@ -107,6 +107,8 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
           // and report the sync error to whoever event added the event
           throw SyncException(ConnectionException(err));
         }
+      } on UnseenVersionsFoundError catch (_) {
+        throw UnseenVersionException();
       } catch (err) {
         if (err is SocketException || err is UnauthenticatedException) {
           // do it offline if not connected or authenticated
@@ -197,6 +199,8 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
           auth.authToken,
         );
         yield CategoryLoadSuccess(current.id, item);
+      } on UnseenVersionsFoundError catch (_) {
+        throw UnseenVersionException();
       } catch (err) {
         // do it offline if not connected or authenticated
         if (err is SocketException || err is UnauthenticatedException) {
@@ -236,6 +240,8 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
           auth.authToken,
         );
         yield CategoryLoadSuccess(current.id, item);
+      } on UnseenVersionsFoundError catch (_) {
+        throw UnseenVersionException();
       } catch (err) {
         if (err is SocketException || err is UnauthenticatedException) {
           // do it offline if not connected or authenticated

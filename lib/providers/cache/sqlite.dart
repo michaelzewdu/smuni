@@ -213,8 +213,11 @@ class PreferencesCache {
 
   Future<String> getMiscCategory() async {
     final id = await _stuffCache.getStuff("miscCategory");
-    if (id == null) await setMiscCategory("000000000000000000000000");
-    return "000000000000000000000000";
+    if (id == null) {
+      await setMiscCategory("000000000000000000000000");
+      return "000000000000000000000000";
+    }
+    return id;
   }
 
   Future<void> setMiscCategory(String token) =>

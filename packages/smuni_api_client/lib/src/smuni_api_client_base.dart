@@ -766,13 +766,20 @@ class EndpointError {
       throw ClientDecodingError(
           "expected endpoint error", response.statusCode, response.body);
     }
-    final endpointErr = EndpointError.fromJson(json);
-    return endpointErr;
+    if (json["type"] == "UnseenVersionsFound") {
+      return UnseenVersionsFoundError(json);
+    }
+    return EndpointError.fromJson(json);
   }
   @override
   String toString() {
     return "EndpointError( code: $code, type: $type, json: $json )";
   }
+}
+
+class UnseenVersionsFoundError extends EndpointError {
+  UnseenVersionsFoundError(Map<String, dynamic> json)
+      : super(400, "UnseenVersionsFound", json);
 }
 
 class ClientError implements Exception {

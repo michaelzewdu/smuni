@@ -99,6 +99,8 @@ class UserBloc extends Bloc<UserEvent, UserBlocState> {
         yield UserLoadSuccess(updated);
       } on SocketException catch (err) {
         throw ConnectionException(err);
+      } on UnseenVersionsFoundError catch (_) {
+        throw UnseenVersionException();
       }
     } else {
       throw Exception("impossible event");

@@ -107,7 +107,12 @@ class BudgetDetailsPage extends StatefulWidget {
                                           SnackBar(
                                             content: err is ConnectionException
                                                 ? Text('Connection Failed')
-                                                : Text('Unknown Error Occured'),
+                                                : err is UnseenVersionException
+                                                    ? Text(
+                                                        'Desync error: sync first',
+                                                      )
+                                                    : Text(
+                                                        'Unknown Error Occured'),
                                             behavior: SnackBarBehavior.floating,
                                             duration: Duration(seconds: 2),
                                           ),

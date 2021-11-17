@@ -206,16 +206,19 @@ class _MyAppState extends State<MyApp> {
                   child: MultiBlocProvider(
                     providers: [
                       BlocProvider(
-                        create: (context) =>
-                            PreferencesBloc(context.read<PreferencesCache>())
-                              ..add(LoadPreferences()),
+                        create: (context) => AuthBloc(
+                            context.read<AuthRepository>(),
+                            context.read<CacheSynchronizer>(),
+                            context.read<PreferencesCache>())
+                          ..add(CheckCache()),
                       ),
                       BlocProvider(
-                        create: (context) => AuthBloc(
-                          context.read<AuthRepository>(),
+                        create: (context) => PreferencesBloc(
+                          context.read<PreferencesCache>(),
+                          context.read<AuthBloc>(),
+                          context.read<UserRepository>(),
                           context.read<CacheSynchronizer>(),
-                          context.read<PreferencesBloc>(),
-                        )..add(CheckCache()),
+                        )..add(LoadPreferences()),
                       ),
                       BlocProvider(
                         create: (context) => SignUpBloc(

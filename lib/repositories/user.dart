@@ -43,13 +43,13 @@ class ApiUserRepository {
   UpdateUserInput updateFromDiff(User update, User old, [String? password]) =>
       UpdateUserInput.fromDiff(update: update, old: old, password: password);
 
-  Future<User> updateItem(
+  Future<UserDenorm> updateItem(
     UpdateUserInput input,
     String username,
     String authToken,
   ) async {
-    final item = User.from(await client.updateUser(username, authToken, input));
-    await cache.setItem(username, item);
+    final item = await client.updateUser(username, authToken, input);
+    await cache.setItem(username, User.from(item));
     _changedItemsController.add({username});
     return item;
   }

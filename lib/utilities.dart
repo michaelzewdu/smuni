@@ -298,6 +298,8 @@ class TimeoutException implements OperationException {}
 
 class UnauthenticatedException implements OperationException {}
 
+class UnseenVersionException implements OperationException {}
+
 class SyncException {
   final OperationException inner;
 

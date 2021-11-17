@@ -24,8 +24,8 @@ class Routes {
         return SmuniHomeScreen.route();
       case SignInPage.routeName:
         return SignInPage.route();
-      case MenusPage.routeName:
-        return MenusPage.route();
+      case SettingsPage.routeName:
+        return SettingsPage.route();
       case BudgetListPage.routeName:
         return BudgetListPage.route();
       case BudgetListPage.routeNameArchivedOnly:

@@ -157,6 +157,9 @@ class _SignInPageState extends State<SignInPage> {
                                               context
                                                   .read<UserBloc>()
                                                   .add(LoadUser());
+                                              context
+                                                  .read<PreferencesBloc>()
+                                                  .add(LoadPreferences());
                                             },
                                             onError: (err) {
                                               setState(
@@ -167,13 +170,15 @@ class _SignInPageState extends State<SignInPage> {
                                                   content: err
                                                           is ConnectionException
                                                       ? Text(
-                                                          'Connection Failed')
-                                                      : err
-                                                              is CredentialsRejected
+                                                          'Connection Failed',
+                                                        )
+                                                      : err is CredentialsRejected
                                                           ? Text(
-                                                              'Credentials Rejected')
+                                                              'Credentials Rejected',
+                                                            )
                                                           : Text(
-                                                              'Unknown Error Occurred'),
+                                                              'Unknown Error Occurred',
+                                                            ),
                                                   behavior:
                                                       SnackBarBehavior.floating,
                                                   duration:

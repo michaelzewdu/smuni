@@ -4,10 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
-import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/widgets.dart';
-import 'package:smuni_api_client/smuni_api_client.dart';
 
 import 'Budget/budget_details_page.dart';
 import 'Budget/budget_list_page.dart';
@@ -98,28 +96,29 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
 
   Widget _homePage() => BlocBuilder<AuthBloc, AuthBlocState>(
         builder: (context, authState) => authState is AuthSuccess
-            ? BlocBuilder<UserBloc, UserBlocState>(
-                builder: (context, userState) {
-                  if (userState is UserLoadSuccess) {
-                    return _showHome(
-                      userState.item.mainBudget,
-                      (newMainBudget, {onSuccess, onError}) =>
-                          context.read<UserBloc>().add(
-                                UpdateUser(
-                                  User.from(
-                                    userState.item,
-                                    mainBudget: newMainBudget,
-                                  ),
-                                  onSuccess: onSuccess,
-                                  onError: onError,
-                                ),
-                              ),
-                    );
-                  } else if (userState is UserLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  throw Exception("unexpected state");
-                },
+            ? BlocBuilder<PreferencesBloc, PreferencesBlocState>(
+                builder: (context, prefState) =>
+                    prefState is PreferencesLoadSuccess
+                        ? _showHome(
+                            prefState.preferences.mainBudget,
+                            (newMainBudget, {onSuccess, onError}) =>
+                                context.read<PreferencesBloc>().add(
+                                      UpdatePreferences(
+                                        Preferences.from(
+                                          prefState.preferences,
+                                          mainBudget: newMainBudget,
+                                        ),
+                                        onSuccess: () {
+                                          onSuccess?.call();
+                                          setState(() {});
+                                        },
+                                        onError: onError,
+                                      ),
+                                    ),
+                          )
+                        : prefState is PreferencesLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : throw Exception("unexpected state"),
               )
             : BlocBuilder<PreferencesBloc, PreferencesBlocState>(
                 builder: (context, preferencesState) {
@@ -158,7 +157,7 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
               (context, state) => [
                 TextButton(
                   onPressed: () =>
-                      _showMainBudgetSelectorModal(context, changeMainBudget),
+                      showMainBudgetSelectorModal(context, changeMainBudget),
                   child: const Text(
                     "Change",
                     style: TextStyle(color: Colors.white),
@@ -166,7 +165,7 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                 ),
                 TextButton(
                   onPressed: () =>
-                      Navigator.pushNamed(context, MenusPage.routeName),
+                      Navigator.pushNamed(context, SettingsPage.routeName),
                   child: const Text("Settings",
                       style: TextStyle(color: Colors.white)),
                 ),
@@ -185,7 +184,7 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                         child: Text("Main budget not selected:"),
                       ),
                       ElevatedButton(
-                        onPressed: () => _showMainBudgetSelectorModal(
+                        onPressed: () => showMainBudgetSelectorModal(
                           context,
                           changeMainBudget,
                         ),
@@ -196,93 +195,6 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                 ),
               ),
             );
-
-  void _showMainBudgetSelectorModal(
-    BuildContext context,
-    void Function(
-      String newMainBudget, {
-      OperationSuccessNotifier? onSuccess,
-      OperationExceptionNotifier? onError,
-    })
-        changeMainBudget,
-  ) {
-    final selectorKey = GlobalKey<FormFieldState<String>>();
-    var budgetId = "";
-    var awaitingOp = false;
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (builder, setState) => Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  BlocProvider(
-                    create: (context) => BudgetListPageBloc(
-                      context.read<BudgetRepository>(),
-                      context.read<OfflineBudgetRepository>(),
-                    ),
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.4,
-                      child: BudgetFormSelector(
-                        key: selectorKey,
-                        isSelecting: true,
-                        caption: const Text(
-                          "Select Main Budget",
-                          textScaleFactor: 1.5,
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        onChanged: (value) {
-                          setState(() => budgetId = value!);
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return "No budget selected";
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: !awaitingOp && budgetId.isNotEmpty
-                        ? () {
-                            final selector = selectorKey.currentState;
-                            if (selector != null && selector.validate()) {
-                              selector.save();
-                              changeMainBudget(
-                                budgetId,
-                                onSuccess: () {
-                                  setState(() => awaitingOp = false);
-                                  this.setState(() => {});
-                                  Navigator.pop(context);
-                                },
-                                onError: (err) {
-                                  setState(() => awaitingOp = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: err is ConnectionException
-                                          ? Text('Connection Failed')
-                                          : Text('Unknown Error Occured'),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                },
-                              );
-                              setState(() => awaitingOp = true);
-                            }
-                          }
-                        : null,
-                    child: awaitingOp
-                        ? const CircularProgressIndicator()
-                        : const Text("Save Selection"),
-                  ),
-                ]),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class SyncScreen extends StatefulWidget {
