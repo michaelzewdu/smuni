@@ -1,75 +1,80 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
+import 'package:smuni/utilities.dart';
 
 class CategoryListView extends StatelessWidget {
-  final CategoriesLoadSuccess state;
-  final void Function(String)? onSelect;
+  final Map<String, Category> items;
   final Set<String> disabledItems;
+
+  /// all nodes in the graph should have entries in [`items`]
+  final Map<String, TreeNode<String>> ancestryGraph;
+  final void Function(String)? onSelect;
   final bool markArchived;
   const CategoryListView({
     Key? key,
-    required this.state,
+    required this.items,
+    required this.ancestryGraph,
     this.onSelect,
     this.disabledItems = const {},
     this.markArchived = true,
   }) : super(key: key);
 
-  Widget _listTile(BuildContext context, Category item) {
-    final isMarked = item.isArchived == markArchived;
-    final isDisabled = disabledItems.contains(item.id) || isMarked;
-    return ListTile(
-      leading: item.parentId == null
-          ? Icon(Icons.workspaces_outline)
-          : Icon(Icons.account_tree_outlined),
-      dense: isDisabled,
-      /*
-      trailing: isMarked
-          ? item.isArchived
-              ? const Text("Archived")
-              : const Text("Active")
-          : null,
-
-
-      trailing: Container(
-        width: 50,
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.edit),
-              onPressed: () {},
-            ),
-          ],
-        ),
-      ),
-
-       */
-      title: Text(
-        item.name,
-        textScaleFactor: 1.3,
-      ),
-      subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
-      onTap: () => !isDisabled ? onSelect?.call(item.id) : null,
-      onLongPress: () {},
-    );
-  }
+  static ListTile listTile(
+    BuildContext context,
+    Category item, {
+    bool showStatus = true,
+    FutureOr<void> Function()? onTap,
+    // bool isDisabled = false,
+  }) =>
+      ListTile(
+        dense: onTap == null,
+        leading: item.parentId == null
+            ? Icon(Icons.workspaces_outline)
+            : Icon(Icons.account_tree_outlined),
+        trailing: showStatus
+            ? item.isArchived
+                ? const Text("In Trash")
+                : const Text("Active")
+            : null,
+        title: Text(item.name),
+        subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
+        onTap: onTap,
+      );
 
   Widget _catDisplay(
     BuildContext context,
     String id,
   ) {
-    final item = state.items[id];
-    final itemNode = state.ancestryGraph[id];
+    final item = items[id];
+    final itemNode = ancestryGraph[id];
     if (item == null) return Text("Error: Category under id $id not found");
     if (itemNode == null) {
       return Text("Error: Category under id $id not found in ancestryGraph");
     }
 
     return itemNode.children.isEmpty
-        ? _listTile(context, item)
+        ? listTile(
+            context,
+            item,
+            showStatus: item.isArchived == markArchived,
+            onTap: !disabledItems.contains(item.id) ||
+                    item.isArchived != markArchived
+                ? () => onSelect?.call(item.id)
+                : null,
+          )
         : Column(
             children: [
-              _listTile(context, item),
+              listTile(
+                context,
+                item,
+                showStatus: item.isArchived == markArchived,
+                onTap: !disabledItems.contains(item.id) ||
+                        item.isArchived != markArchived
+                    ? () => onSelect?.call(item.id)
+                    : null,
+              ),
               Padding(
                 padding: EdgeInsets.only(
                     left: MediaQuery.of(context).size.width * 0.05),
@@ -87,7 +92,7 @@ class CategoryListView extends StatelessWidget {
   Widget build(BuildContext context) {
     // show the selection list
     final topNodes =
-        state.ancestryGraph.values.where((e) => e.parent == null).toList();
+        ancestryGraph.values.where((e) => e.parent == null).toList();
 
     return topNodes.isNotEmpty
         ? ListView.builder(

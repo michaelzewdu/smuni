@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 
@@ -7,10 +8,12 @@ import './models.dart';
 
 class SmuniApiClient {
   final String _baseUrl;
+  final Duration timeout;
   late http.Client client;
   late JsonCodec _json;
 
-  SmuniApiClient(this._baseUrl, {http.Client? client}) {
+  SmuniApiClient(this._baseUrl,
+      {http.Client? client, this.timeout = const Duration(seconds: 8)}) {
     _json = JsonCodec();
     if (client == null) {
       this.client = http.Client();
@@ -262,6 +265,57 @@ class SmuniApiClient {
     );
   }
 
+  Future<Income> createIncome(
+    String username,
+    String accessToken,
+    CreateIncomeInput input,
+  ) async {
+    final response = await makeApiCall("post", "/users/$username/incomes",
+        authToken: accessToken, jsonBody: input.toJson());
+    return Income.fromJson(_json.decode(response.body));
+  }
+
+  Future<Income> getIncome(
+    String id,
+    String username,
+    String accessToken,
+  ) async {
+    final response = await makeApiCall(
+      "get",
+      "/users/$username/incomes/$id",
+      authToken: accessToken,
+    );
+    return Income.fromJson(_json.decode(response.body));
+  }
+
+  Future<Income> updateIncome(
+    String id,
+    String username,
+    String accessToken,
+    UpdateIncomeInput input,
+  ) async {
+    if (input.isEmpty) throw UpdateEmptyException();
+    final response = await makeApiCall(
+      "patch",
+      "/users/$username/incomes/$id",
+      authToken: accessToken,
+      jsonBody: input.toJson(),
+    );
+    return Income.fromJson(_json.decode(response.body));
+  }
+
+  Future<void> deleteIncome(
+    String id,
+    String username,
+    String accessToken,
+  ) async {
+    await makeApiCall(
+      "delete",
+      "/users/$username/incomes/$id",
+      authToken: accessToken,
+    );
+  }
+
   Future<http.Response> makeApiCall(
     String method,
     String path, {
@@ -280,7 +334,12 @@ class SmuniApiClient {
       request.headers["Authorization"] = "Bearer $authToken";
     }
     try {
-      final sResponse = await client.send(request);
+      final sResponse = await client.send(request).timeout(
+            timeout,
+            onTimeout: () => throw SocketException(
+              TimeoutException("request timed out", timeout),
+            ),
+          );
       final response = await http.Response.fromStream(sResponse);
       // print(response.body);
       if (sResponse.statusCode >= 200 && sResponse.statusCode < 300) {
@@ -342,6 +401,7 @@ class UpdateUserInput {
   final String? password;
   final String? pictureURL;
   final String? mainBudget;
+  final String? miscCategory;
 
   const UpdateUserInput({
     required this.lastSeenVersion,
@@ -351,6 +411,7 @@ class UpdateUserInput {
     this.password,
     this.pictureURL,
     this.mainBudget,
+    this.miscCategory,
   });
 
   UpdateUserInput.fromDiff({
@@ -362,6 +423,7 @@ class UpdateUserInput {
         email = ifNotEqualTo(update.email, old.email),
         phoneNumber = ifNotEqualTo(update.phoneNumber, old.phoneNumber),
         mainBudget = ifNotEqualTo(update.mainBudget, old.mainBudget),
+        miscCategory = ifNotEqualTo(update.miscCategory, old.miscCategory),
         pictureURL = ifNotEqualTo(update.pictureURL, old.pictureURL);
 
   Map<String, dynamic> toJson() => {
@@ -371,6 +433,7 @@ class UpdateUserInput {
         "password": password,
         "pictureURL": pictureURL,
         "mainBudget": mainBudget,
+        "miscCategory": miscCategory,
         "lastSeenVersion": lastSeenVersion,
       };
 
@@ -380,6 +443,7 @@ class UpdateUserInput {
       phoneNumber == null &&
       password == null &&
       mainBudget == null &&
+      miscCategory == null &&
       pictureURL == null;
 }
 
@@ -564,6 +628,7 @@ class CreateExpenseInput {
           budgetId: item.budgetId,
           categoryId: item.categoryId,
           amount: item.amount,
+          timestamp: item.timestamp,
         );
 
   Map<String, dynamic> toJson() => {
@@ -580,12 +645,14 @@ class UpdateExpenseInput {
   final String? name;
   final MonetaryAmount? amount;
   final DateTime? timestamp;
+  final Pair<String, String>? budgetAndCategoryId;
 
   const UpdateExpenseInput({
     required this.lastSeenVersion,
     this.name,
     this.amount,
     this.timestamp,
+    this.budgetAndCategoryId,
   });
   UpdateExpenseInput.fromDiff({
     required Expense update,
@@ -593,16 +660,89 @@ class UpdateExpenseInput {
   })  : lastSeenVersion = old.version,
         name = ifNotEqualTo(update.name, old.name),
         timestamp = ifNotEqualTo(update.timestamp, old.timestamp),
+        budgetAndCategoryId = update.categoryId != old.categoryId ||
+                update.budgetId != old.budgetId
+            ? Pair(update.budgetId, update.categoryId)
+            : null,
+        amount = ifNotEqualTo(update.amount, old.amount);
+
+  Map<String, dynamic> toJson() => {
+        "name": name,
+        "budgetId": budgetAndCategoryId?.a,
+        "categoryId": budgetAndCategoryId?.b,
+        "amount": amount?.toJson(),
+        "timestamp": timestamp?.millisecondsSinceEpoch,
+        "lastSeenVersion": lastSeenVersion,
+      };
+
+  bool get isEmpty =>
+      name == null &&
+      amount == null &&
+      budgetAndCategoryId == null &&
+      timestamp == null;
+}
+
+class CreateIncomeInput {
+  final String name;
+  final DateTime? timestamp;
+  final MonetaryAmount amount;
+  final Frequency frequency;
+
+  const CreateIncomeInput({
+    required this.name,
+    required this.frequency,
+    required this.amount,
+    this.timestamp,
+  });
+  CreateIncomeInput.fromItem(Income item)
+      : this(
+          name: item.name,
+          timestamp: item.timestamp,
+          amount: item.amount,
+          frequency: item.frequency,
+        );
+
+  Map<String, dynamic> toJson() => {
+        "name": name,
+        "amount": amount.toJson(),
+        "frequency": frequency.toJson(),
+        "timestamp": timestamp?.millisecondsSinceEpoch
+      };
+}
+
+class UpdateIncomeInput {
+  final int lastSeenVersion;
+  final String? name;
+  final MonetaryAmount? amount;
+  final DateTime? timestamp;
+  final Frequency? frequency;
+
+  const UpdateIncomeInput({
+    required this.lastSeenVersion,
+    this.name,
+    this.amount,
+    this.timestamp,
+    this.frequency,
+  });
+  UpdateIncomeInput.fromDiff({
+    required Income update,
+    required Income old,
+  })  : lastSeenVersion = old.version,
+        name = ifNotEqualTo(update.name, old.name),
+        timestamp = ifNotEqualTo(update.timestamp, old.timestamp),
+        frequency = ifNotEqualTo(update.frequency, old.frequency),
         amount = ifNotEqualTo(update.amount, old.amount);
 
   Map<String, dynamic> toJson() => {
         "name": name,
         "amount": amount?.toJson(),
         "timestamp": timestamp?.millisecondsSinceEpoch,
+        "frequency": frequency?.toJson(),
         "lastSeenVersion": lastSeenVersion,
       };
 
-  bool get isEmpty => name == null && amount == null && timestamp == null;
+  bool get isEmpty =>
+      name == null && amount == null && timestamp == null && frequency == null;
 }
 
 class EndpointError {
@@ -626,13 +766,20 @@ class EndpointError {
       throw ClientDecodingError(
           "expected endpoint error", response.statusCode, response.body);
     }
-    final endpointErr = EndpointError.fromJson(json);
-    return endpointErr;
+    if (json["type"] == "UnseenVersionsFound") {
+      return UnseenVersionsFoundError(json);
+    }
+    return EndpointError.fromJson(json);
   }
   @override
   String toString() {
     return "EndpointError( code: $code, type: $type, json: $json )";
   }
+}
+
+class UnseenVersionsFoundError extends EndpointError {
+  UnseenVersionsFoundError(Map<String, dynamic> json)
+      : super(400, "UnseenVersionsFound", json);
 }
 
 class ClientError implements Exception {
@@ -658,7 +805,7 @@ class ClientDecodingError extends ClientError {
 class UpdateEmptyException implements Exception {}
 
 class SocketException implements Exception {
-  final io.SocketException inner;
+  final Exception? inner;
 
   SocketException(this.inner);
   @override

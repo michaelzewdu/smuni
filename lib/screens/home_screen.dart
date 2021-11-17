@@ -4,15 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
-import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/widgets.dart';
-import 'package:smuni_api_client/smuni_api_client.dart';
 
 import 'Budget/budget_details_page.dart';
 import 'Budget/budget_list_page.dart';
 import 'Category/category_list_page.dart';
 import 'Expense/expense_list_page.dart';
+import 'income/income_list_page.dart';
 import 'settings_page.dart';
 
 class SmuniHomeScreen extends StatefulWidget {
@@ -58,11 +57,11 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
             currentIndex: _selectedPage,
             onTap: (idx) => setState(() => _selectedPage = idx),
             items: const <List<dynamic>>[
-              [Icons.home_filled, Icons.home, "Home"],
+              [Icons.home_outlined, Icons.home_filled, "Home"],
               [Icons.add_chart_outlined, Icons.add_chart, "Budgets"],
               [
-                Icons.playlist_add_check_sharp,
-                Icons.playlist_add_check_rounded,
+                Icons.featured_play_list_outlined,
+                Icons.featured_play_list_rounded,
                 "Expenses"
               ],
               [
@@ -70,7 +69,7 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                 Icons.align_horizontal_center,
                 "Categories"
               ],
-              [Icons.assignment, Icons.wysiwyg_sharp, "Menu"],
+              [Icons.wysiwyg_sharp, Icons.assignment, "Incomes"],
             ]
                 .map((e) => BottomNavigationBarItem(
                       icon: Icon(e[0]),
@@ -79,10 +78,9 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                     ))
                 .toList()),
         body: Builder(builder: (context) {
-          // return Center(child: Text("Shit"));
           switch (_selectedPage) {
             case 4:
-              return MenusPage();
+              return IncomeListPage.page();
             case 3:
               return CategoryListPage.page();
             case 2:
@@ -98,28 +96,29 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
 
   Widget _homePage() => BlocBuilder<AuthBloc, AuthBlocState>(
         builder: (context, authState) => authState is AuthSuccess
-            ? BlocBuilder<UserBloc, UserBlocState>(
-                builder: (context, userState) {
-                  if (userState is UserLoadSuccess) {
-                    return _showHome(
-                      userState.item.mainBudget,
-                      (newMainBudget, {onSuccess, onError}) =>
-                          context.read<UserBloc>().add(
-                                UpdateUser(
-                                  User.from(
-                                    userState.item,
-                                    mainBudget: newMainBudget,
-                                  ),
-                                  onSuccess: onSuccess,
-                                  onError: onError,
-                                ),
-                              ),
-                    );
-                  } else if (userState is UserLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  throw Exception("unexpected state");
-                },
+            ? BlocBuilder<PreferencesBloc, PreferencesBlocState>(
+                builder: (context, prefState) =>
+                    prefState is PreferencesLoadSuccess
+                        ? _showHome(
+                            prefState.preferences.mainBudget,
+                            (newMainBudget, {onSuccess, onError}) =>
+                                context.read<PreferencesBloc>().add(
+                                      UpdatePreferences(
+                                        Preferences.from(
+                                          prefState.preferences,
+                                          mainBudget: newMainBudget,
+                                        ),
+                                        onSuccess: () {
+                                          onSuccess?.call();
+                                          setState(() {});
+                                        },
+                                        onError: onError,
+                                      ),
+                                    ),
+                          )
+                        : prefState is PreferencesLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : throw Exception("unexpected state"),
               )
             : BlocBuilder<PreferencesBloc, PreferencesBlocState>(
                 builder: (context, preferencesState) {
@@ -156,10 +155,19 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
           ? BudgetDetailsPage.page(
               mainBudget,
               (context, state) => [
-                ElevatedButton(
+                TextButton(
                   onPressed: () =>
-                      _showMainBudgetSelectorModal(context, changeMainBudget),
-                  child: const Text("Change"),
+                      showMainBudgetSelectorModal(context, changeMainBudget),
+                  child: const Text(
+                    "Change",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.pushNamed(context, SettingsPage.routeName),
+                  child: const Text("Settings",
+                      style: TextStyle(color: Colors.white)),
                 ),
               ],
             )
@@ -176,7 +184,7 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                         child: Text("Main budget not selected:"),
                       ),
                       ElevatedButton(
-                        onPressed: () => _showMainBudgetSelectorModal(
+                        onPressed: () => showMainBudgetSelectorModal(
                           context,
                           changeMainBudget,
                         ),
@@ -187,88 +195,6 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                 ),
               ),
             );
-
-  void _showMainBudgetSelectorModal(
-    BuildContext context,
-    void Function(
-      String newMainBudget, {
-      OperationSuccessNotifier? onSuccess,
-      OperationExceptionNotifier? onError,
-    })
-        changeMainBudget,
-  ) {
-    final selectorKey = GlobalKey<FormFieldState<String>>();
-    var budgetId = "";
-    var awaitingOp = false;
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (builder, setState) => Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  BlocProvider(
-                    create: (context) => BudgetListPageBloc(
-                      context.read<BudgetRepository>(),
-                      context.read<OfflineBudgetRepository>(),
-                    ),
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.4,
-                      child: BudgetFormSelector(
-                        key: selectorKey,
-                        isSelecting: true,
-                        onChanged: (value) {
-                          setState(() => budgetId = value!);
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return "No budget selected";
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: !awaitingOp && budgetId.isNotEmpty
-                        ? () {
-                            final selector = selectorKey.currentState;
-                            if (selector != null && selector.validate()) {
-                              selector.save();
-                              changeMainBudget(
-                                budgetId,
-                                onSuccess: () {
-                                  setState(() => awaitingOp = false);
-                                  this.setState(() => {});
-                                  Navigator.pop(context);
-                                },
-                                onError: (err) {
-                                  setState(() => awaitingOp = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: err is ConnectionException
-                                          ? Text('Connection Failed')
-                                          : Text('Unknown Error Occured'),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                },
-                              );
-                              setState(() => awaitingOp = true);
-                            }
-                          }
-                        : null,
-                    child: awaitingOp
-                        ? const CircularProgressIndicator()
-                        : const Text("Save Selection"),
-                  ),
-                ]),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class SyncScreen extends StatefulWidget {
@@ -296,9 +222,10 @@ class _SyncScreenState extends State<SyncScreen> {
         },
         builder: (context, state) => Scaffold(
           appBar: AppBar(title: const Text("Kamasio")),
-          body: Center(
-            child: state is DeSynced
-                ? Column(
+          body: state is DeSynced
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       state is SyncFailed
                           ? state.exception.inner is ConnectionException
@@ -308,24 +235,26 @@ class _SyncScreenState extends State<SyncScreen> {
                                   ? Text("Sync failed: signed out")
                                   : Text("Sync failed: unhandled error")
                           : state is ReportedDesync
-                              ? Text(
-                                  "Hard server desynchronization: please refresh")
-                              : Text(
-                                  "Hard server desynchronization: please refresh"),
+                              ? Text("Hard server desynchronization")
+                              : Text("Hard server desynchronization"),
                       const Text("Please try again"),
                       ElevatedButton(
                         onPressed: () => context.read<SyncBloc>().add(Sync()),
                         child: const Text("Refresh"),
                       )
                     ],
-                  )
-                : state is Syncing
-                    ? Column(children: const [
-                        Text("Loading..."),
-                        CircularProgressIndicator()
-                      ])
-                    : const CircularProgressIndicator(),
-          ),
+                  ),
+                )
+              : state is Syncing
+                  ? Center(
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Text("Loading..."),
+                            CircularProgressIndicator()
+                          ]),
+                    )
+                  : throw Exception("Unhandeled state: $state"),
         ),
       );
 }

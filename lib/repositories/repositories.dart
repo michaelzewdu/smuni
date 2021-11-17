@@ -1,3 +1,10 @@
+export 'auth.dart';
+export 'budget.dart';
+export 'expense.dart';
+export 'category.dart';
+export 'income.dart';
+export 'user.dart';
+
 import 'dart:async';
 
 import 'package:smuni/models/models.dart';
@@ -9,6 +16,7 @@ import 'package:smuni_api_client/smuni_api_client.dart';
 import 'budget.dart';
 import 'expense.dart';
 import 'user.dart';
+import 'income.dart';
 
 export 'auth.dart';
 export 'budget.dart';
@@ -352,6 +360,8 @@ extension ExpenseRepositoryExt<CreateInput, UpdateInput>
   }
 }
 
+typedef IncomeRepository = ApiIncomeRepository;
+
 /* class SimpleRepository<Identifier, Item>
     extends ApiRepository<Identifier, Item, Item, Item> {
   final Cache<Identifier, Item> cache;
@@ -437,10 +447,12 @@ class CacheSynchronizer {
   final BudgetRepository budgetRepo;
   final CategoryRepository categoryRepo;
   final ExpenseRepository expenseRepo;
+  final IncomeRepository incomeRepo;
 
   final OfflineBudgetRepository offlineBudgetRepo;
   final OfflineCategoryRepository offlineCategoryRepo;
   final OfflineExpenseRepository offlineExpenseRepo;
+  final OfflineIncomeRepository offlineIncomeRepo;
 
   CacheSynchronizer(
     this.client, {
@@ -448,6 +460,7 @@ class CacheSynchronizer {
     required this.budgetRepo,
     required this.categoryRepo,
     required this.expenseRepo,
+    required this.incomeRepo,
     required this.offlineBudgetRepo,
     required this.offlineCategoryRepo,
     required this.offlineExpenseRepo,
@@ -559,11 +572,27 @@ class CacheSynchronizer {
         await offlineRepo.removedItemsCache.remove(id);
       }
     }
+    {
+      final repo = incomeRepo;
+      final offlineRepo = offlineIncomeRepo;
+      for (final e in (await offlineRepo.getPendingCreates())) {
+        await repo.createItem(e.b, username, authToken);
+        await offlineRepo.cache.removeItem(e.a);
+      }
+      for (final e in (await offlineRepo.getPendingUpdates()).entries) {
+        await repo.updateItem(e.key, e.value, username, authToken);
+      }
+      for (final id in await offlineRepo.getPendingDeletes()) {
+        await repo.removeItem(id, username, authToken);
+        await offlineRepo.removedItemsCache.remove(id);
+      }
+    }
   }
 
-  Future<void> refreshCache(String username, String authToken) async {
+  Future<UserDenorm> refreshCache(String username, String authToken) async {
     final user = await client.getUser(username, authToken);
     await refreshFromUser(user);
+    return user;
   }
 
   Future<void> refreshFromUser(UserDenorm user) async {
@@ -576,6 +605,9 @@ class CacheSynchronizer {
     );
     await expenseRepo.refreshCache(
       {for (final item in user.expenses) item.id: item},
+    );
+    await incomeRepo.refreshCache(
+      {for (final item in user.incomes) item.id: item},
     );
   }
 }

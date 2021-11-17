@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
+import 'package:smuni/widgets/widgets.dart';
 
 import 'category_edit_page.dart';
 
@@ -12,17 +13,32 @@ class CategoryDetailsPage extends StatelessWidget {
 
   static Route route(String id) => MaterialPageRoute(
         settings: const RouteSettings(name: routeName),
-        builder: (context) => BlocProvider(
-          create: (context) => CategoryDetailsPageBloc(
-              context.read<CategoryRepository>(),
-              context.read<OfflineCategoryRepository>(),
-              context.read<AuthBloc>(),
-              context.read<BudgetRepository>(),
-              context.read<OfflineBudgetRepository>(),
-              context.read<ExpenseRepository>(),
-              context.read<OfflineExpenseRepository>(),
-              context.read<SyncBloc>(),
-              id),
+        builder: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => CategoryDetailsPageBloc(
+                  context.read<CategoryRepository>(),
+                  context.read<OfflineCategoryRepository>(),
+                  context.read<AuthBloc>(),
+                  context.read<BudgetRepository>(),
+                  context.read<OfflineBudgetRepository>(),
+                  context.read<ExpenseRepository>(),
+                  context.read<OfflineExpenseRepository>(),
+                  context.read<SyncBloc>(),
+                  context.read<PreferencesBloc>(),
+                  id),
+            ),
+            BlocProvider(
+              create: (context) => CategoryListPageBloc(
+                context.read<CategoryRepository>(),
+                context.read<OfflineCategoryRepository>(),
+                LoadCategoriesFilter(
+                  includeActive: true,
+                  includeArchvied: true,
+                ),
+              ),
+            ),
+          ],
           child: CategoryDetailsPage(),
         ),
       );
@@ -32,6 +48,7 @@ class CategoryDetailsPage extends StatelessWidget {
   static Widget _dialogActionButton(
     BuildContext context,
     CategoryLoadSuccess state, {
+    bool disabled = false,
     required String butonTitle,
     required String dialogTitle,
     required String dialogContent,
@@ -43,7 +60,7 @@ class CategoryDetailsPage extends StatelessWidget {
     })
         eventGenerator,
   }) =>
-      ElevatedButton(
+      TextButton(
         child: Text(butonTitle),
         onPressed: () async {
           final confirm = await showDialog<bool?>(
@@ -60,7 +77,7 @@ class CategoryDetailsPage extends StatelessWidget {
                       child: Text(cancelButtonTitle),
                     ),
                     TextButton(
-                      onPressed: !awaitingOp
+                      onPressed: !disabled && !awaitingOp
                           ? () {
                               context
                                   .read<CategoryDetailsPageBloc>()
@@ -83,9 +100,19 @@ class CategoryDetailsPage extends StatelessWidget {
                                           SnackBar(
                                             content: err is ConnectionException
                                                 ? Text('Connection Failed')
-                                                : Text('Unknown Error Occured'),
+                                                : err
+                                                        is MiscCategoryArchivalForbidden
+                                                    ? Text(
+                                                        'Is default misc category.')
+                                                    : err
+                                                            is UnseenVersionException
+                                                        ? Text(
+                                                            'Desync error: sync first',
+                                                          )
+                                                        : Text(
+                                                            'Unknown Error Occured'),
                                             behavior: SnackBarBehavior.floating,
-                                            duration: Duration(seconds: 1),
+                                            duration: Duration(seconds: 2),
                                           ),
                                         );
                                       }
@@ -121,35 +148,45 @@ class CategoryDetailsPage extends StatelessWidget {
                   _dialogActionButton(
                     context,
                     state,
-                    butonTitle: "Unarchive",
+                    butonTitle: "Restore",
                     dialogTitle: "Confirm",
                     dialogContent:
-                        "Are you sure you want to reactivate category ${state.item.name}?",
+                        "Are you sure you want to restore category ${state.item.name}?",
                     cancelButtonTitle: "Cancel",
-                    confirmButtonTitle: "Unarchive",
+                    confirmButtonTitle: "Restore",
                     eventGenerator: ({onError, onSuccess}) => UnarchiveCategory(
                       onSuccess: onSuccess,
                       onError: onError,
                     ),
                   ),
-                  _dialogActionButton(
-                    context,
-                    state,
-                    butonTitle: "Delete",
-                    dialogTitle: "Confirm deletion",
-                    dialogContent:
-                        "Are you sure you want to permanently delete entry ${state.item.name}?"
-                        "\nWARNING: All attached expenses will be removed as well.",
-                    cancelButtonTitle: "Cancel",
-                    confirmButtonTitle: "Delete",
-                    eventGenerator: ({onError, onSuccess}) => DeleteCategory(
-                      onSuccess: onSuccess,
-                      onError: onError,
-                    ),
-                  ),
+                  Builder(builder: (context) {
+                    final isMiscCat = context
+                            .read<PreferencesBloc>()
+                            .preferencesLoadSuccessState()
+                            .preferences
+                            .miscCategory ==
+                        state.item.id;
+
+                    return _dialogActionButton(context, state,
+                        butonTitle: "Delete",
+                        dialogTitle: "Confirm deletion",
+                        dialogContent: isMiscCat
+                            ? "Category ${state.item.name} is selected as the default miscallenous category. "
+                                "Please choose another one from the setting screen before deleting it."
+                            : "Are you sure you want to permanently delete entry ${state.item.name}?"
+                                "\nWARNING: All attached expenses will be moved to the default misc category.",
+                        cancelButtonTitle: "Cancel",
+                        confirmButtonTitle: "Delete",
+                        eventGenerator: ({onError, onSuccess}) =>
+                            DeleteCategory(
+                              onSuccess: onSuccess,
+                              onError: onError,
+                            ),
+                        disabled: isMiscCat);
+                  }),
                 ]
               : [
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () => Navigator.pushNamed(
                       context,
                       CategoryEditPage.routeName,
@@ -157,30 +194,105 @@ class CategoryDetailsPage extends StatelessWidget {
                     ),
                     child: const Text("Edit"),
                   ),
-                  _dialogActionButton(
-                    context,
-                    state,
-                    butonTitle: "Archive",
-                    dialogTitle: "Confirm archival",
-                    dialogContent:
-                        "Are you sure you want to archive entry ${state.item.name}?"
-                        "\nAssociated expense entries won't removed and you can always Unarchive it afterwards.",
-                    cancelButtonTitle: "Cancel",
-                    confirmButtonTitle: "Archive",
-                    eventGenerator: ({onError, onSuccess}) => ArchiveCategory(
-                      onSuccess: onSuccess,
-                      onError: onError,
-                    ),
-                  ),
+                  Builder(builder: (context) {
+                    final isMiscCat = context
+                            .read<PreferencesBloc>()
+                            .preferencesLoadSuccessState()
+                            .preferences
+                            .miscCategory ==
+                        state.item.id;
+
+                    return _dialogActionButton(
+                      context,
+                      state,
+                      butonTitle: "Delete",
+                      dialogTitle: "Confirm deletion",
+                      dialogContent: isMiscCat
+                          ? "Category ${state.item.name} is selected as the default miscallenous category. "
+                              "Please choose another one from the setting screen before deleting it."
+                          : "Are you sure you want to move Category ${state.item.name} to the trash?"
+                              "\nAssociated expense entries won't removed and you can always recover it afterwards.",
+                      cancelButtonTitle: "Cancel",
+                      confirmButtonTitle: "Delete",
+                      eventGenerator: ({onError, onSuccess}) => ArchiveCategory(
+                        onSuccess: onSuccess,
+                        onError: onError,
+                      ),
+                      disabled: isMiscCat,
+                    );
+                  }),
                 ],
         ),
         body: Column(
           children: <Widget>[
-            Text(state.item.name),
-            Text("id: ${state.item.id}"),
-            Text("tags: ${state.item.tags}"),
-            Text("createdAt: ${state.item.createdAt}"),
-            Text("updatedAt: ${state.item.updatedAt}"),
+            ListTile(
+              title: Text(
+                state.item.name,
+                textScaleFactor: 2,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (state.item.tags.isNotEmpty)
+              ListTile(
+                leading: Text("Tags:"),
+                title:
+                    Text(state.item.tags.map((e) => "#$e").toList().join(" ")),
+                dense: true,
+              ),
+            ListTile(title: Text("Subcategories"), dense: true),
+            BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
+                builder: (context, catListState) =>
+                    catListState is CategoriesLoadSuccess
+                        ? Builder(builder: (context) {
+                            final ancestryGraph = <String, TreeNode<String>>{};
+                            void recursivelyAddChildren(List<String> children) {
+                              for (final id in children) {
+                                ancestryGraph[id] =
+                                    catListState.ancestryGraph[id]!;
+                              }
+                            }
+
+                            for (final node in catListState
+                                .ancestryGraph[state.id]!.children
+                                .map((e) => catListState.ancestryGraph[e]!)) {
+                              ancestryGraph[node.item] = TreeNode(
+                                node.item,
+                                children: node.children,
+                                parent: null,
+                              );
+                              recursivelyAddChildren(node.children);
+                            }
+
+                            return CategoryListView(
+                              ancestryGraph: ancestryGraph,
+                              items: catListState.items,
+                              markArchived: !state.item.isArchived,
+                              onSelect: (id) => Navigator.pushNamed(
+                                context,
+                                CategoryDetailsPage.routeName,
+                                arguments: id,
+                              ),
+                            );
+                          })
+                        : catListState is CategoriesLoading
+                            ? Center(
+                                child: CircularProgressIndicator(),
+                              )
+                            : throw Exception("Unhandled state: $catListState"))
+          ],
+        ),
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            FloatingActionButton.extended(
+              onPressed: () => Navigator.pushNamed(
+                  context, CategoryEditPage.routeName,
+                  arguments: CategoryEditNewArgs(parent: state.id)),
+              icon: Icon(Icons.add),
+              label: Text("Subcategory"),
+            ),
+            // ...defaultActionButtons(context),
           ],
         ),
       );
@@ -212,8 +324,9 @@ class CategoryDetailsPage extends StatelessWidget {
                 ),
               ),
             );
+          } else {
+            throw Exception("Unhandled state");
           }
-          throw Exception("Unhandled state");
         },
       );
 }

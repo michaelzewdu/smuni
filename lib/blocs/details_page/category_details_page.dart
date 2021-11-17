@@ -1,4 +1,5 @@
 import 'package:smuni/blocs/auth.dart';
+import 'package:smuni/blocs/preferences.dart';
 import 'package:smuni/blocs/sync.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
@@ -11,6 +12,8 @@ import 'details_page.dart';
 typedef CategoryDetailsPageEvent = DetailsPageEvent<String, Category>;
 typedef LoadCategory = LoadItem<String, Category>;
 typedef DeleteCategory = DeleteItem<String, Category>;
+
+class MiscCategoryArchivalForbidden extends OperationException {}
 
 class ArchiveCategory extends CategoryDetailsPageEvent with StatusAwareEvent {
   ArchiveCategory({
@@ -43,6 +46,7 @@ typedef LoadingCategory = LoadingItem<String, Category>;
 class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
     CreateCategoryInput, UpdateCategoryInput> {
   final SyncBloc syncBloc;
+  final PreferencesBloc prefsBloc;
   final ExpenseRepository expenseRepo;
   final BudgetRepository budgetRepo;
   final OfflineBudgetRepository offlineBudgetRepo;
@@ -59,6 +63,7 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
     this.expenseRepo,
     this.offlineExpenseRepo,
     this.syncBloc,
+    this.prefsBloc,
     String id,
   ) : super(repo, offlineRepo, authBloc, id) {
     on<ArchiveCategory>(
@@ -84,6 +89,10 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
     }
 
     if (current is CategoryLoadSuccess) {
+      final prefs = prefsBloc.preferencesLoadSuccessState();
+      if (prefs.preferences.miscCategory == current.id) {
+        throw MiscCategoryArchivalForbidden();
+      }
       try {
         final auth = authBloc.authSuccesState();
         await repo.removeItem(current.id, auth.username, auth.authToken, true);
@@ -98,27 +107,42 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
           // and report the sync error to whoever event added the event
           throw SyncException(ConnectionException(err));
         }
+      } on UnseenVersionsFoundError catch (_) {
+        throw UnseenVersionException();
       } catch (err) {
         if (err is SocketException || err is UnauthenticatedException) {
           // do it offline if not connected or authenticated
 
+          // assume prefernces are loaded
+          final prefs = prefsBloc.preferencesLoadSuccessState();
+          final miscCategoryId = prefs.preferences.miscCategory;
+
           for (final expense in await expenseRepo
               .getItemsInRange(DateRange(), ofCategories: {current.id})) {
-            await offlineExpenseRepo.removeItemOffline(expense.id);
+            await offlineExpenseRepo.updateItemOffline(
+              expense.id,
+              UpdateExpenseInput(
+                lastSeenVersion: expense.version,
+                budgetAndCategoryId: Pair(
+                  expense.budgetId,
+                  miscCategoryId,
+                ),
+              ),
+            );
           }
           for (final budget
               in (await offlineBudgetRepo.getItemsOffline()).values) {
             if (budget.categoryAllocations.containsKey(current.id)) {
+              final categoryAllocations = {...budget.categoryAllocations};
+              categoryAllocations[miscCategoryId] =
+                  (categoryAllocations[miscCategoryId] ?? 0) +
+                      categoryAllocations[current.id]!;
+              categoryAllocations.remove(current.id);
               await offlineBudgetRepo.updateItemOffline(
                   budget.id,
                   UpdateBudgetInput(
                     lastSeenVersion: budget.version,
-                    categoryAllocations: {
-                      for (final allocation
-                          in budget.categoryAllocations.entries)
-                        if (allocation.key != current.id)
-                          allocation.key: allocation.value
-                    },
+                    categoryAllocations: categoryAllocations,
                   ));
             }
           }
@@ -158,6 +182,10 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
       totalWait += const Duration(milliseconds: 500);
     }
     if (current is CategoryLoadSuccess) {
+      final prefs = prefsBloc.preferencesLoadSuccessState();
+      if (prefs.preferences.miscCategory == current.id) {
+        throw MiscCategoryArchivalForbidden();
+      }
       final update = UpdateCategoryInput(
         lastSeenVersion: current.item.version,
         archive: true,
@@ -171,6 +199,8 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
           auth.authToken,
         );
         yield CategoryLoadSuccess(current.id, item);
+      } on UnseenVersionsFoundError catch (_) {
+        throw UnseenVersionException();
       } catch (err) {
         // do it offline if not connected or authenticated
         if (err is SocketException || err is UnauthenticatedException) {
@@ -210,6 +240,8 @@ class CategoryDetailsPageBloc extends DetailsPageBloc<String, Category,
           auth.authToken,
         );
         yield CategoryLoadSuccess(current.id, item);
+      } on UnseenVersionsFoundError catch (_) {
+        throw UnseenVersionException();
       } catch (err) {
         if (err is SocketException || err is UnauthenticatedException) {
           // do it offline if not connected or authenticated

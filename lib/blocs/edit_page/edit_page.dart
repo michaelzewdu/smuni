@@ -1,6 +1,7 @@
 export 'budget_edit_page.dart';
 export 'category_edit_page.dart';
 export 'expense_edit_page.dart';
+export 'income_edit_page.dart';
 
 import 'dart:async';
 
@@ -126,6 +127,10 @@ class EditPageBloc<Identifier, Item, CreateInput, UpdateInput> extends Bloc<
         auth.authToken,
       );
       yield EditSuccess(id: event.id, item: result);
+    } on UnseenVersionsFoundError catch (_) {
+      yield EditFailed<Identifier, Item, CreateInput, UpdateInput>(
+        UnseenVersionException(),
+      );
     } catch (err) {
       if (err is SocketException || err is UnauthenticatedException) {
         // do it offline if not connected or authenticated

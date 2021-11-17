@@ -7,36 +7,36 @@ import 'package:smuni_api_client/smuni_api_client.dart';
 
 import 'repositories.dart';
 
-class ApiExpenseRepository extends ApiRepository<String, Expense,
-    CreateExpenseInput, UpdateExpenseInput> {
-  final Cache<String, Expense> cache;
+class ApiIncomeRepository extends ApiRepository<String, Income,
+    CreateIncomeInput, UpdateIncomeInput> {
+  final Cache<String, Income> cache;
   final SmuniApiClient client;
   final StreamController<Set<String>> _changedItemsController =
       StreamController.broadcast();
 
-  ApiExpenseRepository(this.cache, this.client);
+  ApiIncomeRepository(this.cache, this.client);
 
   @override
   Stream<Set<String>> get changedItems => _changedItemsController.stream;
 
   @override
-  Future<Expense?> getItem(String id, String username, String authToken) async {
+  Future<Income?> getItem(String id, String username, String authToken) async {
     var item = await cache.getItem(id);
     if (item != null) return item;
     try {
-      item = await client.getExpense(id, username, authToken);
+      item = await client.getIncome(id, username, authToken);
       await cache.setItem(id, item);
       return item;
     } on EndpointError catch (e) {
-      if (e.type == "ExpenseNotFound") return null;
+      if (e.type == "IncomeNotFound") return null;
       rethrow;
     }
   }
 
   @override
-  Future<Expense> updateItem(String id, UpdateExpenseInput input,
-      String username, String authToken) async {
-    final item = await client.updateExpense(id, username, authToken, input);
+  Future<Income> updateItem(String id, UpdateIncomeInput input, String username,
+      String authToken) async {
+    final item = await client.updateIncome(id, username, authToken, input);
 
     await cache.setItem(id, item);
     _changedItemsController.add({id});
@@ -44,12 +44,12 @@ class ApiExpenseRepository extends ApiRepository<String, Expense,
   }
 
   @override
-  Future<Expense> createItem(
-    CreateExpenseInput input,
+  Future<Income> createItem(
+    CreateIncomeInput input,
     String username,
     String authToken,
   ) async {
-    final item = await client.createExpense(username, authToken, input);
+    final item = await client.createIncome(username, authToken, input);
 
     await cache.setItem(item.id, item);
     _changedItemsController.add({item.id});
@@ -57,7 +57,7 @@ class ApiExpenseRepository extends ApiRepository<String, Expense,
   }
 
   @override
-  Future<Map<String, Expense>> getItems() => cache.getItems();
+  Future<Map<String, Income>> getItems() => cache.getItems();
 
   @override
   Future<void> removeItem(
@@ -66,21 +66,21 @@ class ApiExpenseRepository extends ApiRepository<String, Expense,
     String authToken, [
     bool bypassChangedItemNotification = false,
   ]) async {
-    await client.deleteExpense(id, username, authToken);
+    await client.deleteIncome(id, username, authToken);
     await cache.removeItem(id);
     if (!bypassChangedItemNotification) _changedItemsController.add({id});
   }
 
   @override
-  UpdateExpenseInput updateFromDiff(Expense update, Expense old) =>
-      UpdateExpenseInput.fromDiff(update: update, old: old);
+  UpdateIncomeInput updateFromDiff(Income update, Income old) =>
+      UpdateIncomeInput.fromDiff(update: update, old: old);
 
   @override
-  CreateExpenseInput createFromItem(Expense item) =>
-      CreateExpenseInput.fromItem(item);
+  CreateIncomeInput createFromItem(Income item) =>
+      CreateIncomeInput.fromItem(item);
 
   @override
-  Future<void> refreshCache(Map<String, Expense> items) async {
+  Future<void> refreshCache(Map<String, Income> items) async {
     await cache.clear();
     Set<String> ids = {};
     for (final p in items.entries) {
@@ -91,20 +91,20 @@ class ApiExpenseRepository extends ApiRepository<String, Expense,
   }
 }
 
-class OfflineExpenseRepository extends OfflineRepository<String, Expense,
-    CreateExpenseInput, UpdateExpenseInput> {
-  OfflineExpenseRepository(
-    Cache<String, Expense> cache,
-    Cache<String, Expense> serverVersionCache,
+class OfflineIncomeRepository extends OfflineRepository<String, Income,
+    CreateIncomeInput, UpdateIncomeInput> {
+  OfflineIncomeRepository(
+    Cache<String, Income> cache,
+    Cache<String, Income> serverVersionCache,
     RemovedItemsCache<String> removedItemsCache,
   ) : super(cache, serverVersionCache, removedItemsCache);
 
   @override
-  Pair<String, Expense> itemFromCreateInput(CreateExpenseInput input) {
+  Pair<String, Income> itemFromCreateInput(CreateIncomeInput input) {
     final id = "offlineId-${DateTime.now().millisecondsSinceEpoch}";
     return Pair(
       id,
-      Expense(
+      Income(
         id: id,
         version: -1,
         isServerVersion: false,
@@ -112,40 +112,38 @@ class OfflineExpenseRepository extends OfflineRepository<String, Expense,
         updatedAt: DateTime.now(),
         name: input.name,
         timestamp: input.timestamp ?? DateTime.now(),
-        categoryId: input.categoryId,
-        budgetId: input.budgetId,
+        frequency: input.frequency,
         amount: input.amount,
       ),
     );
   }
 
   @override
-  Expense itemFromUpdateInput(Expense item, UpdateExpenseInput input) =>
-      Expense.from(
+  Income itemFromUpdateInput(Income item, UpdateIncomeInput input) =>
+      Income.from(
         item,
         name: input.name,
         isServerVersion: false,
         timestamp: input.timestamp,
         amount: input.amount,
-        budgetId: input.budgetAndCategoryId?.a,
-        categoryId: input.budgetAndCategoryId?.b,
+        frequency: input.frequency,
       );
 
   @override
-  Future<List<Pair<String, CreateExpenseInput>>> getPendingCreates() async => [
+  Future<List<Pair<String, CreateIncomeInput>>> getPendingCreates() async => [
         for (final item
             in (await getItemsOffline()).values.where((e) => e.version == -1))
-          Pair(item.id, CreateExpenseInput.fromItem(item))
+          Pair(item.id, CreateIncomeInput.fromItem(item))
       ];
   @override
-  Future<Map<String, UpdateExpenseInput>> getPendingUpdates() async => {
+  Future<Map<String, UpdateIncomeInput>> getPendingUpdates() async => {
         for (final item in (await getItemsOffline())
             .values
             .where((e) => !e.isServerVersion && e.version > -1))
-          item.id: UpdateExpenseInput.fromDiff(
+          item.id: UpdateIncomeInput.fromDiff(
               update: item, old: (await serverVersionCache.getItem(item.id))!)
       };
 
   @override
-  bool isServerVersion(Expense item) => item.isServerVersion;
+  bool isServerVersion(Income item) => item.isServerVersion;
 }

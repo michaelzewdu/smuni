@@ -2,27 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/constants.dart';
+import 'package:smuni/models/models.dart';
+import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
+import 'package:smuni/widgets/widgets.dart';
 
 import '../constants.dart';
 
-class MenusPage extends StatefulWidget {
-  const MenusPage({Key? key}) : super(key: key);
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({Key? key}) : super(key: key);
 
   static const String routeName = '/settings';
 
   static Route route() {
     return MaterialPageRoute(
       settings: const RouteSettings(name: routeName),
-      builder: (context) => MenusPage(),
+      builder: (context) => MultiBlocProvider(providers: [
+        BlocProvider(
+          create: (context) => BudgetListPageBloc(
+            context.read<BudgetRepository>(),
+            context.read<OfflineBudgetRepository>(),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => CategoryListPageBloc(
+              context.read<CategoryRepository>(),
+              context.read<OfflineCategoryRepository>(),
+              LoadCategoriesFilter(includeActive: true, includeArchvied: true)),
+        )
+      ], child: SettingsPage()),
     );
   }
 
   @override
-  State<MenusPage> createState() => _MenusPageState();
+  State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _MenusPageState extends State<MenusPage> {
+class _SettingsPageState extends State<SettingsPage> {
   var _awaitingOp = false;
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -37,139 +53,144 @@ class _MenusPageState extends State<MenusPage> {
             ),
           ),
         ),
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          // crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: DrawerButtons(
-                buttonName: 'About Us',
-                drawerButtonAction: () => showAboutDialog(
-                  context: context,
-                  applicationName: "Smuni",
-                  applicationVersion: "0.0.1-alpha",
-                  children: [Text("TODO")],
-                ),
-              ),
-            ),
-            !_awaitingOp
-                ? ElevatedButton(
-                    onPressed: () {
-                      setState(() => _awaitingOp = true);
-                      context.read<SyncBloc>().add(TrySync(
-                            onSuccess: () {
-                              setState(() => _awaitingOp = false);
-                            },
-                            onError: (err) {
-                              setState(() => _awaitingOp = false);
+        body: BlocBuilder<PreferencesBloc, PreferencesBlocState>(
+            builder: (context, prefState) => prefState is PreferencesLoadSuccess
+                ? Column(
+                    // crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      BlocBuilder<BudgetListPageBloc, BudgetListPageBlocState>(
+                        builder: (context, state) => state is BudgetsLoadSuccess
+                            ? Builder(builder: (context) {
+                                final mainBudgetId = context
+                                    .read<PreferencesBloc>()
+                                    .preferencesLoadSuccessState()
+                                    .preferences
+                                    .mainBudget;
+                                return ListTile(
+                                  leading: Text("Main budget"),
+                                  title: mainBudgetId != null
+                                      ? Text(state.items[mainBudgetId]!.name)
+                                      : Text("Not set."),
+                                  trailing: TextButton(
+                                    onPressed: () =>
+                                        showMainBudgetSelectorModal(
+                                            context,
+                                            (newMainBudget,
+                                                    {onSuccess, onError}) =>
+                                                context
+                                                    .read<PreferencesBloc>()
+                                                    .add(
+                                                      UpdatePreferences(
+                                                        Preferences.from(
+                                                          prefState.preferences,
+                                                          mainBudget:
+                                                              newMainBudget,
+                                                        ),
+                                                        onSuccess: () {
+                                                          onSuccess?.call();
+                                                          setState(() {});
+                                                        },
+                                                        onError: onError,
+                                                      ),
+                                                    ),
+                                            initalSelection: mainBudgetId),
+                                    child: Text("Change"),
+                                  ),
+                                );
+                              })
+                            : state is BudgetsLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator())
+                                : throw Exception("Unhandled state: $state"),
+                      ),
+                      BlocBuilder<CategoryListPageBloc,
+                          CategoryListPageBlocState>(
+                        builder: (context, state) => state
+                                is CategoriesLoadSuccess
+                            ? Builder(builder: (context) {
+                                final miscCategoryId = context
+                                    .read<PreferencesBloc>()
+                                    .preferencesLoadSuccessState()
+                                    .preferences
+                                    .miscCategory;
+                                return ListTile(
+                                  leading: Text("Misc category"),
+                                  title:
+                                      Text(state.items[miscCategoryId]!.name),
+                                  trailing: TextButton(
+                                    onPressed: () =>
+                                        showMiscCategorySelectorModal(
+                                      context,
+                                      (newMiscCategory, {onSuccess, onError}) =>
+                                          context.read<PreferencesBloc>().add(
+                                                UpdatePreferences(
+                                                  Preferences.from(
+                                                    prefState.preferences,
+                                                    miscCategory:
+                                                        newMiscCategory,
+                                                  ),
+                                                  onSuccess: () {
+                                                    onSuccess?.call();
+                                                    setState(() {});
+                                                  },
+                                                  onError: onError,
+                                                ),
+                                              ),
+                                      initalSelection: miscCategoryId,
+                                    ),
+                                    child: Text("Change"),
+                                  ),
+                                );
+                              })
+                            : state is CategoriesLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator())
+                                : throw Exception("Unhandled state: $state"),
+                      ),
+                      ListTile(
+                        title: Text("Kamasio"),
+                        trailing: Text("0.0.1-alpha"),
+                        onTap: () => showAboutDialog(
+                          context: context,
+                          applicationName: "Smuni",
+                          applicationVersion: "0.0.1-alpha",
+                          children: [Text("TODO")],
+                        ),
+                      ),
+                      !_awaitingOp
+                          ? ElevatedButton(
+                              onPressed: () {
+                                setState(() => _awaitingOp = true);
+                                context.read<SyncBloc>().add(TrySync(
+                                      onSuccess: () {
+                                        setState(() => _awaitingOp = false);
+                                      },
+                                      onError: (err) {
+                                        setState(() => _awaitingOp = false);
 
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: err is ConnectionException
-                                      ? Text('Connection Failed')
-                                      : err is ConnectionException
-                                          ? Text('Not Signed In')
-                                          : Text('Unknown Error Occured'),
-                                  behavior: SnackBarBehavior.floating,
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                            },
-                          ));
-                    },
-                    child: const Text("Sync"),
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: err is ConnectionException
+                                                ? Text('Connection Failed')
+                                                : err is ConnectionException
+                                                    ? Text('Not Signed In')
+                                                    : Text(
+                                                        'Unknown Error Occured'),
+                                            behavior: SnackBarBehavior.floating,
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      },
+                                    ));
+                              },
+                              child: const Text("Sync"),
+                            )
+                          : const CircularProgressIndicator(),
+                    ],
                   )
-                : const CircularProgressIndicator(),
-            /* !_awaitingOp
-                ? ElevatedButton(
-                    onPressed: () async {
-                      setState(() => _awaitingOp = true);
-                      final s = context.read<CacheSynchronizer>();
-                      final catA = await s.offlineCategoryRepo
-                          .createItemOffline(CreateCategoryInput(
-                        name: "A",
-                      ));
-                      final catB = await s.offlineCategoryRepo
-                          .createItemOffline(CreateCategoryInput(
-                              name: "B", parentId: catA.parentId));
-                      final catC = await s.offlineCategoryRepo
-                          .createItemOffline(CreateCategoryInput(
-                              name: "C", parentId: catB.parentId));
-
-                      final catD = await s.offlineCategoryRepo
-                          .createItemOffline(CreateCategoryInput(
-                        name: "C",
-                      ));
-
-                      final budA = await s.offlineBudgetRepo
-                          .createItemOffline(CreateBudgetInput(
-                        name: "A",
-                        startTime: DateRange.monthRange(DateTime.now()).start,
-                        endTime: DateRange.monthRange(DateTime.now()).end,
-                        frequency: OneTime(),
-                        allocatedAmount:
-                            MonetaryAmount(amount: 100 * 100, currency: "ETB"),
-                        categoryAllocations: {
-                          catA.id: 50 * 100,
-                          catD.id: 50 * 100,
-                        },
-                      ));
-
-                      final expZ = await s.offlineExpenseRepo
-                          .createItemOffline(CreateExpenseInput(
-                        name: "Z",
-                        amount:
-                            MonetaryAmount(amount: 50 * 100, currency: "ETB"),
-                        budgetId: budA.id,
-                        categoryId: catA.id,
-                      ));
-                      final expX = await s.offlineExpenseRepo
-                          .createItemOffline(CreateExpenseInput(
-                        name: "X",
-                        amount:
-                            MonetaryAmount(amount: 40 * 100, currency: "ETB"),
-                        budgetId: budA.id,
-                        categoryId: catD.id,
-                      ));
-                      await s.offlineCategoryRepo.updateItemOffline(
-                        catA.id,
-                        UpdateCategoryInput(
-                            lastSeenVersion: catA.version, archive: true),
-                      );
-                      setState(() => _awaitingOp = false);
-                    },
-                    child: const Text("Add Dummy Data"),
-                  )
-                : const CircularProgressIndicator(), */
-          ],
-        ),
+                : prefState is PreferencesLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : throw Exception("unexpected state")),
       );
-}
-
-class DrawerButtons extends StatelessWidget {
-  final String buttonName;
-  final Function() drawerButtonAction;
-  const DrawerButtons(
-      {Key? key, required this.buttonName, required this.drawerButtonAction})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-        onPressed: drawerButtonAction,
-        child: Text(
-          buttonName,
-          style: TextStyle(fontSize: 20),
-        ),
-        style: ElevatedButton.styleFrom(
-            fixedSize: Size(250, 60),
-            primary: Colors.transparent,
-            shadowColor: Colors.transparent,
-            onPrimary: semuni500,
-            // padding: EdgeInsets.symmetric(vertical: 16, horizontal: 72),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            side: BorderSide(color: semuni500, width: 2)));
-  }
 }

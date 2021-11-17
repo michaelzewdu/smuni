@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 
+import 'package:smuni/providers/cache/cache.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
@@ -63,8 +64,10 @@ class AuthSuccess extends AuthBlocState {
 class AuthBloc extends Bloc<AuthBlocEvent, AuthBlocState> {
   final AuthRepository repo;
   final CacheSynchronizer synchronizer;
+  final PreferencesCache prefsCache;
 
-  AuthBloc(this.repo, this.synchronizer) : super(Unauthenticated()) {
+  AuthBloc(this.repo, this.synchronizer, this.prefsCache)
+      : super(Unauthenticated()) {
     on<SignOut>(
       streamToEmitterAdapter(_handleLogout),
     );
@@ -99,6 +102,13 @@ class AuthBloc extends Bloc<AuthBlocEvent, AuthBlocState> {
         default:
           throw Exception("Unexpected enum: ${event.method}");
       }
+      if (response.user.mainBudget != null) {
+        await prefsCache.setMainBudget(response.user.mainBudget!);
+      } else {
+        await prefsCache.clearMainBudget();
+      }
+      await prefsCache.setMiscCategory(response.user.miscCategory);
+      await prefsCache.setSyncPending(false);
       await synchronizer.refreshFromUser(response.user);
       yield AuthSuccess(
           authToken: response.accessToken, username: response.user.username);

@@ -90,19 +90,16 @@ class _BudgetSelectorState extends State<BudgetSelector> {
               textScaleFactor: 2,
             ),
             SizedBox(height: 50),
-            // Text("id: ${item.id}"),
-            //Text("createdAt: ${item.createdAt}"),
-            //Text("updatedAt: ${item.updatedAt}"),
             Text(
               "AllocatedAmount: ETB ${item.allocatedAmount.amount / 100}",
               textScaleFactor: 1.2,
             ),
             Text(
-              "Started On: ${item.startTime.day} ${monthNames[item.startTime.month]} ${item.startTime.year}",
+              "Started On: ${humanReadableDateTime(item.startTime)}",
               textScaleFactor: 1.2,
             ),
             Text(
-              "End Date: ${item.endTime.day} ${monthNames[item.endTime.month]} ${item.endTime.year}",
+              "End Date: ${humanReadableDateTime(item.endTime)}",
               textScaleFactor: 1.2,
             ),
             item.frequency.kind == FrequencyKind.recurring

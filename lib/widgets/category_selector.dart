@@ -1,10 +1,14 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smuni/blocs/blocs.dart';
-
-import 'category_list_view.dart';
+import 'package:smuni/models/models.dart';
+import 'package:smuni/repositories/repositories.dart';
+import 'package:smuni/utilities.dart';
+import 'package:smuni/widgets/widgets.dart';
 
 class CategoryFormSelector extends FormField<String> {
   CategoryFormSelector({
@@ -83,14 +87,21 @@ class _CategorySelectorState extends State<CategorySelector> {
     if (_selectedCategoryId != null) {
       final item = itemsState.items[_selectedCategoryId];
       if (item != null) {
-        return Column(
-          children: [
-            Text("Name: ${item.name}"),
-            Text("id: ${item.id}"),
-            Text("createdAt: ${item.createdAt}"),
-            Text("updatedAt: ${item.updatedAt}"),
-            Text("parentId: ${item.parentId}"),
-          ],
+        final parent =
+            item.parentId != null ? itemsState.items[item.parentId] : null;
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Align(
+                child: Text(item.name, textScaleFactor: 1.7),
+                alignment: Alignment.center,
+              ),
+              if (item.tags.isNotEmpty)
+                Text(item.tags.map((e) => "#$e").toList().join(" ")),
+              if (parent != null) Text("Parent: ${parent.name}"),
+            ],
+          ),
         );
       } else {
         return Center(child: const Text("Error: selected item not found."));
@@ -102,34 +113,118 @@ class _CategorySelectorState extends State<CategorySelector> {
 
   Widget _selecting(
     CategoriesLoadSuccess itemsState,
-  ) =>
-      Expanded(
-        child: CategoryListView(
-          state: itemsState,
-          disabledItems: widget.disabledItems,
-          onSelect: (id) => _selectCategory(id),
-        ),
-      );
+  ) {
+    // ignore: prefer_collection_literals
+    Set<String> rootNodes = LinkedHashSet();
+
+    // FIXME: move this calculation
+    final ancestryTree = CategoryRepositoryExt.calcAncestryTree(
+      itemsState.items.keys.toSet().difference(widget.disabledItems),
+      itemsState.items,
+    );
+    for (final node in ancestryTree.values.where((e) => e.parent == null)) {
+      rootNodes.add(node.item);
+    }
+
+    return rootNodes.isNotEmpty
+        ? ListView.builder(
+            shrinkWrap: true,
+            itemBuilder: (BuildContext context, int index) {
+              final id = rootNodes.elementAt(index);
+              return _catTree(
+                context,
+                itemsState.items,
+                ancestryTree,
+                id,
+              );
+            },
+            itemCount: rootNodes.length,
+          )
+        : itemsState.items.isEmpty
+            ? Center(child: const Text("No categories."))
+            : throw Exception("error: parents are missing");
+  }
+
+  Widget _catTree(
+    BuildContext context,
+    Map<String, Category> items,
+    Map<String, TreeNode<String>> nodes,
+    String id,
+  ) {
+    final item = items[id];
+    final itemNode = nodes[id];
+    if (item == null) return Text("Error: Category under id $id not found");
+    if (itemNode == null) {
+      return Text("Error: Category under id $id not found in ancestryGraph");
+    }
+
+    return Column(
+      children: [
+        !widget.disabledItems.contains(id)
+            ? ListTile(
+                selected: _selectedCategoryId == id,
+                title: Text(item.name),
+                subtitle: item.tags.isNotEmpty || item.isArchived
+                    ? Row(children: [
+                        if (item.isArchived)
+                          Text("In Trash", style: TextStyle(color: Colors.red)),
+                        if (item.isArchived && item.tags.isNotEmpty)
+                          const DotSeparator(),
+                        if (item.tags.isNotEmpty)
+                          Text(item.tags.map((e) => "#$e").toList().join(" ")),
+                      ])
+                    : null,
+                onTap: () => _selectCategory(id),
+              )
+            : ListTile(
+                dense: true,
+                title: Text(item.name),
+              ),
+        if (itemNode.children.isNotEmpty)
+          Padding(
+            padding:
+                EdgeInsets.only(left: MediaQuery.of(context).size.width * 0.05),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ...itemNode.children.map(
+                  (e) => _catTree(
+                    context,
+                    items,
+                    nodes,
+                    e,
+                  ),
+                ),
+              ],
+            ),
+          )
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) => Column(
         children: [
           // the top bar
-          Row(children: [
-            Expanded(
-                child: widget.caption ??
-                    const Text(
-                      "Category",
-                    )),
-            TextButton(
-              child: _isSelecting ? const Text("Cancel") : const Text("Select"),
+          ListTile(
+            dense: true,
+            title: widget.caption ??
+                const Text(
+                  "Category",
+                ),
+            trailing: TextButton(
+              child: _isSelecting
+                  ? const Text("Cancel")
+                  : _selectedCategoryId != null
+                      ? const Text("Change")
+                      : const Text("Select"),
               onPressed: () {
                 setState(() {
                   _isSelecting = !_isSelecting;
                 });
               },
-            )
-          ]),
+            ),
+          ),
           BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
               builder: (context, itemsState) {
             if (itemsState is CategoriesLoadSuccess) {

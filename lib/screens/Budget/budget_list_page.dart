@@ -60,7 +60,7 @@ class _BudgetListPageState extends State<BudgetListPage> {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: widget.showingArchivedOnly
-              ? const Text("Archived Budgets")
+              ? const Text("Budget Trash")
               : const Text("Budgets"),
           actions: [
             if (!widget.showingArchivedOnly)
@@ -75,7 +75,7 @@ class _BudgetListPageState extends State<BudgetListPage> {
                       <PopupMenuEntry<BudgetActionsMenuItem>>[
                         const PopupMenuItem(
                           value: BudgetActionsMenuItem.archived,
-                          child: Text('Archived budgets'),
+                          child: Text('Trash'),
                         )
                       ])
           ],
@@ -85,13 +85,13 @@ class _BudgetListPageState extends State<BudgetListPage> {
             if (state is BudgetsLoadSuccess) {
               return Column(
                 children: [
-                  if (!widget.showingArchivedOnly)
+                  /* if (!widget.showingArchivedOnly)
                     ListTile(
-                      title: Text("Archived budgets"),
+                      title: Text("Trash"),
                       dense: true,
                       onTap: () => Navigator.pushNamed(
                           context, BudgetListPage.routeNameArchivedOnly),
-                    ),
+                    ), */
                   Expanded(
                     child: BudgetListView(
                       state: state,
@@ -108,11 +108,18 @@ class _BudgetListPageState extends State<BudgetListPage> {
             return Center(child: CircularProgressIndicator.adaptive());
           },
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () =>
-              Navigator.pushNamed(context, BudgetEditPage.routeName),
-          child: Icon(Icons.add),
-          tooltip: "Add",
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            FloatingActionButton.extended(
+              onPressed: () =>
+                  Navigator.pushNamed(context, BudgetEditPage.routeName),
+              icon: Icon(Icons.add),
+              label: Text("Budget"),
+            ),
+            ...defaultActionButtons(context),
+          ],
         ),
       );
 }

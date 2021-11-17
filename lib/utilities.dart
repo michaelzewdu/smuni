@@ -1,15 +1,10 @@
+export 'package:smuni_api_client/smuni_api_client.dart' show Pair;
+
 import 'dart:async';
 
 import 'package:flutter/material.dart' as flutter;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
-
-class Pair<A, B> {
-  final A a;
-  final B b;
-
-  const Pair(this.a, this.b);
-}
 
 class EnemeratedIterator<T> extends Iterator<Pair<int, T>> {
   int currentCount = -1;
@@ -109,7 +104,8 @@ class DateRange {
       flutter.DateTimeRange(start: start, end: end);
 
   @override
-  String toString() => "DateRange{ startTime: $startTime, endTime: $endTime }";
+  String toString() =>
+      "${runtimeType.toString()} { startTime: $start, endTime: $end }";
 
   @override
   bool operator ==(other) =>
@@ -131,13 +127,50 @@ class DateRangeFilter {
   const DateRangeFilter(this.name, this.range, this.level);
   @override
   String toString() {
-    return "DateRangeFilter { name: $name, range: $range, level: $level }";
+    return "${runtimeType.toString()} { name: $name, range: $range, level: $level }";
   }
+}
+
+String humanReadableDateTime(DateTime time) =>
+    "${monthNames[time.month]} ${time.day} ${time.year}";
+String humanReadableDayRelationName(
+  DateTime time,
+  DateTime relativeTo,
+) {
+  final diff = time.difference(relativeTo);
+  if (diff.inDays.abs() > 7) {
+    return humanReadableDateTime(time);
+  }
+
+  if (diff.inDays < -2) return '${diff.inDays.abs()} days ago';
+  if (diff.inDays > 2) return '${diff.inDays.abs()} days later';
+  if (diff.inDays < -1 && relativeTo.day - 1 == time.day) return 'Yesterday';
+  if (diff.inDays > 1 && relativeTo.day + 1 == time.day) return 'Tomorrow';
+  return 'Today';
+}
+
+String humanReadableTimeRelationName(
+  DateTime time,
+  DateTime relativeTo,
+) {
+  final diff = time.difference(relativeTo);
+  if (diff.inDays.abs() > 7) {
+    return humanReadableDateTime(time);
+  }
+  if (diff.inDays < -2) return '${diff.inDays.abs()} days ago';
+  if (diff.inDays > 2) return '${diff.inDays.abs()} days later';
+  if (diff.inDays < -1 && relativeTo.day - 1 == time.day) return 'Yesterday';
+  if (diff.inDays > 1 && relativeTo.day + 1 == time.day) return 'Tomorrow';
+  if (diff.inHours > -1) return '${diff.inHours.abs()} hours ago';
+  if (diff.inHours < 1) return '${diff.inHours.abs()} hours later';
+  if (diff.inMinutes > -1) return '${diff.inMinutes.abs()} minutes ago';
+  if (diff.inMinutes < 1) return '${diff.inMinutes.abs()} minutes later';
+  return 'Now';
 }
 
 // TODO: i10n
 const List<String> monthNames = [
-  "IMPOSSIBLE",
+  "BAD_MONTH",
   "Jan",
   "Feb",
   "Mar",
@@ -190,6 +223,57 @@ Map<DateRange, DateRangeFilter> generateDateRangesFilters(
   return filters;
 }
 
+DateRangeFilter currentBudgetCycle(
+  Recurring freq,
+  DateTime startTime,
+  DateTime endTime,
+  DateTime now,
+) {
+  final recurrenceSpan = Duration(seconds: freq.recurringIntervalSecs);
+  final durationSinceInit = DateTime.now().difference(startTime);
+  final numberOfPastCycles =
+      (durationSinceInit.inMilliseconds / recurrenceSpan.inMilliseconds)
+          .truncate();
+  final start = startTime.add(Duration(
+    seconds: numberOfPastCycles * freq.recurringIntervalSecs,
+  ));
+  final span = endTime.difference(startTime);
+  return DateRangeFilter(
+    "Current Cycle",
+    DateRange.usingDates(start: start, end: start.add(span)),
+    FilterLevel.custom,
+  );
+}
+
+List<DateRangeFilter> pastCycleDateRanges(
+  Recurring frequency,
+  DateTime startTime,
+  DateTime endTime,
+  DateTime now,
+) {
+  final span = endTime.difference(startTime);
+  final recurrenceSpan = Duration(seconds: frequency.recurringIntervalSecs);
+  var cycleNo = 1;
+  var start = startTime;
+  final cycleRanges = <DateRangeFilter>[];
+  do {
+    cycleRanges.add(
+      DateRangeFilter(
+          "Cycle $cycleNo",
+          DateRange.usingDates(start: start, end: start.add(span)),
+          FilterLevel.custom),
+    );
+    start = start.add(recurrenceSpan);
+    cycleNo += 1;
+  } while (start.isBefore(now));
+  cycleRanges[cycleRanges.length - 1] = DateRangeFilter(
+    "Current Cycle",
+    cycleRanges.last.range,
+    FilterLevel.custom,
+  );
+  return cycleRanges.reversed.toList();
+}
+
 class TreeNode<T> {
   final TreeNode<T>? parent;
   final T item;
@@ -213,6 +297,8 @@ abstract class OperationException implements Exception {}
 class TimeoutException implements OperationException {}
 
 class UnauthenticatedException implements OperationException {}
+
+class UnseenVersionException implements OperationException {}
 
 class SyncException {
   final OperationException inner;

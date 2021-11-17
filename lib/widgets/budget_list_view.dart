@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:smuni/blocs/budget_list_page.dart';
+
+import 'package:smuni/blocs/blocs.dart';
+import 'package:smuni/models/models.dart';
 
 class BudgetListView extends StatelessWidget {
   final BudgetsLoadSuccess state;
@@ -19,19 +23,28 @@ class BudgetListView extends StatelessWidget {
             shrinkWrap: true,
             itemBuilder: (context, index) {
               final item = items[keys.elementAt(index)]!;
-              return ListTile(
-                title: Text(
-                  item.name,
-                  textScaleFactor: 1.3,
-                ),
-                trailing: Text(
-                  "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
-                  textScaleFactor: 1.3,
-                ),
-                onTap: () => onSelect?.call(item.id),
-              );
+              return listTile(context, item,
+                  onTap: () => onSelect?.call(item.id));
             },
           )
         : const Center(child: Text("No budgets."));
   }
+
+  static Widget listTile(
+    BuildContext context,
+    Budget item, {
+    FutureOr<void> Function()? onTap,
+  }) =>
+      ListTile(
+        dense: onTap == null,
+        title: Text(
+          item.name,
+          textScaleFactor: 1.3,
+        ),
+        trailing: Text(
+          "${item.allocatedAmount.currency} ${item.allocatedAmount.amount / 100}",
+          textScaleFactor: 1.3,
+        ),
+        onTap: onTap,
+      );
 }

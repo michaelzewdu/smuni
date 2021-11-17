@@ -8,6 +8,12 @@ import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/widgets.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
+class CategoryEditNewArgs {
+  final String? parent;
+
+  const CategoryEditNewArgs({this.parent});
+}
+
 class CategoryEditPage extends StatefulWidget {
   static const String routeName = "categoryEdit";
 
@@ -22,17 +28,27 @@ class CategoryEditPage extends StatefulWidget {
 
   static Route route(Category item) => MaterialPageRoute(
         settings: const RouteSettings(name: routeName),
-        builder: (context) => BlocProvider(
-          create: (context) => CategoryEditPageBloc(
-            context.read<CategoryRepository>(),
-            context.read<OfflineCategoryRepository>(),
-            context.read<AuthBloc>(),
-          ),
+        builder: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => CategoryEditPageBloc(
+                context.read<CategoryRepository>(),
+                context.read<OfflineCategoryRepository>(),
+                context.read<AuthBloc>(),
+              ),
+            ),
+            BlocProvider(
+              create: (context) => CategoryListPageBloc(
+                context.read<CategoryRepository>(),
+                context.read<OfflineCategoryRepository>(),
+              ),
+            ),
+          ],
           child: CategoryEditPage(item: item, isCreating: false),
         ),
       );
 
-  static Route routeNew() => MaterialPageRoute(
+  static Route routeNew(CategoryEditNewArgs args) => MaterialPageRoute(
       settings: const RouteSettings(name: routeName),
       builder: (context) {
         final now = DateTime.now();
@@ -42,13 +58,24 @@ class CategoryEditPage extends StatefulWidget {
           updatedAt: now,
           name: "",
           tags: [],
+          parentId: args.parent,
         );
-        return BlocProvider(
-          create: (context) => CategoryEditPageBloc(
-            context.read<CategoryRepository>(),
-            context.read<OfflineCategoryRepository>(),
-            context.read<AuthBloc>(),
-          ),
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => CategoryEditPageBloc(
+                context.read<CategoryRepository>(),
+                context.read<OfflineCategoryRepository>(),
+                context.read<AuthBloc>(),
+              ),
+            ),
+            BlocProvider(
+              create: (context) => CategoryListPageBloc(
+                context.read<CategoryRepository>(),
+                context.read<OfflineCategoryRepository>(),
+              ),
+            ),
+          ],
           child: CategoryEditPage(item: item, isCreating: true),
         );
       });
@@ -59,11 +86,15 @@ class CategoryEditPage extends StatefulWidget {
 
 class _CategoryEditPageState extends State<CategoryEditPage> {
   final _formKey = GlobalKey<FormState>();
+  final _tagEditorKey = GlobalKey<FormFieldState<String>>();
+  final _tagEditorController = TextEditingController();
 
   late var _name = widget.item.name;
   late String? _parentId = widget.item.parentId;
-  late var _isSubcategory = widget.item.parentId != null;
+  late bool _isSubcategory = widget.isCreating || widget.item.parentId != null;
+  late final _tags = <String>{...widget.item.tags};
 
+  String? _nextNewTag;
   bool _awaitingSave = false;
 
   @override
@@ -79,9 +110,13 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
               SnackBar(
                 content: state.error is ConnectionException
                     ? Text('Connection Failed')
-                    : Text('Unknown Error Occured'),
+                    : state.error is UnseenVersionException
+                        ? Text(
+                            'Desync error: sync first',
+                          )
+                        : Text('Unknown Error Occured'),
                 behavior: SnackBarBehavior.floating,
-                duration: Duration(seconds: 1),
+                duration: Duration(seconds: 2),
               ),
             );
           } else {
@@ -92,10 +127,12 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
           appBar: AppBar(
             title: _awaitingSave
                 ? const Text("Loading...")
-                : Text("Editing category: ${widget.item.name}"),
+                : widget.item.name.isEmpty
+                    ? Text("New category")
+                    : FittedBox(child: Text(widget.item.name)),
             actions: !_awaitingSave
                 ? [
-                    ElevatedButton(
+                    TextButton(
                       child: const Text("Save"),
                       onPressed: () {
                         final form = _formKey.currentState;
@@ -106,7 +143,8 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                             context.read<CategoryEditPageBloc>().add(
                                   CreateCategory(CreateCategoryInput(
                                     name: _name,
-                                    parentId: _parentId,
+                                    parentId: _isSubcategory ? _parentId : null,
+                                    tags: _tags.toList(),
                                   )),
                                 );
                           } else {
@@ -118,7 +156,8 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                                           widget.item,
                                           name: _name,
                                           parentId:
-                                              !_isSubcategory ? "" : _parentId,
+                                              _isSubcategory ? _parentId : "",
+                                          tags: _tags.toList(),
                                         ),
                                         old: widget.item,
                                       )),
@@ -128,7 +167,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                         }
                       },
                     ),
-                    ElevatedButton(
+                    TextButton(
                       child: const Text("Cancel"),
                       onPressed: () => Navigator.pop(context, false),
                     ),
@@ -156,12 +195,65 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                       helperText: "Name",
                     ),
                   ),
-                  /*
-                  Text("createdAt: ${widget.item.createdAt}"),
-                  Text("updatedAt: ${widget.item.updatedAt}"),
-
-                   */
-                  // Text("category: ${state.unmodified.categoryId}"),
+                  Row(
+                    children: [
+                      Expanded(
+                        child:
+                            StatefulBuilder(builder: (context, setWidgetState) {
+                          return TextField(
+                            key: _tagEditorKey,
+                            controller: _tagEditorController,
+                            onChanged: (value) =>
+                                setWidgetState(() => _nextNewTag = value),
+                            decoration: InputDecoration(
+                              suffixIcon: Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: _nextNewTag != null &&
+                                        _nextNewTag!.isNotEmpty &&
+                                        !_tags.contains(_nextNewTag)
+                                    ? ElevatedButton(
+                                        onPressed: () {
+                                          setState(
+                                            () => _tags.add(_nextNewTag!
+                                                .trim()
+                                                .split(" ")
+                                                .join()),
+                                          );
+                                          _tagEditorController.clear();
+                                        },
+                                        child: const Text("New tag"),
+                                      )
+                                    : null,
+                              ),
+                              border: const OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(8)),
+                              ),
+                              hintText: "New Tag",
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    height: 50,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text("Tags"),
+                        ),
+                        ..._tags.map(
+                          (e) => Chip(
+                            label: Text("#$e"),
+                            onDeleted: () => setState(() => _tags.remove(e)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   CheckboxListTile(
                     value: _isSubcategory,
                     title: const Text("Is a Subcategory"),
@@ -169,29 +261,23 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                         setState(() => _isSubcategory = value!),
                   ),
                   if (_isSubcategory)
-                    BlocProvider(
-                      create: (context) => CategoryListPageBloc(
-                        context.read<CategoryRepository>(),
-                        context.read<OfflineCategoryRepository>(),
-                      ),
-                      child: Expanded(
-                        child: CategoryFormSelector(
-                          isSelecting: _parentId == null,
-                          caption: Text("Parent category"),
-                          disabledItems:
-                              !widget.isCreating ? {widget.item.id} : null,
-                          initialValue: _parentId == null ? null : _parentId!,
-                          onChanged: (value) {
-                            setState(() {
-                              _parentId = value!;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null) {
-                              return "Parent category not selected";
-                            }
-                          },
-                        ),
+                    Expanded(
+                      child: CategoryFormSelector(
+                        isSelecting: _parentId == null,
+                        caption: Text("Parent category"),
+                        disabledItems:
+                            !widget.isCreating ? {widget.item.id} : null,
+                        initialValue: _parentId == null ? null : _parentId!,
+                        onChanged: (value) {
+                          setState(() {
+                            _parentId = value!;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return "Parent category not selected";
+                          }
+                        },
                       ),
                     ),
                 ],
