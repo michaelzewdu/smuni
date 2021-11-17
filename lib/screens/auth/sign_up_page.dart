@@ -37,6 +37,7 @@ class SignUpPage extends StatelessWidget {
                 key: _formKey,
                 child: Column(
                   children: [
+                    /*
                     Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: TextFormField(
@@ -52,6 +53,8 @@ class SignUpPage extends StatelessWidget {
                         },
                       ),
                     ),
+
+                     */
                     Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: TextFormField(
@@ -64,6 +67,12 @@ class SignUpPage extends StatelessWidget {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Email can\'t be empty';
+                          }
+                          if (!value.contains('@') || !value.contains('.')) {
+                            return 'Invalid email';
+                          }
+                          if (value.contains(' ')) {
+                            return 'Email can\'t contain space';
                           }
                         },
                       ),
@@ -82,6 +91,9 @@ class SignUpPage extends StatelessWidget {
                             if (value == null || value.isEmpty) {
                               return 'Phone number can\'t be empty';
                             }
+                            if (value.contains(' ')) {
+                              return 'Phone number can\'t contain space';
+                            }
                           },
                         )),
                     Padding(
@@ -95,6 +107,9 @@ class SignUpPage extends StatelessWidget {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Username can\'t be empty';
+                          }
+                          if (value.contains(' ')) {
+                            return 'Username can\'t contain space';
                           }
                         },
                       ),
@@ -110,6 +125,9 @@ class SignUpPage extends StatelessWidget {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Password can\'t be empty';
+                          }
+                          if (value.contains(' ')) {
+                            return 'Password can\'t contain space';
                           }
                           if (value.length < 6) {
                             return 'The inserted password length is too low';
@@ -131,23 +149,22 @@ class SignUpPage extends StatelessWidget {
                       onPressed: () {
                         //TODO: Uncomment the if condition below
 
-                        // if (_formKey.currentState != null &&  _formKey.currentState!.validate()) {
-                        context.read<SignUpBloc>().add(SignUpEvent(
-                            name: _name,
-                            username: _username,
-                            email: _email,
-                            password: _password,
-                            phone: _phone));
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => OtpVerificationPage(
-                                    name: _name,
-                                    username: _username,
-                                    email: _email,
-                                    password: _password,
-                                    phone: plus + _phone)));
-                        // }
+                        if (_formKey.currentState != null &&
+                            _formKey.currentState!.validate()) {
+                          context
+                              .read<SignUpBloc>()
+                              .add(AuthenticatePhoneNo(phoneNo: plus + _phone));
+
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OtpVerificationPage(
+                                      name: _name,
+                                      username: _username,
+                                      email: _email,
+                                      password: _password,
+                                      phone: plus + _phone)));
+                        }
                       },
                       child: Text('Next'))
             ],

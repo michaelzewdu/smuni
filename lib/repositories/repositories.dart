@@ -1,9 +1,3 @@
-export 'auth.dart';
-export 'budget.dart';
-export 'expense.dart';
-export 'category.dart';
-export 'user.dart';
-
 import 'dart:async';
 
 import 'package:smuni/models/models.dart';
@@ -15,6 +9,11 @@ import 'package:smuni_api_client/smuni_api_client.dart';
 import 'budget.dart';
 import 'expense.dart';
 import 'user.dart';
+
+export 'auth.dart';
+export 'budget.dart';
+export 'category.dart';
+export 'expense.dart';
 
 abstract class ApiRepository<Identifier, Item, CreateInput, UpdateInput> {
   Future<Item?> getItem(Identifier id, String username, String authToken);

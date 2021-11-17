@@ -182,9 +182,9 @@ class _MyAppState extends State<MyApp> {
                       ),
                       BlocProvider(
                         create: (context) => SignUpBloc(
-                          context.read<AuthRepository>(),
-                          NotSignedUp(),
-                        ),
+                            context.read<AuthRepository>(),
+                            NotSignedUp(),
+                            context.read<UserRepository>()),
                       ),
                       BlocProvider(
                         create: (context) =>

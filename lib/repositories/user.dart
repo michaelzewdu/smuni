@@ -53,4 +53,24 @@ class ApiUserRepository {
     _changedItemsController.add({username});
     return item;
   }
+
+  Future<void> createUser(
+      {required String firebaseId,
+      required String phoneNo,
+      required String email,
+      required String password,
+      required String username}) async {
+    final newUser = CreateUserInput(
+      firebaseId: firebaseId,
+      username: username,
+      email: email,
+      phoneNumber: phoneNo,
+      password: password,
+    );
+
+    final item = await client.createUser(newUser);
+    await cache.setItem(username, User.from(item));
+    _changedItemsController.add({username});
+    // return item;
+  }
 }

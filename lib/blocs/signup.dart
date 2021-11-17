@@ -3,26 +3,31 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smuni/repositories/auth.dart';
+import 'package:smuni/repositories/user.dart';
 
 abstract class SignUpBlocEvent {
   const SignUpBlocEvent();
 }
 
-class SignUpEvent extends SignUpBlocEvent {
-  final String name;
+class AuthenticatePhoneNo extends SignUpBlocEvent {
+  String phoneNo;
+  AuthenticatePhoneNo({required this.phoneNo});
+}
+
+class SignUpToBackEndEvent extends SignUpBlocEvent {
+  //final String name;
   final String email;
   final String password;
   final String phone;
   final String username;
-  final String? otpCode;
 
-  SignUpEvent(
-      {required this.name,
-      required this.username,
-      required this.email,
-      required this.password,
-      required this.phone,
-      this.otpCode});
+  SignUpToBackEndEvent({
+    // required this.name,
+    required this.username,
+    required this.email,
+    required this.password,
+    required this.phone,
+  });
 }
 
 class OtpSentEvent extends SignUpBlocEvent {
@@ -62,20 +67,25 @@ class NotSignedUp extends SignUpBlocState {
 
 class SignUpBloc extends Bloc<SignUpBlocEvent, SignUpBlocState> {
   final AuthRepository repository;
+  final ApiUserRepository apiUserRepository;
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  SignUpBloc(this.repository, SignUpBlocState initialState)
+  SignUpBloc(
+      this.repository, SignUpBlocState initialState, this.apiUserRepository)
       : super(initialState) {
-    on<SignUpEvent>(authenticatePhoneNumber);
+    on<AuthenticatePhoneNo>(authenticatePhoneNumber);
     on<OtpSentEvent>(firebaseCodeSent);
+    on<SignUpToBackEndEvent>(signUpToBackend);
   }
 
   Future<void> authenticatePhoneNumber(
-      SignUpEvent event, Emitter<SignUpBlocState> emitter) async {
+      AuthenticatePhoneNo event, Emitter<SignUpBlocState> emitter) async {
     try {
-      repository.authenticatePhoneNumber(event.phone, _firebaseAuth);
+      repository.authenticatePhoneNumber(event.phoneNo, _firebaseAuth);
     } on MyFirebaseError catch (e) {
       emitter(FirebaseError(errorMessage: e.toString()));
+    } catch (e) {
+      emitter(FirebaseError(errorMessage: 'An error occurred'));
     }
   }
 
@@ -83,9 +93,28 @@ class SignUpBloc extends Bloc<SignUpBlocEvent, SignUpBlocState> {
     try {
       repository.firebaseCodeSent(
           otpCode: event.otpCode, firebaseAuth: _firebaseAuth);
-      emitter(SignUpSuccess());
+      emitter(PhoneNumberVerified('Phone Number verified successfully'));
+    } on MyFirebaseError catch (e) {
+      emitter(FirebaseError(errorMessage: e.toString()));
     } catch (e) {
       emitter(FirebaseError(errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> signUpToBackend(
+      SignUpToBackEndEvent event, Emitter<SignUpBlocState> emitter) async {
+    try {
+      final firebaseUserId = _firebaseAuth.currentUser!.uid;
+      apiUserRepository.createUser(
+          firebaseId: firebaseUserId,
+          phoneNo: event.phone,
+          email: event.email,
+          password: event.password,
+          username: event.username);
+      emitter(SignUpSuccess(successMessage: 'Sign up successful'));
+    } catch (e) {
+      emitter(SignUpFailure(
+          failureMessage: 'Something went wrong, try again later.'));
     }
   }
 }

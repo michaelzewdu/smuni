@@ -59,7 +59,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   size: 50,
                 ),
                 Text(
-                  'We have sent you a short code for verification, enter it below: ',
+                  'We have sent a verification code to: ${widget.phone} ',
                   textScaleFactor: 1.5,
                 ),
                 Form(
@@ -136,30 +136,47 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                 ),
                 _loadingIndicator ? CircularProgressIndicator() : Container(),
                 BlocConsumer<SignUpBloc, SignUpBlocState>(
-                  listener: (context, currentState) {
+                  listener: (context, currentState) async {
                     if (currentState is PhoneNumberVerified) {
+                      final snackBar = SnackBar(
+                        content: (Text('${currentState.message}')),
+                        duration: Duration(seconds: 2),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                      context.read<SignUpBloc>().add(SignUpToBackEndEvent(
+                          // name: _name,
+                          username: widget.username,
+                          email: widget.email,
+                          password: widget.password,
+                          phone: widget.phone));
+                    }
+                    if (currentState is SignUpSuccess) {
                       setState(() {
                         _loadingIndicator = false;
                       });
                       Navigator.pushNamedAndRemoveUntil(
                           context,
                           SignInPage.routeName,
-                          ModalRoute.withName(SignInPage.routeName)
-                          /*     (route) {
-                        if (route.settings.name == SignInPage.routeName) {
-                          return true;
-                        } else {
-                          return false;
-                        }
-                      }*/
-                          );
+                          ModalRoute.withName(SignInPage.routeName));
                     }
-                    if (currentState is FirebaseError &&
-                        currentState.errorMessage!.isNotEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(currentState.errorMessage!),
-                        duration: Duration(seconds: 3),
-                      ));
+                    if (currentState is FirebaseError) {
+                      if (currentState.errorMessage == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('An error occurred'),
+                          duration: Duration(seconds: 3),
+                        ));
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(currentState.errorMessage!),
+                          duration: Duration(seconds: 3),
+                        ));
+                      }
+                    }
+                    if (currentState is SignUpFailure) {
+                      var snackBar = SnackBar(
+                        content: Text('${currentState.failureMessage}'),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
                     }
                   },
                   builder: (context, currentState) {

@@ -27,8 +27,8 @@
 
 ### Screens
 
-- [ ] Sign up
-- [ ] Login
+- [x] Sign up
+- [x] Login
 - [x] Home
 - [ ] Settings
 - [x] Budgets List
@@ -37,7 +37,7 @@
 - [x] Expenses List
 - [x] Expense Details
 - [x] Expense Add/Edit
-- [x] Categort list
+- [x] Category list
 - [x] Category details
 - [x] Category Add/Edit
 - [ ] Dept payoff plans list

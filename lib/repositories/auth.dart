@@ -142,6 +142,7 @@ class AuthRepository {
           await firebaseAuth.signInWithCredential(credential);
         },
         verificationFailed: (FirebaseAuthException e) {
+          print('The firebase error is: ${e.code}');
           throw (MyFirebaseError(e.code));
         },
         codeSent: (String verificationId, int? resendToken) async {
