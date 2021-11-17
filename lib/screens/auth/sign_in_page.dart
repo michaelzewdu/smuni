@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
@@ -23,28 +22,12 @@ class _SignInPageState extends State<SignInPage> {
   final _formKey = GlobalKey<FormState>();
 
   var _method = SignInMethod.email;
-  String? _userIdentity;
   String? _username;
   String? _email;
   String? _phoneNumber;
   String? _password;
 
   bool _awaitingOp = false;
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    _awaitingOp = true;
-
-    initializeFirebase();
-    _awaitingOp = false;
-    setState(() {});
-  }
-
-  void initializeFirebase() async {
-    await Firebase.initializeApp();
-  }
 
   @override
   Widget build(BuildContext context) => BlocListener<AuthBloc, AuthBlocState>(
@@ -81,82 +64,32 @@ class _SignInPageState extends State<SignInPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: <Widget>[
-                    /*
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Text("Sign In Method"),
-
-                        DropdownButton(
-                          value: _method,
-                          onChanged: (v) =>
-                              setState(() => _method = v as SignInMethod),
-                          items: [
-                            ...<List<dynamic>>[
-                              [SignInMethod.username, "Username"],
-                              [SignInMethod.email, "Email"],
-                              [SignInMethod.phoneNumber, "Phone Number"],
-                            ].map(
-                              (e) => DropdownMenuItem<SignInMethod>(
-                                value: e[0],
-                                child: Text(e[1]),
-                                // groupValue: _method,
-                              ),
-                            )
-                          ],
-                        ),
-                      ],
-                    ),
-
-                     */
                     Text(
                       'KamasiYo',
                       textScaleFactor: 3,
                     ),
-                    // if (_method == SignInMethod.username)
-
                     Column(
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: TextFormField(
                             enabled: !_awaitingOp,
-                            initialValue: _userIdentity,
-                            onSaved: (value) {
-                              setState(() => _userIdentity = value!);
-                            },
-                            validator: (value) {
-                              // TODO: username validation
-                              if (value == null || value.isEmpty) {
-                                return "Username can't be empty";
-                              }
-                              if (value.contains('@')) {
-                                print('This is an email');
+                            onSaved: (value) => setState(() {
+                              if (value!.contains('@')) {
                                 _method = SignInMethod.email;
-                                _email = _userIdentity;
-                              } else if (RegExp(r'^[0-9]+$').hasMatch(value) ||
-                                  value.contains('+')) {
-                                print('This is a phone number');
+                                _email = value;
+                              } else if (RegExp(r'^[0-9+]+$').hasMatch(value)) {
                                 _method = SignInMethod.phoneNumber;
-                                _phoneNumber = _userIdentity;
+                                _phoneNumber = value;
                               } else {
-                                print('This is a username');
                                 _method = SignInMethod.username;
-                                _username = _userIdentity;
+                                _username = value;
                               }
-                              /*
-                                if (RegExp(
-                                        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
-                                    .hasMatch(value)) {
-                                  print('it is an email');
-                                  // _email = value;
-                                }
-                                if (RegExp(r"/^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$/")
-                                    .hasMatch(value)) {
-                                  print('This is a username');
-                                }
-
-                                 */
+                            }),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "Identifier can't be empty";
+                              }
                             },
                             decoration: InputDecoration(
                               border: const OutlineInputBorder(),
@@ -168,15 +101,16 @@ class _SignInPageState extends State<SignInPage> {
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: TextFormField(
+                            obscureText: true,
                             enabled: !_awaitingOp,
                             initialValue: _password,
                             onSaved: (value) =>
                                 setState(() => _password = value!),
                             validator: (value) {
-                              // TODO: password validation
                               if (value == null || value.isEmpty) {
                                 return "Password can't be empty";
                               }
+                              if (value.length < 8) return "Password too short";
                             },
                             decoration: InputDecoration(
                               border: const OutlineInputBorder(),
@@ -187,9 +121,6 @@ class _SignInPageState extends State<SignInPage> {
                         ),
                       ],
                     ),
-
-                    // Spacer(),
-                    // TODO
                     Column(
                       children: [
                         !_awaitingOp

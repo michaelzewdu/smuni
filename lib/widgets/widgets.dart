@@ -40,6 +40,7 @@ List<Widget> defaultActionButtons(BuildContext context) {
       Padding(
         padding: const EdgeInsets.only(bottom: 4.0, top: 8.0),
         child: FloatingActionButton.extended(
+          heroTag: null,
           onPressed: () => Navigator.pushNamed(
             context,
             ExpenseEditPage.routeName,
@@ -57,6 +58,7 @@ List<Widget> defaultActionButtons(BuildContext context) {
               padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
               child: FloatingActionButton.extended(
                 icon: Icon(Icons.refresh),
+                heroTag: null,
                 onPressed: () {
                   setState(() => awaitingOp = true);
                   context.read<SyncBloc>().add(TrySync(

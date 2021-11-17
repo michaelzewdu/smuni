@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -18,7 +19,7 @@ import 'screens/routes.dart';
 import 'screens/splash.dart';
 
 void main() {
-  // WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
 }
 
@@ -38,7 +39,10 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    _initAsyncFuture = initDb();
+    _initAsyncFuture = () async {
+      await Firebase.initializeApp();
+      return await initDb();
+    }();
     super.initState();
   }
 
@@ -202,9 +206,15 @@ class _MyAppState extends State<MyApp> {
                   child: MultiBlocProvider(
                     providers: [
                       BlocProvider(
+                        create: (context) =>
+                            PreferencesBloc(context.read<PreferencesCache>())
+                              ..add(LoadPreferences()),
+                      ),
+                      BlocProvider(
                         create: (context) => AuthBloc(
                           context.read<AuthRepository>(),
                           context.read<CacheSynchronizer>(),
+                          context.read<PreferencesBloc>(),
                         )..add(CheckCache()),
                       ),
                       BlocProvider(
@@ -212,11 +222,6 @@ class _MyAppState extends State<MyApp> {
                           context.read<AuthRepository>(),
                           NotSignedUp(),
                         ),
-                      ),
-                      BlocProvider(
-                        create: (context) =>
-                            PreferencesBloc(context.read<PreferencesCache>())
-                              ..add(LoadPreferences()),
                       ),
                       BlocProvider(
                         create: (context) => UserBloc(

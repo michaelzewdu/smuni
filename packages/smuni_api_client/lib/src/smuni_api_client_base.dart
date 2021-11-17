@@ -13,7 +13,7 @@ class SmuniApiClient {
   late JsonCodec _json;
 
   SmuniApiClient(this._baseUrl,
-      {http.Client? client, this.timeout = const Duration(seconds: 3)}) {
+      {http.Client? client, this.timeout = const Duration(seconds: 8)}) {
     _json = JsonCodec();
     if (client == null) {
       this.client = http.Client();

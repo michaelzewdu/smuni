@@ -229,10 +229,9 @@ class _ExpenseListViewState extends State<ExpenseListView> {
       expandedHeaderPadding: const EdgeInsets.symmetric(vertical: 2),
       animationDuration: Duration(milliseconds: 400),
       expansionCallback: (int index, bool isExpanded) {
-        if (widget.onSelected != null && isExpanded) {
-          widget.onSelected!.call(null);
-        } else {
-          widget.onSelected!.call(widget.items[keys[index]]!.id);
+        if (widget.onSelected != null) {
+          widget.onSelected!
+              .call(isExpanded ? widget.items[keys[index]]!.id : null);
         }
       },
       children: keys.map((k) => widget.items[k]!).map<ExpansionPanel>((item) {
@@ -252,8 +251,7 @@ class _ExpenseListViewState extends State<ExpenseListView> {
               "${item.amount.currency} ${item.amount.amount / 100}",
             ),
             subtitle: Text(
-              humanReadableTimeRelationName(item.timestamp, DateTime.now()),
-            ),
+                humanReadableTimeRelationName(item.timestamp, DateTime.now())),
           ),
           body: Padding(
             padding: const EdgeInsets.all(8.0),

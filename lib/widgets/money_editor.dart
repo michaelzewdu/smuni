@@ -63,14 +63,12 @@ class _MoneyEditorState extends State<MoneyEditor> {
     super.initState();
     _wholesFocusNode.addListener(() {
       if (_wholesFocusNode.hasFocus) {
-        print("here");
         _wholesController.selection = TextSelection(
             baseOffset: 0, extentOffset: _wholesController.value.text.length);
       }
     });
     _centsFocusNode.addListener(() {
       if (_centsFocusNode.hasFocus) {
-        print("here");
         _centsController.selection = TextSelection(
             baseOffset: 0, extentOffset: _centsController.value.text.length);
       }

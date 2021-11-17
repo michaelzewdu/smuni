@@ -85,7 +85,7 @@ class ExpenseEditPage extends StatefulWidget {
           id: "id-${now.microsecondsSinceEpoch}",
           createdAt: now,
           updatedAt: now,
-          name: "",
+          name: humanReadableDateTime(now),
           timestamp: now,
           categoryId: args.categoryId ??
               context
@@ -151,14 +151,36 @@ class ExpenseEditPage extends StatefulWidget {
 
 class _ExpenseEditPageState extends State<ExpenseEditPage> {
   final _formKey = GlobalKey<FormState>();
+  final FocusNode _nameEditorFocusNode = FocusNode();
+  final _nameEditorController = TextEditingController();
 
   late var _amount = widget.item.amount;
   late var _name = widget.item.name;
   late DateTime _timestamp = widget.item.timestamp;
   late String? _categoryId = widget.item.categoryId;
-  bool _isSelecting = false;
+  bool _autoName = true;
+  String _budgetName = "";
+  String _categoryName = "";
+  bool _isSelectingCategory = false;
 
   bool _awaitingSave = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameEditorController.text = _name;
+    _nameEditorFocusNode.addListener(() {
+      if (_nameEditorFocusNode.hasFocus) {
+        setState(() {
+          _autoName = false;
+          _nameEditorController.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: _nameEditorController.value.text.length,
+          );
+        });
+      }
+    });
+  }
 
   @override
   Widget build(context) =>
@@ -186,7 +208,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
           appBar: AppBar(
             title: _awaitingSave
                 ? const Text("Loading...")
-                : widget.item.name.isEmpty
+                : widget.isCreating
                     ? Text("New expense")
                     : FittedBox(child: Text(widget.item.name)),
             actions: [
@@ -237,14 +259,82 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
               ),
             ],
           ),
-          body: Form(
-            key: _formKey,
-            child: Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: TextFormField(
-                    initialValue: _name,
+          body: BlocConsumer<BudgetDetailsPageBloc, BudgetDetailsPageState>(
+            listener: (context, current) {
+              if (current is BudgetLoadSuccess) {
+                setState(() {
+                  _budgetName = current.item.name;
+                });
+                calcAutoName();
+              }
+            },
+            builder: (context, budgetState) => budgetState is BudgetLoadSuccess
+                ? BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
+                    builder: (context, expensesState) => expensesState
+                            is ExpensesLoadSuccess
+                        ? BlocConsumer<CategoryListPageBloc,
+                                CategoryListPageBlocState>(
+                            listener: (context, current) {
+                              if (current is CategoriesLoadSuccess &&
+                                  _categoryId != null) {
+                                setState(() {
+                                  _categoryName =
+                                      current.items[_categoryId!]!.name;
+                                });
+                                calcAutoName();
+                              }
+                            },
+                            builder: (context, catListState) => catListState
+                                    is CategoriesLoadSuccess
+                                ? _form(context, catListState, expensesState,
+                                    budgetState)
+                                : catListState is CategoriesLoading
+                                    ? const Center(
+                                        child: Text("Loading categories..."))
+                                    : throw Exception(
+                                        "Unhandeled state: $catListState"))
+                        : expensesState is ExpensesLoading
+                            ? const Center(child: Text("Loading expenses..."))
+                            : throw Exception(
+                                "Unhandled state: $expensesState"))
+                : budgetState is LoadingBudget
+                    ? const Center(child: Text("Loading budget..."))
+                    : budgetState is BudgetNotFound
+                        ? const Center(child: Text("Error: budget not found."))
+                        : throw Exception("Unhandled state: $budgetState"),
+          ),
+        ),
+      );
+
+  Widget _form(
+    BuildContext context,
+    CategoriesLoadSuccess catListState,
+    ExpensesLoadSuccess expensesState,
+    BudgetLoadSuccess budgetState,
+  ) =>
+      Form(
+        key: _formKey,
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                children: [
+                  /*  Row(
+                    children: [
+                      Checkbox(
+                        value: _autoName,
+                        onChanged: (b) {
+                          setState(() => _autoName = b!);
+                          calcAutoName();
+                        },
+                      ),
+                      Text("Auto Name")
+                    ],
+                  ), */
+                  TextFormField(
+                    controller: _nameEditorController,
+                    focusNode: _nameEditorFocusNode,
                     onSaved: (value) {
                       setState(() {
                         _name = value!;
@@ -256,133 +346,129 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                       }
                     },
                     decoration: InputDecoration(
+                      // enabled: _autoName,
                       border: const OutlineInputBorder(),
                       hintText: "Name",
                       helperText: "Name",
                     ),
                   ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12.0),
-                  child: MoneyFormEditor(
-                    initialValue: _amount,
-                    onSaved: (v) => setState(() => _amount = v!),
-                  ),
-                ),
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    decoration: BoxDecoration(
-                        border: Border.all(),
-                        borderRadius: BorderRadius.circular(15)),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text("Day: "),
-                        Text(
-                          humanReadableDayRelationName(
-                            _timestamp,
-                            DateTime.now(),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () async {
-                            final selectedDate = await showDatePicker(
-                              context: context,
-                              initialDate: _timestamp,
-                              firstDate: DateTime.fromMillisecondsSinceEpoch(0),
-                              lastDate: DateTime.now(),
-                            );
-                            if (selectedDate != null) {
-                              setState(() => _timestamp = selectedDate);
-                            }
-                          },
-                          icon: Icon(Icons.edit),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: _catSelector(context),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 8, horizontal: 12.0),
+              child: MoneyFormEditor(
+                initialValue: _amount,
+                onSaved: (v) => setState(() => _amount = v!),
+              ),
+            ),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                decoration: BoxDecoration(
+                    border: Border.all(),
+                    borderRadius: BorderRadius.circular(15)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Day: "),
+                    Text(
+                      humanReadableDayRelationName(
+                        _timestamp,
+                        DateTime.now(),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () async {
+                        final selectedDate = await showDatePicker(
+                          context: context,
+                          initialDate: _timestamp,
+                          firstDate: DateTime.fromMillisecondsSinceEpoch(0),
+                          lastDate: DateTime.now(),
+                        );
+                        if (selectedDate != null) {
+                          setState(() => _timestamp = selectedDate);
+                          calcAutoName();
+                        }
+                      },
+                      icon: Icon(Icons.edit),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _catSelector(
+                  context, catListState, expensesState, budgetState),
+            ),
+          ],
         ),
       );
 
-  void _selectCategory(String id) {
-    setState(() {
-      _categoryId = id;
-      _isSelecting = false;
-    });
+  void calcAutoName() {
+    if (_autoName) {
+      _nameEditorController.text =
+          "$_budgetName - $_categoryName - ${humanReadableDateTime(_timestamp)}";
+    }
   }
 
-  Widget _catSelector(BuildContext context) => Column(
-        children: [
-          // the top bar
-          ListTile(
-            dense: true,
-            title: const Text(
-              "Category",
-            ),
-            trailing: TextButton(
-              child: _isSelecting ? const Text("Cancel") : const Text("Select"),
-              onPressed: () {
-                setState(() {
-                  _isSelecting = !_isSelecting;
-                });
-              },
-            ),
-          ),
-          BlocBuilder<BudgetDetailsPageBloc, BudgetDetailsPageState>(
-            builder: (context, budgetState) => budgetState is BudgetLoadSuccess
-                ? BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
-                    builder: (context, expensesState) {
-                    if (expensesState is ExpensesLoadSuccess) {
-                      // var totalUsed = 0;
-                      final perCategoryUsed = <String, int>{};
-                      for (final expense in expensesState.items.values) {
-                        final expenseAmount = expense.amount.amount;
-                        // totalUsed += expenseAmount;
-                        perCategoryUsed.update(
-                          expense.categoryId,
-                          (value) => value + expenseAmount,
-                          ifAbsent: () => expenseAmount,
-                        );
-                      }
-                      return BlocBuilder<CategoryListPageBloc,
-                              CategoryListPageBlocState>(
-                          builder: (context, itemsState) =>
-                              itemsState is CategoriesLoadSuccess
-                                  ? _isSelecting
-                                      ? _selecting(
-                                          itemsState,
-                                          budgetState,
-                                          perCategoryUsed,
-                                        )
-                                      : _viewing(itemsState)
-                                  : itemsState is CategoriesLoading
-                                      ? const Center(
-                                          child: Text("Loading categories..."))
-                                      : throw Exception(
-                                          "Unhandeled state: $itemsState"));
-                    } else if (expensesState is ExpensesLoading) {
-                      return const Center(child: Text("Loading expenses..."));
-                    }
-                    throw Exception("Unhandled state: $expensesState");
-                  })
-                : budgetState is LoadingBudget
-                    ? const Center(child: Text("Loading budget..."))
-                    : budgetState is BudgetNotFound
-                        ? const Center(child: Text("Error: budget not found."))
-                        : throw Exception("Unhandled state: $budgetState"),
-          )
-        ],
+  void _selectCategory(Category category) {
+    setState(() {
+      _categoryId = category.id;
+      _categoryName = category.name;
+      _isSelectingCategory = false;
+    });
+    calcAutoName();
+  }
+
+  Widget _catSelector(
+    BuildContext context,
+    CategoriesLoadSuccess itemsState,
+    ExpensesLoadSuccess expensesState,
+    BudgetLoadSuccess budgetState,
+  ) {
+    // var totalUsed = 0;
+    final perCategoryUsed = <String, int>{};
+    for (final expense in expensesState.items.values) {
+      final expenseAmount = expense.amount.amount;
+      // totalUsed += expenseAmount;
+      perCategoryUsed.update(
+        expense.categoryId,
+        (value) => value + expenseAmount,
+        ifAbsent: () => expenseAmount,
       );
+    }
+    return Column(
+      children: [
+        // the top bar
+        ListTile(
+          dense: true,
+          title: const Text(
+            "Category",
+          ),
+          trailing: TextButton(
+            child: _isSelectingCategory
+                ? const Text("Cancel")
+                : const Text("Select"),
+            onPressed: () {
+              setState(() {
+                _isSelectingCategory = !_isSelectingCategory;
+              });
+            },
+          ),
+        ),
+        _isSelectingCategory
+            ? _selecting(
+                itemsState,
+                budgetState,
+                perCategoryUsed,
+              )
+            : _viewing(itemsState)
+      ],
+    );
+  }
 
   Widget _selecting(
     CategoriesLoadSuccess itemsState,
@@ -499,7 +585,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                     ],
                   ),
                 ),
-                onTap: () => _selectCategory(id),
+                onTap: () => _selectCategory(item),
               )
             : ListTile(
                 dense: true,

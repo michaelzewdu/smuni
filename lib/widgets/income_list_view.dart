@@ -35,10 +35,9 @@ class _IncomeListViewState extends State<IncomeListView> {
       animationDuration: Duration(milliseconds: 400),
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
-          if (widget.onSelected != null && isExpanded) {
-            widget.onSelected!.call(null);
-          } else {
-            widget.onSelected!.call(widget.items[keys[index]]!.id);
+          if (widget.onSelected != null) {
+            widget.onSelected!
+                .call(isExpanded ? widget.items[keys[index]]!.id : null);
           }
         });
       },
@@ -86,7 +85,7 @@ class _IncomeListViewState extends State<IncomeListView> {
                               ListTile(
                                 dense: true,
                                 title: Text(
-                                  'Next payout on: ${humanReadableDateTime(cycles[0]!.range.end)}',
+                                  'Next payout on: ${humanReadableDateTime(cycles[0].range.end)}',
                                 ),
                               ),
                               ListTile(
