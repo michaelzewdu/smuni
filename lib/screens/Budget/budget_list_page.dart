@@ -108,11 +108,18 @@ class _BudgetListPageState extends State<BudgetListPage> {
             return Center(child: CircularProgressIndicator.adaptive());
           },
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () =>
-              Navigator.pushNamed(context, BudgetEditPage.routeName),
-          child: Icon(Icons.add),
-          tooltip: "Add",
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            FloatingActionButton.extended(
+              onPressed: () =>
+                  Navigator.pushNamed(context, BudgetEditPage.routeName),
+              icon: Icon(Icons.add),
+              label: Text("Budget"),
+            ),
+            ...defaultActionButtons(context),
+          ],
         ),
       );
 }

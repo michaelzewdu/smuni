@@ -59,11 +59,11 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
             currentIndex: _selectedPage,
             onTap: (idx) => setState(() => _selectedPage = idx),
             items: const <List<dynamic>>[
-              [Icons.home_filled, Icons.home, "Home"],
+              [Icons.home_outlined, Icons.home_filled, "Home"],
               [Icons.add_chart_outlined, Icons.add_chart, "Budgets"],
               [
-                Icons.playlist_add_check_sharp,
-                Icons.playlist_add_check_rounded,
+                Icons.featured_play_list_outlined,
+                Icons.featured_play_list_rounded,
                 "Expenses"
               ],
               [
@@ -71,7 +71,7 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
                 Icons.align_horizontal_center,
                 "Categories"
               ],
-              [Icons.assignment, Icons.wysiwyg_sharp, "Incomes"],
+              [Icons.wysiwyg_sharp, Icons.assignment, "Incomes"],
             ]
                 .map((e) => BottomNavigationBarItem(
                       icon: Icon(e[0]),
@@ -156,15 +156,19 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
           ? BudgetDetailsPage.page(
               mainBudget,
               (context, state) => [
-                ElevatedButton(
+                TextButton(
                   onPressed: () =>
                       _showMainBudgetSelectorModal(context, changeMainBudget),
-                  child: const Text("Change"),
+                  child: const Text(
+                    "Change",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
-                ElevatedButton(
+                TextButton(
                   onPressed: () =>
                       Navigator.pushNamed(context, MenusPage.routeName),
-                  child: const Text("Settings"),
+                  child: const Text("Settings",
+                      style: TextStyle(color: Colors.white)),
                 ),
               ],
             )
@@ -306,9 +310,10 @@ class _SyncScreenState extends State<SyncScreen> {
         },
         builder: (context, state) => Scaffold(
           appBar: AppBar(title: const Text("Kamasio")),
-          body: Center(
-            child: state is DeSynced
-                ? Column(
+          body: state is DeSynced
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       state is SyncFailed
                           ? state.exception.inner is ConnectionException
@@ -318,24 +323,26 @@ class _SyncScreenState extends State<SyncScreen> {
                                   ? Text("Sync failed: signed out")
                                   : Text("Sync failed: unhandled error")
                           : state is ReportedDesync
-                              ? Text(
-                                  "Hard server desynchronization: please refresh")
-                              : Text(
-                                  "Hard server desynchronization: please refresh"),
+                              ? Text("Hard server desynchronization")
+                              : Text("Hard server desynchronization"),
                       const Text("Please try again"),
                       ElevatedButton(
                         onPressed: () => context.read<SyncBloc>().add(Sync()),
                         child: const Text("Refresh"),
                       )
                     ],
-                  )
-                : state is Syncing
-                    ? Column(children: const [
-                        Text("Loading..."),
-                        CircularProgressIndicator()
-                      ])
-                    : const CircularProgressIndicator(),
-          ),
+                  ),
+                )
+              : state is Syncing
+                  ? Center(
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Text("Loading..."),
+                            CircularProgressIndicator()
+                          ]),
+                    )
+                  : throw Exception("Unhandeled state: $state"),
         ),
       );
 }

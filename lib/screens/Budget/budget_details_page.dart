@@ -67,8 +67,8 @@ class BudgetDetailsPage extends StatefulWidget {
     })
         eventGenerator,
   }) =>
-      ElevatedButton(
-        child: Text(butonTitle),
+      TextButton(
+        child: Text(butonTitle, style: TextStyle(color: Colors.white)),
         onPressed: () async {
           final confirm = await showDialog<bool?>(
             context: context,
@@ -170,7 +170,7 @@ class BudgetDetailsPage extends StatefulWidget {
               ),
             ]
           : [
-              ElevatedButton(
+              TextButton(
                 onPressed: () => Navigator.pushNamed(
                   context,
                   BudgetEditPage.routeName,
@@ -251,131 +251,124 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
     final totalAllocated = state.item.allocatedAmount.amount;
 
     return Scaffold(
-        body: BlocProvider(
-          create: (BuildContext context) => ExpenseListPageBloc(
-            context.read<ExpenseRepository>(),
-            context.read<OfflineExpenseRepository>(),
-            context.read<AuthBloc>(),
-            context.read<BudgetRepository>(),
-            context.read<CategoryRepository>(),
-            initialFilter: LoadExpensesFilter(
-                ofBudget: state.id,
-                range: state.item.frequency is Recurring
-                    ? currentBudgetCycle(
-                        state.item.frequency as Recurring,
-                        state.item.startTime,
-                        state.item.endTime,
-                        DateTime.now())
-                    : DateRangeFilter("All", DateRange(), FilterLevel.all)),
-          ),
-          child: BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
-            builder: (context, expensesState) => expensesState
-                    is ExpensesLoadSuccess
-                ? BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
-                    builder: (context, catListState) => catListState
-                            is CategoriesLoadSuccess
-                        ? Builder(builder: (context) {
-                            var totalUsed = 0;
-                            final perCategoryUsed = <String, int>{};
-                            for (final expense in expensesState.items.values) {
-                              final expenseAmount = expense.amount.amount;
-                              totalUsed += expenseAmount;
-                              perCategoryUsed.update(
-                                expense.categoryId,
-                                (value) => value + expenseAmount,
-                                ifAbsent: () => expenseAmount,
-                              );
-                            }
-                            return CustomScrollView(
-                              slivers: [
-                                _detailsAppBar(
-                                  context,
-                                  state,
-                                  totalAllocated,
-                                  currency,
-                                  totalUsed,
-                                ),
-                                if (!_showAllBudgetExpenses &&
-                                    state.item.frequency is Recurring)
-                                  SliverToBoxAdapter(
-                                    child: Container(
-                                      height: 50,
-                                      child: Builder(builder: (context) {
-                                        final allRange = DateRangeFilter("All",
-                                            DateRange(), FilterLevel.all);
-                                        final cycleRanges = pastCycleDateRanges(
-                                          state.item.frequency as Recurring,
-                                          state.item.startTime,
-                                          state.item.endTime,
-                                          DateTime.now(),
-                                        );
-                                        Widget tabButton(
-                                                DateRangeFilter range) =>
-                                            ExpenseListView.buttonChip(
-                                              range.name,
-                                              isSelected: expensesState
-                                                      .filter.range.range ==
-                                                  range.range,
-                                              isIncluded: expensesState
-                                                  .filter.range.range
-                                                  .contains(range.range),
-                                              onPressed: () => context
-                                                  .read<ExpenseListPageBloc>()
-                                                  .add(LoadExpenses(
-                                                      filter:
-                                                          LoadExpensesFilter(
-                                                    range: range,
-                                                    ofBudget: state.id,
-                                                  ))),
-                                            );
-                                        print(
-                                            "a: ${cycleRanges[0]}\n b: ${expensesState.filter.range}");
-                                        return ListView(
-                                          scrollDirection: Axis.horizontal,
-                                          children: [
-                                            // All expenses button
-                                            tabButton(allRange),
-                                            ...cycleRanges.map(tabButton),
-                                          ],
-                                        );
-                                      }),
-                                    ),
-                                  ),
-                                _showAllBudgetExpenses
-                                    ? _allBudgetExpenses(context, state,
-                                        expensesState, catListState)
-                                    : _categoryAllocations(
-                                        context,
-                                        state,
-                                        expensesState,
-                                        catListState,
-                                        perCategoryUsed,
-                                      )
-                              ],
-                            );
-                          })
-                        : catListState is CategoriesLoading
-                            ? Center(child: CircularProgressIndicator())
-                            : throw Exception("Unhandled state: $catListState"),
-                  )
-                : expensesState is ExpensesLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : throw Exception("Unhandled state: $expensesState"),
-          ),
+      body: BlocProvider(
+        create: (BuildContext context) => ExpenseListPageBloc(
+          context.read<ExpenseRepository>(),
+          context.read<OfflineExpenseRepository>(),
+          context.read<AuthBloc>(),
+          context.read<BudgetRepository>(),
+          context.read<CategoryRepository>(),
+          initialFilter: LoadExpensesFilter(
+              ofBudget: state.id,
+              range: state.item.frequency is Recurring
+                  ? currentBudgetCycle(state.item.frequency as Recurring,
+                      state.item.startTime, state.item.endTime, DateTime.now())
+                  : DateRangeFilter("All", DateRange(), FilterLevel.all)),
         ),
-        floatingActionButton: !state.item.isArchived
-            ? FloatingActionButton.extended(
-                onPressed: () => Navigator.pushNamed(
-                  context,
-                  ExpenseEditPage.routeName,
-                  arguments: ExpenseEditPageNewArgs(
-                    budgetId: state.item.id,
-                  ),
-                ),
-                label: Text('Add new expense'),
-                icon: Icon(Icons.add),
-              )
-            : null);
+        child: BlocBuilder<ExpenseListPageBloc, ExpenseListPageBlocState>(
+          builder: (context, expensesState) => expensesState
+                  is ExpensesLoadSuccess
+              ? BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
+                  builder: (context, catListState) => catListState
+                          is CategoriesLoadSuccess
+                      ? Builder(builder: (context) {
+                          var totalUsed = 0;
+                          final perCategoryUsed = <String, int>{};
+                          for (final expense in expensesState.items.values) {
+                            final expenseAmount = expense.amount.amount;
+                            totalUsed += expenseAmount;
+                            perCategoryUsed.update(
+                              expense.categoryId,
+                              (value) => value + expenseAmount,
+                              ifAbsent: () => expenseAmount,
+                            );
+                          }
+                          return CustomScrollView(
+                            slivers: [
+                              _detailsAppBar(
+                                context,
+                                state,
+                                totalAllocated,
+                                currency,
+                                totalUsed,
+                              ),
+                              if (!_showAllBudgetExpenses &&
+                                  state.item.frequency is Recurring)
+                                SliverToBoxAdapter(
+                                  child: Container(
+                                    height: 50,
+                                    child: Builder(builder: (context) {
+                                      final allRange = DateRangeFilter(
+                                          "All", DateRange(), FilterLevel.all);
+                                      final cycleRanges = pastCycleDateRanges(
+                                        state.item.frequency as Recurring,
+                                        state.item.startTime,
+                                        state.item.endTime,
+                                        DateTime.now(),
+                                      );
+                                      Widget tabButton(DateRangeFilter range) =>
+                                          ExpenseListView.buttonChip(
+                                            range.name,
+                                            isSelected: expensesState
+                                                    .filter.range.range ==
+                                                range.range,
+                                            isIncluded: expensesState
+                                                .filter.range.range
+                                                .contains(range.range),
+                                            onPressed: () => context
+                                                .read<ExpenseListPageBloc>()
+                                                .add(LoadExpenses(
+                                                    filter: LoadExpensesFilter(
+                                                  range: range,
+                                                  ofBudget: state.id,
+                                                ))),
+                                          );
+                                      print(
+                                          "a: ${cycleRanges[0]}\n b: ${expensesState.filter.range}");
+                                      return ListView(
+                                        scrollDirection: Axis.horizontal,
+                                        children: [
+                                          // All expenses button
+                                          tabButton(allRange),
+                                          ...cycleRanges.map(tabButton),
+                                        ],
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              _showAllBudgetExpenses
+                                  ? _allBudgetExpenses(context, state,
+                                      expensesState, catListState)
+                                  : _categoryAllocations(
+                                      context,
+                                      state,
+                                      expensesState,
+                                      catListState,
+                                      perCategoryUsed,
+                                    )
+                            ],
+                          );
+                        })
+                      : catListState is CategoriesLoading
+                          ? Center(child: CircularProgressIndicator())
+                          : throw Exception("Unhandled state: $catListState"),
+                )
+              : expensesState is ExpensesLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : throw Exception("Unhandled state: $expensesState"),
+        ),
+      ),
+      floatingActionButton: Visibility(
+        visible: _selectedCategory == null,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            ...defaultActionButtons(context),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _detailsAppBar(
@@ -393,36 +386,37 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
           borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30)),
         ),
         expandedHeight: 250,
-        pinned: true,
+        pinned: true, backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
         //floating: true,
-        flexibleSpace: FlexibleSpaceBar(
-          background: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 60, 0, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ...<dynamic>[
-                        [
-                          'Used',
-                          "${totalUsed / 100}",
-                          totalUsed > totalAllocated
-                        ],
-                        [
-                          'Remaining',
-                          "${(totalAllocated - totalUsed) / 100}",
-                          totalUsed > totalAllocated
-                        ],
-                        ['Total', "${totalAllocated / 100}", false],
-                      ].map(((e) => DefaultTextStyle(
-                            style: const TextStyle(
-                              color: Colors.white,
-                            ),
-                            child: Column(
+        flexibleSpace: DefaultTextStyle(
+          style: const TextStyle(
+            color: Colors.white,
+          ),
+          child: FlexibleSpaceBar(
+            background: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 60, 0, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...<dynamic>[
+                          [
+                            'Used',
+                            "${totalUsed / 100}",
+                            totalUsed > totalAllocated
+                          ],
+                          [
+                            'Remaining',
+                            "${(totalAllocated - totalUsed) / 100}",
+                            totalUsed > totalAllocated
+                          ],
+                          ['Total', "${totalAllocated / 100}", false],
+                        ].map(((e) => Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(e[0]),
@@ -449,144 +443,140 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                   ),
                                 ),
                               ],
-                            ),
-                          ))),
-                    ],
-                  ),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      // crossAxisAlignment: CrossAxisAlignment.start?,
-                      children: [
-                        Expanded(
-                          child: Center(
-                            child: DefaultTextStyle(
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 44,
-                                ),
-                                child: totalAllocated == 0
-                                    ? Text("0%")
-                                    : Builder(builder: (context) {
-                                        final percentage =
-                                            ((totalUsed / totalAllocated) * 100)
-                                                .truncate();
-                                        return FittedBox(
-                                          child: Text(
-                                            "$percentage%",
-                                            style: percentage >= 100
-                                                ? TextStyle(
-                                                    backgroundColor:
-                                                        Colors.red[700],
-                                                  )
-                                                : null,
-                                          ),
-                                        );
-                                      })),
-                          ),
-                        ),
-                        if (state.item.frequency is Recurring)
-                          Builder(builder: (context) {
-                            int recurrenceIntervalSeconds =
-                                (state.item.frequency as Recurring)
-                                    .recurringIntervalSecs;
-                            int untilNow = DateTime.now()
-                                .difference(state.item.startTime)
-                                .inSeconds;
-                            int numberOfRecurringCyclesPassed =
-                                (untilNow / recurrenceIntervalSeconds).ceil();
-                            DateTime budgetEndDate = (state.item.startTime.add(
-                                Duration(
-                                    seconds: numberOfRecurringCyclesPassed *
-                                        recurrenceIntervalSeconds)));
-                            Duration remainingDays =
-                                budgetEndDate.difference(DateTime.now());
-                            if (remainingDays.inHours < 1) {
-                              return Text(
-                                  '${remainingDays.inMinutes} minutes left till new cycle',
-                                  style: TextStyle(color: Colors.yellow));
-                            } else if (remainingDays.inDays < 1) {
-                              return Text(
-                                  '${remainingDays.inHours} hours left till new cycle',
-                                  style: TextStyle(color: Colors.yellow));
-                            } else {
-                              return Text(
-                                  '${remainingDays.inDays} days left till new cycle',
-                                  style: TextStyle(color: Colors.white));
-                            }
-                          }),
-                        if (state.item.frequency is OneTime)
-                          Builder(builder: (context) {
-                            Duration remainingDays =
-                                state.item.endTime.difference(DateTime.now());
-                            if (remainingDays.inDays > 0 &&
-                                !remainingDays.isNegative) {
-                              return Text(
-                                '${remainingDays.inDays.toString()} days to budget end',
-                                style: TextStyle(color: Colors.white),
-                              );
-                            } else if (remainingDays.isNegative) {
-                              return Text(
-                                'Budget ended ${remainingDays.inDays * -1} days ago',
-                                style: TextStyle(color: Colors.white),
-                              );
-                            } else if (remainingDays.inHours > 0 &&
-                                !remainingDays.isNegative) {
-                              return Text('${remainingDays.inHours} hours left',
-                                  style: TextStyle(color: Colors.white));
-                            } else if (remainingDays.inMinutes > 0 &&
-                                !remainingDays.isNegative) {
-                              return Text(
-                                  '${remainingDays.inMinutes} minutes left',
-                                  style: TextStyle(color: Colors.yellow));
-                            } else {
-                              return Text('');
-                            }
-                          }),
-                        _showAllBudgetExpenses
-                            ? TextButton(
-                                onPressed: () => setState(
-                                    () => _showAllBudgetExpenses = false),
-                                style: ButtonStyle(
-                                  foregroundColor:
-                                      MaterialStateProperty.all(Colors.white),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Padding(
-                                      padding: EdgeInsets.all(8.0),
-                                      child: Icon(Icons.list_alt),
-                                    ),
-                                    Text("Show Allocations"),
-                                  ],
-                                ),
-                              )
-                            : TextButton(
-                                onPressed: () => setState(
-                                    () => _showAllBudgetExpenses = true),
-                                style: ButtonStyle(
-                                  foregroundColor:
-                                      MaterialStateProperty.all(Colors.white),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Padding(
-                                      padding: EdgeInsets.all(8.0),
-                                      child: Icon(
-                                        Icons.list,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    Text("Show Expenses"),
-                                  ],
-                                ),
-                              )
+                            ))),
                       ],
                     ),
-                  )
-                ],
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        // crossAxisAlignment: CrossAxisAlignment.start?,
+                        children: [
+                          Expanded(
+                            child: Center(
+                              child: DefaultTextStyle(
+                                  style: const TextStyle(
+                                    fontSize: 44,
+                                  ),
+                                  child: totalAllocated == 0
+                                      ? Text("0%")
+                                      : Builder(builder: (context) {
+                                          final percentage =
+                                              ((totalUsed / totalAllocated) *
+                                                      100)
+                                                  .truncate();
+                                          return FittedBox(
+                                            child: Text(
+                                              "$percentage%",
+                                              style: percentage >= 100
+                                                  ? TextStyle(
+                                                      backgroundColor:
+                                                          Colors.red[700],
+                                                    )
+                                                  : null,
+                                            ),
+                                          );
+                                        })),
+                            ),
+                          ),
+                          if (state.item.frequency is Recurring)
+                            Builder(builder: (context) {
+                              int recurrenceIntervalSeconds =
+                                  (state.item.frequency as Recurring)
+                                      .recurringIntervalSecs;
+                              int untilNow = DateTime.now()
+                                  .difference(state.item.startTime)
+                                  .inSeconds;
+                              int numberOfRecurringCyclesPassed =
+                                  (untilNow / recurrenceIntervalSeconds).ceil();
+                              DateTime budgetEndDate = (state.item.startTime
+                                  .add(Duration(
+                                      seconds: numberOfRecurringCyclesPassed *
+                                          recurrenceIntervalSeconds)));
+                              Duration remainingDays =
+                                  budgetEndDate.difference(DateTime.now());
+                              if (remainingDays.inHours < 1) {
+                                return Text(
+                                    '${remainingDays.inMinutes} minutes left till new cycle',
+                                    style: TextStyle(color: Colors.yellow));
+                              } else if (remainingDays.inDays < 1) {
+                                return Text(
+                                    '${remainingDays.inHours} hours left till new cycle',
+                                    style: TextStyle(color: Colors.yellow));
+                              } else {
+                                return Text(
+                                    '${remainingDays.inDays} days left till new cycle');
+                              }
+                            }),
+                          if (state.item.frequency is OneTime)
+                            Builder(builder: (context) {
+                              Duration remainingDays =
+                                  state.item.endTime.difference(DateTime.now());
+                              if (remainingDays.inDays > 0 &&
+                                  !remainingDays.isNegative) {
+                                return Text(
+                                  '${remainingDays.inDays.toString()} days to budget end',
+                                );
+                              } else if (remainingDays.isNegative) {
+                                return Text(
+                                    'Budget ended ${remainingDays.inDays * -1} days ago');
+                              } else if (remainingDays.inHours > 0 &&
+                                  !remainingDays.isNegative) {
+                                return Text(
+                                    '${remainingDays.inHours} hours left');
+                              } else if (remainingDays.inMinutes > 0 &&
+                                  !remainingDays.isNegative) {
+                                return Text(
+                                    '${remainingDays.inMinutes} minutes left',
+                                    style: TextStyle(color: Colors.yellow));
+                              } else {
+                                return Text('');
+                              }
+                            }),
+                          _showAllBudgetExpenses
+                              ? TextButton(
+                                  onPressed: () => setState(
+                                      () => _showAllBudgetExpenses = false),
+                                  style: ButtonStyle(
+                                    foregroundColor:
+                                        MaterialStateProperty.all(Colors.white),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: Icon(Icons.list_alt),
+                                      ),
+                                      Text("Show Allocations"),
+                                    ],
+                                  ),
+                                )
+                              : TextButton(
+                                  onPressed: () => setState(
+                                      () => _showAllBudgetExpenses = true),
+                                  style: ButtonStyle(
+                                    foregroundColor:
+                                        MaterialStateProperty.all(Colors.white),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: Icon(
+                                          Icons.list,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Text("Show Expenses"),
+                                    ],
+                                  ),
+                                )
+                        ],
+                      ),
+                    )
+                  ],
+                ),
               ),
             ),
           ),
@@ -1060,6 +1050,8 @@ class _BudgetDetailsCategoryAllocationDisplay extends StatelessWidget {
       title: Text(budget.name),
       expandedHeight: 250,
       pinned: true,
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Colors.white,
       shape: RoundedRectangleBorder(
         side: BorderSide.none,
         borderRadius: BorderRadius.only(bottomRight: Radius.circular(30)),

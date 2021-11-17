@@ -585,9 +585,10 @@ class CacheSynchronizer {
     }
   }
 
-  Future<void> refreshCache(String username, String authToken) async {
+  Future<UserDenorm> refreshCache(String username, String authToken) async {
     final user = await client.getUser(username, authToken);
     await refreshFromUser(user);
+    return user;
   }
 
   Future<void> refreshFromUser(UserDenorm user) async {

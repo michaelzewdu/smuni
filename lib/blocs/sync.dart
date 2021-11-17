@@ -84,11 +84,14 @@ class SyncBloc extends Bloc<SyncBlocEvent, SyncBlocState> {
     try {
       final auth = authBloc.authSuccesState();
       await refresher.syncPendingChanges(auth.username, auth.authToken);
-      await refresher.refreshCache(auth.username, auth.authToken);
+      final user = await refresher.refreshCache(auth.username, auth.authToken);
       yield Synced();
+
       prefsBloc.add(
-        UpdatePreferences(
-            Preferences.from(prefs.preferences, syncPending: false)),
+        UpdatePreferences(Preferences(
+            miscCategory: user.miscCategory,
+            mainBudget: user.mainBudget,
+            syncPending: false)),
       );
     } catch (err) {
       prefsBloc.add(
@@ -107,7 +110,7 @@ class SyncBloc extends Bloc<SyncBlocEvent, SyncBlocState> {
   }
 
   Stream<SyncBlocState> _handleTrySync(TrySync event) async* {
-    final prefs = prefsBloc.preferencesLoadSuccessState();
+    // final prefs = prefsBloc.preferencesLoadSuccessState();
     final current = state;
     // yield Syncing();
 
@@ -119,18 +122,18 @@ class SyncBloc extends Bloc<SyncBlocEvent, SyncBlocState> {
 
     try {
       await refresher.syncPendingChanges(auth.username, auth.authToken);
-      await refresher.refreshCache(auth.username, auth.authToken);
+      final user = await refresher.refreshCache(auth.username, auth.authToken);
       yield Synced();
+
       prefsBloc.add(
         UpdatePreferences(
-            Preferences.from(prefs.preferences, syncPending: false)),
+          Preferences(
+              miscCategory: user.miscCategory,
+              mainBudget: user.mainBudget,
+              syncPending: false),
+        ),
       );
     } catch (err) {
-      prefsBloc.add(
-        UpdatePreferences(
-            Preferences.from(prefs.preferences, syncPending: true)),
-      );
-
       if (err is SocketException) {
         yield SyncFailed(SyncException(ConnectionException(err)));
         throw ConnectionException(err);

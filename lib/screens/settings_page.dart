@@ -38,19 +38,16 @@ class _MenusPageState extends State<MenusPage> {
           ),
         ),
         body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           // crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: DrawerButtons(
-                buttonName: 'About Us',
-                drawerButtonAction: () => showAboutDialog(
-                  context: context,
-                  applicationName: "Smuni",
-                  applicationVersion: "0.0.1-alpha",
-                  children: [Text("TODO")],
-                ),
+            ListTile(
+              title: Text("Kamasio"),
+              trailing: Text("0.0.1-alpha"),
+              onTap: () => showAboutDialog(
+                context: context,
+                applicationName: "Smuni",
+                applicationVersion: "0.0.1-alpha",
+                children: [Text("TODO")],
               ),
             ),
             !_awaitingOp
@@ -81,67 +78,6 @@ class _MenusPageState extends State<MenusPage> {
                     child: const Text("Sync"),
                   )
                 : const CircularProgressIndicator(),
-            /* !_awaitingOp
-                ? ElevatedButton(
-                    onPressed: () async {
-                      setState(() => _awaitingOp = true);
-                      final s = context.read<CacheSynchronizer>();
-                      final catA = await s.offlineCategoryRepo
-                          .createItemOffline(CreateCategoryInput(
-                        name: "A",
-                      ));
-                      final catB = await s.offlineCategoryRepo
-                          .createItemOffline(CreateCategoryInput(
-                              name: "B", parentId: catA.parentId));
-                      final catC = await s.offlineCategoryRepo
-                          .createItemOffline(CreateCategoryInput(
-                              name: "C", parentId: catB.parentId));
-
-                      final catD = await s.offlineCategoryRepo
-                          .createItemOffline(CreateCategoryInput(
-                        name: "C",
-                      ));
-
-                      final budA = await s.offlineBudgetRepo
-                          .createItemOffline(CreateBudgetInput(
-                        name: "A",
-                        startTime: DateRange.monthRange(DateTime.now()).start,
-                        endTime: DateRange.monthRange(DateTime.now()).end,
-                        frequency: OneTime(),
-                        allocatedAmount:
-                            MonetaryAmount(amount: 100 * 100, currency: "ETB"),
-                        categoryAllocations: {
-                          catA.id: 50 * 100,
-                          catD.id: 50 * 100,
-                        },
-                      ));
-
-                      final expZ = await s.offlineExpenseRepo
-                          .createItemOffline(CreateExpenseInput(
-                        name: "Z",
-                        amount:
-                            MonetaryAmount(amount: 50 * 100, currency: "ETB"),
-                        budgetId: budA.id,
-                        categoryId: catA.id,
-                      ));
-                      final expX = await s.offlineExpenseRepo
-                          .createItemOffline(CreateExpenseInput(
-                        name: "X",
-                        amount:
-                            MonetaryAmount(amount: 40 * 100, currency: "ETB"),
-                        budgetId: budA.id,
-                        categoryId: catD.id,
-                      ));
-                      await s.offlineCategoryRepo.updateItemOffline(
-                        catA.id,
-                        UpdateCategoryInput(
-                            lastSeenVersion: catA.version, archive: true),
-                      );
-                      setState(() => _awaitingOp = false);
-                    },
-                    child: const Text("Add Dummy Data"),
-                  )
-                : const CircularProgressIndicator(), */
           ],
         ),
       );

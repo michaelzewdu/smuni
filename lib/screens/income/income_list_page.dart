@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/income_list_view.dart';
+import 'package:smuni/widgets/widgets.dart';
 
 import 'income_edit_page.dart';
 
@@ -29,6 +30,7 @@ class IncomeListPage extends StatefulWidget {
 }
 
 class _IncomeListPageState extends State<IncomeListPage> {
+  String? _selectedIncome;
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
@@ -40,6 +42,7 @@ class _IncomeListPageState extends State<IncomeListPage> {
               return SingleChildScrollView(
                 child: IncomeListView(
                   items: state.items,
+                  onSelected: (id) => setState(() => _selectedIncome = id),
                   onEdit: (id) => Navigator.pushNamed(
                     context,
                     IncomeEditPage.routeName,
@@ -76,11 +79,21 @@ class _IncomeListPageState extends State<IncomeListPage> {
             return Center(child: CircularProgressIndicator.adaptive());
           },
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () =>
-              Navigator.pushNamed(context, IncomeEditPage.routeName),
-          child: Icon(Icons.add),
-          tooltip: "Add",
+        floatingActionButton: Visibility(
+          visible: _selectedIncome == null,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              FloatingActionButton.extended(
+                onPressed: () =>
+                    Navigator.pushNamed(context, IncomeEditPage.routeName),
+                icon: Icon(Icons.add),
+                label: Text("Income"),
+              ),
+              ...defaultActionButtons(context),
+            ],
+          ),
         ),
       );
 }

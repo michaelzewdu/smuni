@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
+import 'package:smuni/widgets/widgets.dart';
 
 import 'category_edit_page.dart';
 
@@ -12,18 +13,32 @@ class CategoryDetailsPage extends StatelessWidget {
 
   static Route route(String id) => MaterialPageRoute(
         settings: const RouteSettings(name: routeName),
-        builder: (context) => BlocProvider(
-          create: (context) => CategoryDetailsPageBloc(
-              context.read<CategoryRepository>(),
-              context.read<OfflineCategoryRepository>(),
-              context.read<AuthBloc>(),
-              context.read<BudgetRepository>(),
-              context.read<OfflineBudgetRepository>(),
-              context.read<ExpenseRepository>(),
-              context.read<OfflineExpenseRepository>(),
-              context.read<SyncBloc>(),
-              context.read<PreferencesBloc>(),
-              id),
+        builder: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => CategoryDetailsPageBloc(
+                  context.read<CategoryRepository>(),
+                  context.read<OfflineCategoryRepository>(),
+                  context.read<AuthBloc>(),
+                  context.read<BudgetRepository>(),
+                  context.read<OfflineBudgetRepository>(),
+                  context.read<ExpenseRepository>(),
+                  context.read<OfflineExpenseRepository>(),
+                  context.read<SyncBloc>(),
+                  context.read<PreferencesBloc>(),
+                  id),
+            ),
+            BlocProvider(
+              create: (context) => CategoryListPageBloc(
+                context.read<CategoryRepository>(),
+                context.read<OfflineCategoryRepository>(),
+                LoadCategoriesFilter(
+                  includeActive: true,
+                  includeArchvied: true,
+                ),
+              ),
+            ),
+          ],
           child: CategoryDetailsPage(),
         ),
       );
@@ -45,7 +60,7 @@ class CategoryDetailsPage extends StatelessWidget {
     })
         eventGenerator,
   }) =>
-      ElevatedButton(
+      TextButton(
         child: Text(butonTitle),
         onPressed: () async {
           final confirm = await showDialog<bool?>(
@@ -166,7 +181,7 @@ class CategoryDetailsPage extends StatelessWidget {
                   }),
                 ]
               : [
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () => Navigator.pushNamed(
                       context,
                       CategoryEditPage.routeName,
@@ -205,11 +220,74 @@ class CategoryDetailsPage extends StatelessWidget {
         ),
         body: Column(
           children: <Widget>[
-            Text(state.item.name),
-            Text("id: ${state.item.id}"),
-            Text("tags: ${state.item.tags}"),
-            Text("createdAt: ${state.item.createdAt}"),
-            Text("updatedAt: ${state.item.updatedAt}"),
+            ListTile(
+              title: Text(
+                state.item.name,
+                textScaleFactor: 2,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (state.item.tags.isNotEmpty)
+              ListTile(
+                leading: Text("Tags:"),
+                title:
+                    Text(state.item.tags.map((e) => "#$e").toList().join(" ")),
+                dense: true,
+              ),
+            ListTile(title: Text("Subcategories"), dense: true),
+            BlocBuilder<CategoryListPageBloc, CategoryListPageBlocState>(
+                builder: (context, catListState) =>
+                    catListState is CategoriesLoadSuccess
+                        ? Builder(builder: (context) {
+                            final ancestryGraph = <String, TreeNode<String>>{};
+                            void recursivelyAddChildren(List<String> children) {
+                              for (final id in children) {
+                                ancestryGraph[id] =
+                                    catListState.ancestryGraph[id]!;
+                              }
+                            }
+
+                            for (final node in catListState
+                                .ancestryGraph[state.id]!.children
+                                .map((e) => catListState.ancestryGraph[e]!)) {
+                              ancestryGraph[node.item] = TreeNode(
+                                node.item,
+                                children: node.children,
+                                parent: null,
+                              );
+                              recursivelyAddChildren(node.children);
+                            }
+
+                            return CategoryListView(
+                              ancestryGraph: ancestryGraph,
+                              items: catListState.items,
+                              markArchived: !state.item.isArchived,
+                              onSelect: (id) => Navigator.pushNamed(
+                                context,
+                                CategoryDetailsPage.routeName,
+                                arguments: id,
+                              ),
+                            );
+                          })
+                        : catListState is CategoriesLoading
+                            ? Center(
+                                child: CircularProgressIndicator(),
+                              )
+                            : throw Exception("Unhandled state: $catListState"))
+          ],
+        ),
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            FloatingActionButton.extended(
+              onPressed: () => Navigator.pushNamed(
+                  context, CategoryEditPage.routeName,
+                  arguments: CategoryEditNewArgs(parent: state.id)),
+              icon: Icon(Icons.add),
+              label: Text("Subcategory"),
+            ),
+            // ...defaultActionButtons(context),
           ],
         ),
       );
@@ -241,8 +319,9 @@ class CategoryDetailsPage extends StatelessWidget {
                 ),
               ),
             );
+          } else {
+            throw Exception("Unhandled state");
           }
-          throw Exception("Unhandled state");
         },
       );
 }

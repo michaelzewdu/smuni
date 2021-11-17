@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/expense_list_view.dart';
+import 'package:smuni/widgets/widgets.dart';
 
-import '../../constants.dart';
 import 'expense_edit_page.dart';
 
 class ExpenseListPage extends StatefulWidget {
@@ -56,11 +56,10 @@ class ExpenseListPage extends StatefulWidget {
 }
 
 class _ExpenseListPageState extends State<ExpenseListPage> {
+  String? _selectedExpense;
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          backgroundColor: semuni50,
-          foregroundColor: Colors.black,
           shadowColor: Colors.transparent,
           title: const Text("Expenses"),
         ),
@@ -87,6 +86,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
                                       ExpenseEditPage.routeName,
                                       arguments: expensesState.items[id],
                                     ),
+                                    onSelected: (id) =>
+                                        setState(() => _selectedExpense = id),
                                     onDelete: (id) async {
                                       final item = expensesState.items[id]!;
                                       final confirm = await showDialog<bool?>(
@@ -137,6 +138,16 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
               : expensesState is ExpensesLoading
                   ? Center(child: CircularProgressIndicator.adaptive())
                   : throw Exception("Unhandled state: $expensesState"),
+        ),
+        floatingActionButton: Visibility(
+          visible: _selectedExpense == null,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ...defaultActionButtons(context),
+            ],
+          ),
         ),
       );
 }

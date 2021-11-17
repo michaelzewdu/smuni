@@ -16,7 +16,7 @@ class User {
   final String? phoneNumber;
   final String? pictureURL;
   final String? mainBudget;
-  final String? miscCategory;
+  final String miscCategory;
 
   User({
     required this.id,
@@ -29,7 +29,7 @@ class User {
     this.phoneNumber,
     this.pictureURL,
     this.mainBudget,
-    this.miscCategory,
+    required this.miscCategory,
   });
 
   Map<String, dynamic> toJson() => {
@@ -57,7 +57,7 @@ class User {
         phoneNumber: checkedConvert(json, "phoneNumber", (v) => v as String?),
         pictureURL: checkedConvert(json, "pictureURL", (v) => v as String?),
         mainBudget: checkedConvert(json, "mainBudget", (v) => v as String?),
-        miscCategory: checkedConvert(json, "miscCategory", (v) => v as String?),
+        miscCategory: checkedConvert(json, "miscCategory", (v) => v as String),
       );
 
   factory User.from(
@@ -109,7 +109,7 @@ class UserDenorm extends User {
     String? phoneNumber,
     String? pictureURL,
     String? mainBudget,
-    String? miscCategory,
+    required String miscCategory,
     required this.budgets,
     required this.expenses,
     required this.categories,

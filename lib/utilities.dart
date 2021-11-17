@@ -131,16 +131,21 @@ class DateRangeFilter {
   }
 }
 
+String humanReadableDateTime(DateTime time) =>
+    "${monthNames[time.month]} ${time.day} ${time.year}";
 String humanReadableDayRelationName(
   DateTime time,
   DateTime relativeTo,
 ) {
   final diff = time.difference(relativeTo);
-  if (diff.inDays < -7) {
-    return '${monthNames[time.month]} ${time.day} ${time.year}';
+  if (diff.inDays.abs() > 7) {
+    return humanReadableDateTime(time);
   }
-  if (diff.inDays <= -2) return '${diff.inDays.abs()} days ago';
-  if (relativeTo.day - 1 == time.day) return 'Yesterday';
+
+  if (diff.inDays < -2) return '${diff.inDays.abs()} days ago';
+  if (diff.inDays > 2) return '${diff.inDays.abs()} days later';
+  if (diff.inDays < -1 && relativeTo.day - 1 == time.day) return 'Yesterday';
+  if (diff.inDays > 1 && relativeTo.day + 1 == time.day) return 'Tomorrow';
   return 'Today';
 }
 
@@ -149,19 +154,23 @@ String humanReadableTimeRelationName(
   DateTime relativeTo,
 ) {
   final diff = time.difference(relativeTo);
-  if (diff.inDays < -7) {
-    return '${monthNames[time.month]} ${time.day} ${time.year}';
+  if (diff.inDays.abs() > 7) {
+    return humanReadableDateTime(time);
   }
-  if (diff.inDays > -2) return '${diff.inDays.abs()} days ago';
+  if (diff.inDays < -2) return '${diff.inDays.abs()} days ago';
+  if (diff.inDays > 2) return '${diff.inDays.abs()} days later';
   if (diff.inDays < -1 && relativeTo.day - 1 == time.day) return 'Yesterday';
-  if (diff.inHours < -1) return '${diff.inHours.abs()} hours ago';
-  if (diff.inMinutes < -1) return '${diff.inMinutes.abs()} minutes ago';
+  if (diff.inDays > 1 && relativeTo.day + 1 == time.day) return 'Tomorrow';
+  if (diff.inHours > -1) return '${diff.inHours.abs()} hours ago';
+  if (diff.inHours < 1) return '${diff.inHours.abs()} hours later';
+  if (diff.inMinutes > -1) return '${diff.inMinutes.abs()} minutes ago';
+  if (diff.inMinutes < 1) return '${diff.inMinutes.abs()} minutes later';
   return 'Now';
 }
 
 // TODO: i10n
 const List<String> monthNames = [
-  "IMPOSSIBLE",
+  "BAD_MONTH",
   "Jan",
   "Feb",
   "Mar",

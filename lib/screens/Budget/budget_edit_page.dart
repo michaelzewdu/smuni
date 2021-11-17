@@ -133,7 +133,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
             title: _awaitingSave
                 ? const Text("Loading...")
                 : widget.isCreating
-                    ? const Text("Create budget")
+                    ? const Text("New budget")
                     : FittedBox(child: Text(widget.item.name)),
             actions: !_awaitingSave
                 ? [

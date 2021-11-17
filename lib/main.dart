@@ -262,9 +262,17 @@ class _MyAppState extends State<MyApp> {
                               Locale('wal', ''), //ወላይታ
                             ],
                             theme: ThemeData(
+                              appBarTheme: AppBarTheme(
+                                backgroundColor: semuni50,
+                                foregroundColor: Colors.black,
+                              ),
                               primarySwatch: primarySmuniSwatch,
                               buttonTheme: ButtonThemeData(
                                 textTheme: ButtonTextTheme.primary,
+                              ),
+                              floatingActionButtonTheme:
+                                  FloatingActionButtonThemeData(
+                                extendedTextStyle: TextStyle(),
                               ),
                             ),
                             onGenerateRoute: Routes.myOnGenerateRoute,

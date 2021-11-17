@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:smuni/blocs/category_list_page.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/widgets/widgets.dart';
 
-import '../../constants.dart';
 import 'category_details_page.dart';
 import 'category_edit_page.dart';
 
@@ -61,8 +61,6 @@ class _CategoryListPageState extends State<CategoryListPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          backgroundColor: semuni50,
-          foregroundColor: Colors.black,
           shadowColor: Colors.transparent,
           title: widget.showingArchivedOnly
               ? const Text("Category Trash")
@@ -97,7 +95,8 @@ class _CategoryListPageState extends State<CategoryListPage> {
                     ), */
                   Expanded(
                     child: CategoryListView(
-                      state: state,
+                      items: state.items,
+                      ancestryGraph: state.ancestryGraph,
                       markArchived: !widget.showingArchivedOnly,
                       onSelect: (id) => Navigator.pushNamed(
                         context,
@@ -112,13 +111,21 @@ class _CategoryListPageState extends State<CategoryListPage> {
             return Center(child: CircularProgressIndicator.adaptive());
           },
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => Navigator.pushNamed(
-            context,
-            CategoryEditPage.routeName,
-          ),
-          child: Icon(Icons.add),
-          tooltip: "Add",
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            FloatingActionButton.extended(
+              onPressed: () => Navigator.pushNamed(
+                context,
+                CategoryEditPage.routeName,
+                arguments: CategoryEditNewArgs(),
+              ),
+              icon: Icon(Icons.add),
+              label: Text("Category"),
+            ),
+            ...defaultActionButtons(context),
+          ],
         ),
       );
 }

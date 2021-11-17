@@ -186,9 +186,11 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
           appBar: AppBar(
             title: _awaitingSave
                 ? const Text("Loading...")
-                : FittedBox(child: Text(widget.item.name)),
+                : widget.item.name.isEmpty
+                    ? Text("New expense")
+                    : FittedBox(child: Text(widget.item.name)),
             actions: [
-              ElevatedButton(
+              TextButton(
                 child: const Text("Save"),
                 onPressed: !_awaitingSave
                     ? () {
@@ -226,7 +228,7 @@ class _ExpenseEditPageState extends State<ExpenseEditPage> {
                       }
                     : null,
               ),
-              ElevatedButton(
+              TextButton(
                 child: !_awaitingSave
                     ? const Text("Cancel")
                     : const CircularProgressIndicator(),

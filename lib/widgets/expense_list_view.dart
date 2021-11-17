@@ -22,6 +22,7 @@ class ExpenseListView extends StatefulWidget {
   /// range.
   final List<DateRangeFilter>? unbucketedRanges;
   final bool dense;
+  final FutureOr<void> Function(String?)? onSelected;
   final FutureOr<void> Function(String)? onDelete;
   final FutureOr<void> Function(String)? onEdit;
   final List<DateRangeFilter> yearGroups = [],
@@ -38,6 +39,7 @@ class ExpenseListView extends StatefulWidget {
     required this.displayedRange,
     required this.allDateRanges,
     this.dense = false,
+    this.onSelected,
     this.onDelete,
     this.onEdit,
     this.unbucketedRanges,
@@ -108,8 +110,6 @@ class ExpenseListView extends StatefulWidget {
 }
 
 class _ExpenseListViewState extends State<ExpenseListView> {
-  String? _selectedItem;
-
   @override
   Widget build(BuildContext context) {
     final currentFilterLevel = widget.displayedRange.level;
@@ -224,25 +224,23 @@ class _ExpenseListViewState extends State<ExpenseListView> {
 
   Widget _expenseListView(BuildContext context) {
     final keys = widget.items.keys.toList();
-    return ExpansionPanelList(
+    return ExpansionPanelList.radio(
       dividerColor: Colors.transparent,
       expandedHeaderPadding: const EdgeInsets.symmetric(vertical: 2),
       animationDuration: Duration(milliseconds: 400),
       expansionCallback: (int index, bool isExpanded) {
-        setState(() {
-          final tappedId = widget.items[keys[index]]!.id;
-          if (tappedId != _selectedItem) {
-            _selectedItem = tappedId;
-          } else {
-            _selectedItem = null;
-          }
-        });
+        if (widget.onSelected != null && isExpanded) {
+          widget.onSelected!.call(null);
+        } else {
+          widget.onSelected!.call(widget.items[keys[index]]!.id);
+        }
       },
       children: keys.map((k) => widget.items[k]!).map<ExpansionPanel>((item) {
         final budget = widget.allBudgets[item.budgetId]!;
         final category = widget.allCategories[item.categoryId]!;
 
-        return ExpansionPanel(
+        return ExpansionPanelRadio(
+          value: item.id,
           canTapOnHeader: true,
           headerBuilder: (BuildContext context, bool isExpanded) => ListTile(
             title: Text(
@@ -254,7 +252,7 @@ class _ExpenseListViewState extends State<ExpenseListView> {
               "${item.amount.currency} ${item.amount.amount / 100}",
             ),
             subtitle: Text(
-              '${monthNames[item.timestamp.month]} ${item.timestamp.day} ${item.timestamp.year}',
+              humanReadableTimeRelationName(item.timestamp, DateTime.now()),
             ),
           ),
           body: Padding(
@@ -263,9 +261,7 @@ class _ExpenseListViewState extends State<ExpenseListView> {
               children: [
                 ListTile(
                     dense: true,
-                    title: Text(
-                      '${monthNames[item.createdAt.month]} ${item.createdAt.day} ${item.createdAt.year}',
-                    )),
+                    title: Text(humanReadableDateTime(item.timestamp))),
                 if (widget.showBudgetDetail)
                   ListTile(
                     dense: true,
@@ -323,7 +319,6 @@ class _ExpenseListViewState extends State<ExpenseListView> {
               ],
             ),
           ),
-          isExpanded: item.id == _selectedItem,
         );
       }).toList(),
     );

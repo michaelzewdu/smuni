@@ -100,9 +100,11 @@ class _IncomeEditPageState extends State<IncomeEditPage> {
           appBar: AppBar(
             title: _awaitingSave
                 ? const Text("Loading...")
-                : FittedBox(child: Text(widget.item.name)),
+                : widget.isCreating
+                    ? Text("New income")
+                    : FittedBox(child: Text(widget.item.name)),
             actions: [
-              ElevatedButton(
+              TextButton(
                 child: const Text("Save"),
                 onPressed: !_awaitingSave
                     ? () {
@@ -140,7 +142,7 @@ class _IncomeEditPageState extends State<IncomeEditPage> {
                       }
                     : null,
               ),
-              ElevatedButton(
+              TextButton(
                 child: !_awaitingSave
                     ? const Text("Cancel")
                     : const CircularProgressIndicator(),

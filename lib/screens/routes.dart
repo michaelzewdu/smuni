@@ -61,8 +61,9 @@ class Routes {
       case CategoryDetailsPage.routeName:
         return CategoryDetailsPage.route(settings.arguments as String);
       case CategoryEditPage.routeName:
-        return settings.arguments == null
-            ? CategoryEditPage.routeNew()
+        return settings.arguments is CategoryEditNewArgs
+            ? CategoryEditPage.routeNew(
+                settings.arguments as CategoryEditNewArgs)
             : CategoryEditPage.route(settings.arguments as Category);
       case SignUpPage.routeName:
         return SignUpPage.route();

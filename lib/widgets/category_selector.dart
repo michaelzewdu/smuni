@@ -91,10 +91,16 @@ class _CategorySelectorState extends State<CategorySelector> {
             item.parentId != null ? itemsState.items[item.parentId] : null;
         return Padding(
           padding: const EdgeInsets.all(8.0),
-          child: ListTile(
-            title: Text(item.name),
-            subtitle: Text(item.tags.map((e) => "#$e").toList().join(" ")),
-            trailing: parent != null ? Text("Parent: ${parent.name}") : null,
+          child: Column(
+            children: [
+              Align(
+                child: Text(item.name, textScaleFactor: 1.7),
+                alignment: Alignment.center,
+              ),
+              if (item.tags.isNotEmpty)
+                Text(item.tags.map((e) => "#$e").toList().join(" ")),
+              if (parent != null) Text("Parent: ${parent.name}"),
+            ],
           ),
         );
       } else {
@@ -207,7 +213,11 @@ class _CategorySelectorState extends State<CategorySelector> {
                   "Category",
                 ),
             trailing: TextButton(
-              child: _isSelecting ? const Text("Cancel") : const Text("Select"),
+              child: _isSelecting
+                  ? const Text("Cancel")
+                  : _selectedCategoryId != null
+                      ? const Text("Change")
+                      : const Text("Select"),
               onPressed: () {
                 setState(() {
                   _isSelecting = !_isSelecting;
