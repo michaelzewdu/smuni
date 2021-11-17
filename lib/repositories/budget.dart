@@ -5,6 +5,7 @@ import 'package:smuni/providers/cache/cache.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
 
+import '../utilities.dart';
 import 'repositories.dart';
 
 class ApiBudgetRepository
@@ -100,6 +101,9 @@ class ApiBudgetRepository
     }
     _changedItemsController.add(ids);
   }
+
+  @override
+  bool isEmptyUpdate(UpdateBudgetInput input) => input.isEmpty;
 
   /*  @override
   Future<Budget> createItemOffline(String id, Budget input) {

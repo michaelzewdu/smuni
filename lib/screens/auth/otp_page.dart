@@ -134,7 +134,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                         },
                       )),
                 ),
-                _loadingIndicator ? CircularProgressIndicator() : Container(),
+                if (_loadingIndicator) CircularProgressIndicator(),
                 BlocConsumer<SignUpBloc, SignUpBlocState>(
                   listener: (context, currentState) async {
                     if (currentState is PhoneNumberVerified) {
@@ -151,30 +151,64 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                           phone: widget.phone));
                     }
                     if (currentState is SignUpSuccess) {
-                      setState(() {
-                        _loadingIndicator = false;
-                      });
+                      setState(() => _loadingIndicator = false);
                       Navigator.pushNamedAndRemoveUntil(
                           context,
                           SignInPage.routeName,
                           ModalRoute.withName(SignInPage.routeName));
                     }
                     if (currentState is FirebaseError) {
+                      setState(() => _loadingIndicator = false);
                       if (currentState.errorMessage == null) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           content: Text('An error occurred'),
-                          duration: Duration(seconds: 3),
+                          duration: Duration(seconds: 5),
+                          action: SnackBarAction(
+                            label: "Retry",
+                            onPressed: () => context.read<SignUpBloc>().add(
+                                  SignUpToBackEndEvent(
+                                      // name: _name,
+                                      username: widget.username,
+                                      email: widget.email,
+                                      password: widget.password,
+                                      phone: widget.phone),
+                                ),
+                          ),
                         ));
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           content: Text(currentState.errorMessage!),
-                          duration: Duration(seconds: 3),
+                          duration: Duration(seconds: 5),
+                          action: SnackBarAction(
+                            label: "Retry",
+                            onPressed: () => context.read<SignUpBloc>().add(
+                                  SignUpToBackEndEvent(
+                                      // name: _name,
+                                      username: widget.username,
+                                      email: widget.email,
+                                      password: widget.password,
+                                      phone: widget.phone),
+                                ),
+                          ),
                         ));
                       }
                     }
                     if (currentState is SignUpFailure) {
+                      setState(() => _loadingIndicator = false);
                       var snackBar = SnackBar(
                         content: Text('${currentState.failureMessage}'),
+                        duration: Duration(seconds: 5),
+                        action: SnackBarAction(
+                          label: "Retry",
+                          onPressed: () => context.read<SignUpBloc>().add(
+                                SignUpToBackEndEvent(
+                                    // name: _name,
+                                    username: widget.username,
+                                    email: widget.email,
+                                    password: widget.password,
+                                    phone: widget.phone),
+                              ),
+                        ),
                       );
                       ScaffoldMessenger.of(context).showSnackBar(snackBar);
                     }

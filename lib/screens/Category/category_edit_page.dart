@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
@@ -156,7 +155,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
                                           widget.item,
                                           name: _name,
                                           parentId:
-                                              _isSubcategory ? _parentId : "",
+                                              _isSubcategory ? _parentId : null,
                                           tags: _tags.toList(),
                                         ),
                                         old: widget.item,

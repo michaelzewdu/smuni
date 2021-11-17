@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
@@ -147,12 +146,12 @@ class BudgetDetailsPage extends StatefulWidget {
               _dialogActionButton(
                 context,
                 state,
-                butonTitle: "Unarchive",
+                butonTitle: "Restore",
                 dialogTitle: "Confirm",
                 dialogContent:
-                    "Are you sure you want to reactivate budget ${state.item.name}?",
+                    "Are you sure you want to restore budget ${state.item.name}?",
                 cancelButtonTitle: "Cancel",
-                confirmButtonTitle: "Unarchive",
+                confirmButtonTitle: "Restore",
                 eventGenerator: ({onError, onSuccess}) => UnarchiveBudget(
                   onSuccess: onSuccess,
                   onError: onError,
@@ -161,7 +160,7 @@ class BudgetDetailsPage extends StatefulWidget {
               _dialogActionButton(
                 context,
                 state,
-                butonTitle: "Delete",
+                butonTitle: "Permanent Delete",
                 dialogTitle: "Confirm deletion",
                 dialogContent:
                     "Are you sure you want to permanently delete entry ${state.item.name}?"
@@ -181,18 +180,18 @@ class BudgetDetailsPage extends StatefulWidget {
                   BudgetEditPage.routeName,
                   arguments: state.item,
                 ),
-                child: const Text("Edit"),
+                child: const Text("Edit",style: TextStyle(color:Colors.white),),
               ),
               _dialogActionButton(
                 context,
                 state,
-                butonTitle: "Archive",
-                dialogTitle: "Confirm archival",
+                butonTitle: "Delete",
+                dialogTitle: "Confirm delete",
                 dialogContent:
-                    "Are you sure you want to archive entry ${state.item.name}?"
-                    "\nAssociated expense entries won't removed and you can always Unarchive it afterwards.",
+                    "Are you sure you want to delete entry ${state.item.name}?"
+                    "\nAssociated expense entries won't removed and you can always recover it afterwards.",
                 cancelButtonTitle: "Cancel",
-                confirmButtonTitle: "Archive",
+                confirmButtonTitle: "Delete",
                 eventGenerator: ({onError, onSuccess}) => ArchiveBudget(
                   onSuccess: onSuccess,
                   onError: onError,

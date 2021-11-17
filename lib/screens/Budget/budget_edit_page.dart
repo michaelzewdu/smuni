@@ -144,7 +144,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4.0, vertical: 8),
-                      child: ElevatedButton(
+                      child: TextButton(
                         child: const Text("Save"),
                         onPressed: () {
                           final allocated = _categoryAllocations.isNotEmpty
@@ -204,7 +204,7 @@ class _BudgetEditPageState extends State<BudgetEditPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4.0, vertical: 8),
-                      child: ElevatedButton(
+                      child: TextButton(
                         child: const Text("Cancel"),
                         onPressed: () => Navigator.pop(context, false),
                       ),

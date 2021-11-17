@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/utilities.dart';
@@ -174,6 +173,13 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
           : Scaffold(
               appBar: AppBar(
                 title: Text('Home'),
+                actions: [
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.pushNamed(context, SettingsPage.routeName),
+                    child: const Text("Settings"),
+                  ),
+                ],
               ),
               body: Center(
                 child: Form(

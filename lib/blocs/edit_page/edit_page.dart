@@ -1,16 +1,15 @@
-export 'budget_edit_page.dart';
-export 'category_edit_page.dart';
-export 'expense_edit_page.dart';
-export 'income_edit_page.dart';
-
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:smuni/blocs/auth.dart';
-
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
+
+export 'budget_edit_page.dart';
+export 'category_edit_page.dart';
+export 'expense_edit_page.dart';
+export 'income_edit_page.dart';
 
 // EVENTS
 
@@ -118,6 +117,11 @@ class EditPageBloc<Identifier, Item, CreateInput, UpdateInput> extends Bloc<
       _handleUpdateItem(
     UpdateItem event,
   ) async* {
+    if (repo.isEmptyUpdate(event.input)) {
+      final item = await offlineRepo.getItemOffline(event.id);
+      yield EditSuccess(id: event.id, item: item!);
+      return;
+    }
     try {
       final auth = authBloc.authSuccesState();
       final result = await repo.updateItem(

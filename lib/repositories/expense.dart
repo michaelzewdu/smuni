@@ -80,6 +80,9 @@ class ApiExpenseRepository extends ApiRepository<String, Expense,
       CreateExpenseInput.fromItem(item);
 
   @override
+  bool isEmptyUpdate(UpdateExpenseInput input) => input.isEmpty;
+
+  @override
   Future<void> refreshCache(Map<String, Expense> items) async {
     await cache.clear();
     Set<String> ids = {};

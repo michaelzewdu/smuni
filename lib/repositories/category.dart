@@ -91,6 +91,9 @@ class ApiCategoryRepository extends ApiRepository<String, Category,
       CreateCategoryInput.fromItem(item);
 
   @override
+  bool isEmptyUpdate(UpdateCategoryInput input) => input.isEmpty;
+
+  @override
   Future<void> refreshCache(Map<String, Category> items) async {
     await cache.clear();
     Set<String> ids = {};

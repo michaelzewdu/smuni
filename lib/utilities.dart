@@ -1,10 +1,10 @@
-export 'package:smuni_api_client/smuni_api_client.dart' show Pair;
-
 import 'dart:async';
 
 import 'package:flutter/material.dart' as flutter;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
+
+export 'package:smuni_api_client/smuni_api_client.dart' show Pair;
 
 class EnemeratedIterator<T> extends Iterator<Pair<int, T>> {
   int currentCount = -1;
@@ -142,8 +142,8 @@ String humanReadableDayRelationName(
     return humanReadableDateTime(time);
   }
 
-  if (diff.inDays < -2) return '${diff.inDays.abs()} days ago';
-  if (diff.inDays > 2) return '${diff.inDays.abs()} days later';
+  if (diff.inDays < -2) return '${diff.inDays.abs()} days later';
+  if (diff.inDays > 2) return '${diff.inDays.abs()} days go';
   if (diff.inDays < -1 && relativeTo.day - 1 == time.day) return 'Yesterday';
   if (diff.inDays > 1 && relativeTo.day + 1 == time.day) return 'Tomorrow';
   return 'Today';
@@ -157,14 +157,14 @@ String humanReadableTimeRelationName(
   if (diff.inDays.abs() > 7) {
     return humanReadableDateTime(time);
   }
-  if (diff.inDays < -2) return '${diff.inDays.abs()} days ago';
-  if (diff.inDays > 2) return '${diff.inDays.abs()} days later';
+  if (diff.inDays < -2) return '${diff.inDays.abs()} days later';
+  if (diff.inDays > 2) return '${diff.inDays.abs()} days before';
   if (diff.inDays < -1 && relativeTo.day - 1 == time.day) return 'Yesterday';
   if (diff.inDays > 1 && relativeTo.day + 1 == time.day) return 'Tomorrow';
-  if (diff.inHours > -1) return '${diff.inHours.abs()} hours ago';
-  if (diff.inHours < 1) return '${diff.inHours.abs()} hours later';
-  if (diff.inMinutes > -1) return '${diff.inMinutes.abs()} minutes ago';
-  if (diff.inMinutes < 1) return '${diff.inMinutes.abs()} minutes later';
+  if (diff.inHours > -1) return '${diff.inHours.abs()} hours later';
+  if (diff.inHours < 1) return '${diff.inHours.abs()} hours ago';
+  if (diff.inMinutes > -1) return '${diff.inMinutes.abs()} minutes later';
+  if (diff.inMinutes < 1) return '${diff.inMinutes.abs()} minutes ago';
   return 'Now';
 }
 

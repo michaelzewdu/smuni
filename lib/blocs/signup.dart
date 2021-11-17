@@ -5,13 +5,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smuni/repositories/auth.dart';
 import 'package:smuni/repositories/user.dart';
 
+import '../utilities.dart';
+
 abstract class SignUpBlocEvent {
   const SignUpBlocEvent();
 }
 
-class AuthenticatePhoneNo extends SignUpBlocEvent {
+class AuthenticatePhoneNo extends SignUpBlocEvent with StatusAwareEvent {
   String phoneNo;
-  AuthenticatePhoneNo({required this.phoneNo});
+  AuthenticatePhoneNo({
+    required this.phoneNo,
+    OperationSuccessNotifier? onSuccess,
+    OperationExceptionNotifier? onError,
+  }) {
+    this.onSuccess = onSuccess;
+    this.onError = onError;
+  }
 }
 
 class SignUpToBackEndEvent extends SignUpBlocEvent {
@@ -117,4 +126,21 @@ class SignUpBloc extends Bloc<SignUpBlocEvent, SignUpBlocState> {
           failureMessage: 'Something went wrong, try again later.'));
     }
   }
+  /*Stream<SignUpBlocState> _handleSignUpToBackend(
+      SignUpToBackEndEvent event,) async* {
+    try{
+
+      final firebaseUserId = _firebaseAuth.currentUser!.uid;
+      apiUserRepository.createUser(
+          firebaseId: firebaseUserId,
+          phoneNo: event.phone,
+          email: event.email,
+          password: event.password,
+          username: event.username);
+      yield SignUpSuccess(successMessage: 'Sign up successful');
+    } on SocketException catch (err) {
+      throw ConnectionException(err);
+    }
+  }*/
+
 }

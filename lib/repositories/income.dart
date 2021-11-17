@@ -80,6 +80,9 @@ class ApiIncomeRepository extends ApiRepository<String, Income,
       CreateIncomeInput.fromItem(item);
 
   @override
+  bool isEmptyUpdate(UpdateIncomeInput input) => input.isEmpty;
+
+  @override
   Future<void> refreshCache(Map<String, Income> items) async {
     await cache.clear();
     Set<String> ids = {};

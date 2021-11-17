@@ -1,10 +1,3 @@
-export 'auth.dart';
-export 'budget.dart';
-export 'expense.dart';
-export 'category.dart';
-export 'income.dart';
-export 'user.dart';
-
 import 'dart:async';
 
 import 'package:smuni/models/models.dart';
@@ -15,13 +8,15 @@ import 'package:smuni_api_client/smuni_api_client.dart';
 
 import 'budget.dart';
 import 'expense.dart';
-import 'user.dart';
 import 'income.dart';
+import 'user.dart';
 
 export 'auth.dart';
 export 'budget.dart';
 export 'category.dart';
 export 'expense.dart';
+export 'income.dart';
+export 'user.dart';
 
 abstract class ApiRepository<Identifier, Item, CreateInput, UpdateInput> {
   Future<Item?> getItem(Identifier id, String username, String authToken);
@@ -45,6 +40,7 @@ abstract class ApiRepository<Identifier, Item, CreateInput, UpdateInput> {
   UpdateInput updateFromDiff(Item update, Item old);
   CreateInput createFromItem(Item item);
   Future<void> refreshCache(Map<Identifier, Item> items);
+  bool isEmptyUpdate(UpdateInput input);
 }
 
 abstract class ApiRepositoryWrapper<Identifier, Item, CreateInput, UpdateInput>
@@ -100,6 +96,9 @@ abstract class ApiRepositoryWrapper<Identifier, Item, CreateInput, UpdateInput>
   @override
   UpdateInput updateFromDiff(Item update, Item old) =>
       repo.updateFromDiff(update, old);
+
+  @override
+  bool isEmptyUpdate(UpdateInput input) => repo.isEmptyUpdate(input);
 }
 
 /* mixin OfflineCapableRepository<Identifier, Item, CreateInput, UpdateInput>
@@ -464,6 +463,7 @@ class CacheSynchronizer {
     required this.offlineBudgetRepo,
     required this.offlineCategoryRepo,
     required this.offlineExpenseRepo,
+    required this.offlineIncomeRepo,
   });
 
   Future<void> syncPendingChanges(String username, String authToken) async {
