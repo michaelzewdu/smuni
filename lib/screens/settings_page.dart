@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
-import 'package:smuni/constants.dart';
 import 'package:smuni/models/models.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni/widgets/widgets.dart';
-
-import '../constants.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -93,7 +90,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                         onError: onError,
                                                       ),
                                                     ),
-                                            initalSelection: mainBudgetId),
+                                            initialSelection: mainBudgetId),
                                     child: Text("Change"),
                                   ),
                                 );

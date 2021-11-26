@@ -1,14 +1,5 @@
-export 'budget_list_view.dart';
-export 'budget_selector.dart';
-export 'category_list_view.dart';
-export 'category_selector.dart';
-export 'expense_list_view.dart';
-export 'money_editor.dart';
-export 'simple_date_range_editor.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/screens/Expense/expense_edit_page.dart';
@@ -16,6 +7,14 @@ import 'package:smuni/utilities.dart';
 
 import 'budget_selector.dart';
 import 'category_selector.dart';
+
+export 'budget_list_view.dart';
+export 'budget_selector.dart';
+export 'category_list_view.dart';
+export 'category_selector.dart';
+export 'expense_list_view.dart';
+export 'money_editor.dart';
+export 'simple_date_range_editor.dart';
 
 class DotSeparator extends StatelessWidget {
   const DotSeparator({
@@ -102,10 +101,10 @@ void showMainBudgetSelectorModal(
     OperationExceptionNotifier? onError,
   })
       changeMainBudget, {
-  String? initalSelection,
+  String? initialSelection,
 }) {
   final selectorKey = GlobalKey<FormFieldState<String>>();
-  var budgetId = initalSelection ?? "";
+  var budgetId = initialSelection ?? "";
   var awaitingOp = false;
   showModalBottomSheet(
     context: context,
@@ -148,6 +147,7 @@ void showMainBudgetSelectorModal(
                           final selector = selectorKey.currentState;
                           if (selector != null && selector.validate()) {
                             selector.save();
+
                             changeMainBudget(
                               budgetId,
                               onSuccess: () {
@@ -162,7 +162,7 @@ void showMainBudgetSelectorModal(
                                         ? Text('Connection Failed')
                                         : err is UnseenVersionException
                                             ? Text('Desync error: sync first')
-                                            : Text('Unknown Error Occured'),
+                                            : Text('Unknown Error Occurred'),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );

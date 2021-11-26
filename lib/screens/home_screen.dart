@@ -122,12 +122,16 @@ class _DefaultHomeScreenState extends State<DefaultHomeScreen> {
             : BlocBuilder<PreferencesBloc, PreferencesBlocState>(
                 builder: (context, preferencesState) {
                   if (preferencesState is PreferencesLoadSuccess) {
+                    print(
+                        'Current preference state ${preferencesState.preferences.mainBudget}');
                     return _showHome(
                       preferencesState.preferences.mainBudget,
                       (newMainBudget, {onSuccess, onError}) =>
                           context.read<PreferencesBloc>().add(
                                 UpdatePreferences(
-                                  preferencesState.preferences,
+                                  // preferencesState.preferences,
+                                  Preferences.from(preferencesState.preferences,
+                                      mainBudget: newMainBudget),
                                   onSuccess: onSuccess,
                                   onError: onError,
                                 ),

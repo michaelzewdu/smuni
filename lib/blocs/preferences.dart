@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:bloc/bloc.dart';
 
-import 'package:smuni/providers/cache/cache.dart';
+import 'package:bloc/bloc.dart';
 import 'package:smuni/models/models.dart';
+import 'package:smuni/providers/cache/cache.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/utilities.dart';
 import 'package:smuni_api_client/smuni_api_client.dart';
@@ -84,7 +84,7 @@ class PreferencesBloc extends Bloc<PreferencesBlocEvent, PreferencesBlocState> {
   PreferencesLoadSuccess preferencesLoadSuccessState() {
     final current = state;
     if (current is! PreferencesLoadSuccess) {
-      throw Exception("prferences not loaded");
+      throw Exception("preferences not loaded");
     }
     return current;
   }
@@ -96,6 +96,7 @@ class PreferencesBloc extends Bloc<PreferencesBlocEvent, PreferencesBlocState> {
     if (current is PreferencesLoadSuccess) {
       final updateMainBudget =
           current.preferences.mainBudget != event.update.mainBudget;
+      print('Update event main budget id ${event.update.mainBudget}');
       final updateMiscCategory =
           current.preferences.miscCategory != event.update.miscCategory;
 
@@ -133,8 +134,10 @@ class PreferencesBloc extends Bloc<PreferencesBlocEvent, PreferencesBlocState> {
       } else {
         // do it as if not signed in
         if (updateMainBudget) {
+          print('Made it to update main budget');
           final update = event.update.mainBudget;
           if (update != null) {
+            print('Made it to set main budget');
             await cache.setMainBudget(update);
           } else {
             await cache.clearMainBudget();
