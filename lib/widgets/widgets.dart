@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smuni/blocs/blocs.dart';
 import 'package:smuni/repositories/repositories.dart';
 import 'package:smuni/screens/Expense/expense_edit_page.dart';
+import 'package:smuni/screens/home_screen.dart';
+import 'package:smuni/screens/splash.dart';
 import 'package:smuni/utilities.dart';
 
 import 'budget_selector.dart';
@@ -151,8 +153,13 @@ void showMainBudgetSelectorModal(
                             changeMainBudget(
                               budgetId,
                               onSuccess: () {
+                                // Navigator.pop(context);
                                 setState(() => awaitingOp = false);
-                                Navigator.pop(context);
+                                Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    SmuniHomeScreen.routeName,
+                                    (ModalRoute.withName(
+                                        SplashPage.routeName)));
                               },
                               onError: (err) {
                                 setState(() => awaitingOp = false);
